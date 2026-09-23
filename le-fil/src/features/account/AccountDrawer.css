@@ -1,0 +1,180 @@
+.acctDrawer__overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 10, 10, 0.45);
+  z-index: 30;
+}
+.acctDrawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 420px;
+  max-width: 100%;
+  background: var(--paper);
+  border-left: 1px solid var(--ink);
+  z-index: 31;
+  display: flex;
+  flex-direction: column;
+}
+.acctDrawer__header {
+  display: flex;
+  align-items: center;
+  padding: 0 0 0 20px;
+  border-bottom: 1px solid var(--ink);
+  background: var(--ink);
+  color: var(--paper);
+  flex-shrink: 0;
+}
+.acctDrawer__title {
+  font: 800 11px var(--font-ui);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+.acctDrawer__close {
+  margin-left: auto;
+  border: none;
+  border-left: 1px solid var(--rule-on-ink);
+  background: transparent;
+  color: var(--paper);
+  cursor: pointer;
+  padding: 12px 15px;
+  font: 600 11px var(--font-ui);
+}
+.acctDrawer__close:hover {
+  background: var(--yellow);
+  color: var(--ink);
+}
+
+.acctDrawer__body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+.acctDrawer__section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--ink);
+}
+.acctDrawer__sectionTitle {
+  font: 800 8.5px var(--font-ui);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+.acctDrawer__email {
+  font: 600 15px var(--font-ui);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.acctDrawer__stats {
+  font: 600 8px var(--font-ui);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.acctDrawer__field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.acctDrawer__fieldLabel {
+  font: 600 8px var(--font-ui);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+.acctDrawer__field input {
+  width: 100%;
+  min-height: 36px;
+  font: 500 13.5px var(--font-ui);
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--ink);
+  padding: 0 11px;
+}
+.acctDrawer__field input:focus {
+  background: var(--yellow-pale);
+}
+
+.acctDrawer__msg {
+  padding: 8px 10px;
+  font: 600 9px var(--font-ui);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.acctDrawer__msg--error {
+  background: var(--red);
+  color: var(--paper);
+}
+.acctDrawer__msg--ok {
+  background: var(--green);
+  color: var(--paper);
+}
+
+.acctDrawer__btn {
+  min-height: 34px;
+  border: 1px solid var(--ink);
+  background: transparent;
+  cursor: pointer;
+  padding: 0 13px;
+  font: 800 9px var(--font-ui);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  align-self: flex-start;
+}
+.acctDrawer__btn:hover:not(:disabled) {
+  background: var(--yellow);
+}
+.acctDrawer__btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.acctDrawer__btn--primary {
+  background: var(--ink);
+  color: var(--paper);
+}
+.acctDrawer__btn--primary:hover:not(:disabled) {
+  background: var(--yellow);
+  color: var(--ink);
+}
+.acctDrawer__btn--danger {
+  border-color: var(--red);
+  color: var(--red);
+}
+.acctDrawer__btn--danger:hover:not(:disabled) {
+  background: var(--red);
+  color: var(--paper);
+}
+
+.acctDrawer__device {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.acctDrawer__deviceDot {
+  width: 7px;
+  height: 7px;
+  flex-shrink: 0;
+  background: var(--green);
+}
+.acctDrawer__deviceName {
+  font: 600 13px var(--font-ui);
+}
+.acctDrawer__deviceTag {
+  margin-left: auto;
+  font: 600 8px var(--font-ui);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.acctDrawer__hint {
+  font: 400 12.5px/1.5 var(--font-ui);
+  color: #4a4a46;
+}

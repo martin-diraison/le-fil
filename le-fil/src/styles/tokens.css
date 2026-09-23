@@ -1,0 +1,31 @@
+/*
+  Le Fil — tokens de design
+  Source : design_handoff_le_fil/README.md (§5) + prototypes .dc.html
+  Toute valeur ici doit rester synchronisée avec la transmission de design.
+*/
+:root {
+  /* Interface */
+  --ink: #0a0a0a;         /* texte, filets principaux, fonds sombres */
+  --paper: #fbfbf9;       /* fond */
+  --hover: #f1f1ec;       /* fond secondaire / survol */
+  --outmonth: #f4f4ef;    /* hors mois (calendrier) */
+  --rule: #e0e0d9;        /* filet secondaire (listes) */
+  --border-quiet: #cfcfc8;/* bord discret */
+  --text-secondary: #6b6b66;
+  --text-tertiary: #9c9c98;
+  --on-ink-secondary: #c9c9c4;
+  --on-ink-tertiary: #e4e4e0;
+  --rule-on-ink: #3a3a38;
+
+  --red: #e8402a;         /* retard, erreur, suppression */
+  --yellow: #f2c015;      /* sélection, survol, focus */
+  --yellow-pale: #fdf4d6; /* aujourd'hui, focus de champ, cible de dépôt */
+  --green: #2f6f5e;       /* synchronisé, succès */
+
+  /* Typographie */
+  --font-ui: 'Archivo', system-ui, sans-serif;
+  --font-content: 'Archivo Narrow', system-ui, sans-serif;
+
+  /* Transitions : fond uniquement, rien d'autre */
+  --transition-bg: background-color .12s linear;
+}

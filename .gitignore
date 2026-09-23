@@ -1,0 +1,4 @@
+node_modules/
+
+# Doublon de design_handoff_le_fil/ (archive de la transmission)
+*.zip

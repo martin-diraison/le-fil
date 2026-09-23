@@ -1,0 +1,311 @@
+.lotDetail {
+  flex: 1 1 0;
+  min-width: 336px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.lotDetail__inner {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--ink);
+  color: var(--paper);
+}
+.lotDetail__band {
+  height: 8px;
+  flex-shrink: 0;
+}
+
+.lotDetail__header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 0 0 16px;
+  border-bottom: 1px solid var(--rule-on-ink);
+  flex-shrink: 0;
+}
+.lotDetail__headerInfo {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  gap: 10px;
+  overflow: hidden;
+}
+.lotDetail__project {
+  min-width: 0;
+  font: 600 9px var(--font-ui);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--on-ink-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.lotDetail__due {
+  flex-shrink: 0;
+  font: 600 9px var(--font-ui);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.lotDetail__headerBtn {
+  flex-shrink: 0;
+  border: none;
+  border-left: 1px solid var(--rule-on-ink);
+  background: transparent;
+  color: var(--on-ink-secondary);
+  cursor: pointer;
+  padding: 9px 12px;
+  font: 600 10px var(--font-ui);
+  transition: var(--transition-bg);
+}
+.lotDetail__headerBtn:hover {
+  background: var(--yellow);
+  color: var(--ink);
+}
+.lotDetail__moreBtn {
+  font: 800 11px var(--font-ui);
+  padding: 9px 11px;
+}
+.lotDetail__doneBtn {
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  padding: 9px 13px;
+}
+
+.lotDetail__moveRow {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+  align-items: center;
+  padding: 9px 16px;
+  border-bottom: 1px solid var(--rule-on-ink);
+  background: #151513;
+  flex-shrink: 0;
+}
+.lotDetail__moveLabel {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  font: 600 8px var(--font-ui);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--on-ink-secondary);
+}
+.lotDetail__deleteBtn {
+  margin-left: auto;
+  border: 1px solid var(--red);
+  cursor: pointer;
+  padding: 4px 8px;
+  font: 600 8.5px var(--font-ui);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.lotDetail__deleteBtn:hover {
+  background: var(--red) !important;
+  color: var(--paper) !important;
+}
+.lotDetail__moveTarget {
+  font: 600 9.5px var(--font-content);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-width: 1px;
+  border-style: solid;
+}
+
+.lotDetail__body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+}
+
+.lotDetail__main {
+  flex: 1 1 260px;
+  min-width: 0;
+  padding: 18px 20px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.lotDetail__title {
+  font: 800 24px var(--font-ui);
+  letter-spacing: -0.028em;
+  color: var(--paper);
+  background: transparent;
+  border: none;
+  padding: 0;
+  width: 100%;
+}
+.lotDetail__textarea {
+  font: 400 15px/1.6 var(--font-ui);
+  color: var(--on-ink-tertiary);
+  background: transparent;
+  border: none;
+  resize: none;
+  width: 100%;
+  max-width: 66ch;
+  padding: 0;
+}
+.lotDetail__dueShortcuts {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding-top: 2px;
+}
+.lotDetail__dueShortcutsLabel {
+  font: 600 8.5px var(--font-ui);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--on-ink-secondary);
+  margin-right: 3px;
+}
+.lotDetail__shortcutBtn {
+  font: 600 9px var(--font-ui);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  padding: 5px 9px;
+  border-width: 1px;
+  border-style: solid;
+}
+
+.lotDetail__tasks {
+  flex: 1 1 240px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.lotDetail__tasksHeader {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 8px 13px;
+  border-bottom: 1px solid var(--rule-on-ink);
+}
+.lotDetail__tasksDot {
+  width: 10px;
+  height: 10px;
+  flex-shrink: 0;
+}
+.lotDetail__tasksLabel {
+  font: 600 8.5px var(--font-ui);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--on-ink-secondary);
+}
+.lotDetail__tasksCount {
+  margin-left: auto;
+  font: 800 9px var(--font-ui);
+  letter-spacing: 0.08em;
+  color: var(--on-ink-secondary);
+}
+
+.taskRow {
+  border-bottom: 1px solid var(--rule-on-ink);
+}
+.taskRow__main {
+  display: flex;
+  align-items: stretch;
+}
+.taskRow__toggle {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 9px 0 9px 13px;
+  transition: var(--transition-bg);
+}
+.taskRow__toggle:hover {
+  background: var(--yellow);
+  color: var(--ink);
+}
+.taskRow__box {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+  border: 1.5px solid;
+  color: var(--ink);
+  font: 800 8px var(--font-ui);
+  line-height: 10px;
+  text-align: center;
+}
+.taskRow__label {
+  font: 500 12.5px var(--font-ui);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.taskRow__due {
+  flex-shrink: 0;
+  border: none;
+  border-left: 1px solid var(--rule-on-ink);
+  background: transparent;
+  cursor: pointer;
+  padding: 9px 11px;
+  font: 600 8.5px var(--font-ui);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.taskRow__due:hover {
+  background: var(--yellow);
+  color: var(--ink);
+}
+.taskRow__picker {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+  padding: 8px 13px;
+  background: #151513;
+  border-top: 1px solid var(--rule-on-ink);
+}
+.taskRow__pickerChoice {
+  font: 600 8.5px var(--font-ui);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-width: 1px;
+  border-style: solid;
+}
+.taskRow__pickerRemove {
+  margin-left: auto;
+  font: 600 8.5px var(--font-ui);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--red);
+  background: transparent;
+  border: 1px solid var(--red);
+  cursor: pointer;
+  padding: 4px 8px;
+}
+.taskRow__pickerRemove:hover {
+  background: var(--red);
+  color: var(--paper);
+}
+
+.lotDetail__addTask {
+  font: 600 9px var(--font-ui);
+  letter-spacing: 0.12em;
+  color: var(--paper);
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--rule-on-ink);
+  padding: 9px 13px;
+}

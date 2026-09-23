@@ -1,0 +1,1455 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;800&family=Archivo+Narrow:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; background: #fbfbf9; }
+  * { box-sizing: border-box; }
+  a { color: #1b3ad8; text-decoration: underline; }
+  a:hover { color: #e8402a; }
+  ::selection { background: #f2c015; color: #0a0a0a; }
+  input, textarea, button { font-family: inherit; }
+  input::placeholder, textarea::placeholder { color: #6b6b66; }
+  input:focus, textarea:focus { outline: none; }
+  ::-webkit-scrollbar { width: 9px; height: 9px; }
+  ::-webkit-scrollbar-track { background: #f1f1ec; }
+  ::-webkit-scrollbar-thumb { background: #cfcfc8; }
+  ::-webkit-scrollbar-thumb:hover { background: #0a0a0a; }
+  @keyframes cell { from { opacity: 0; transform: translateX(-4px); } to { opacity: 1; transform: none; } }
+  @keyframes deck { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+</style>
+</helmet>
+
+<sc-if value="{{ needAuth }}" hint-placeholder-val="{{ false }}">
+<div style="height:100vh;display:flex;background:#fbfbf9;color:#0a0a0a;font-family:'Archivo',system-ui,sans-serif;overflow:hidden">
+  <div style="flex:1 1 0;min-width:0;background:#0a0a0a;color:#fbfbf9;display:flex;flex-direction:column;justify-content:space-between;padding:26px 32px">
+    <span style="font:800 13px 'Archivo',sans-serif;letter-spacing:.18em;text-transform:uppercase">le fil</span>
+    <div style="display:flex;flex-direction:column;gap:22px">
+      <span style="font:800 clamp(40px,6vw,76px)/.95 'Archivo',sans-serif;letter-spacing:-.045em">Projets,<br>lots,<br>tâches.</span>
+      <div style="display:flex;gap:3px"><sc-for list="{{ authColors }}" as="c" hint-placeholder-count="8"><span style="width:27px;height:9px;background:{{ c.hex }}"></span></sc-for></div>
+    </div>
+    <span style="font:600 9px 'Archivo',sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#9c9c98">un seul compte · tous tes écrans</span>
+  </div>
+  <div style="width:460px;max-width:100%;flex-shrink:0;border-left:1px solid #0a0a0a;display:flex;flex-direction:column;justify-content:center;gap:18px;padding:32px 44px;overflow-y:auto">
+
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <span style="font:800 28px/1.05 'Archivo',sans-serif;letter-spacing:-.03em">{{ authTitle }}</span>
+        <span style="font:400 13.5px/1.5 'Archivo',sans-serif;color:#4a4a46;text-wrap:pretty">{{ authSub }}</span>
+      </div>
+      <sc-if value="{{ showEmail }}" hint-placeholder-val="{{ true }}">
+        <label style="display:flex;flex-direction:column;gap:6px">
+          <span style="font:600 8.5px 'Archivo',sans-serif;letter-spacing:.18em;text-transform:uppercase;color:#6b6b66;white-space:nowrap">adresse e-mail</span>
+          <input type="email" autocomplete="email" value="{{ aEmail }}" onChange="{{ onAEmail }}" onKeyDown="{{ submitAuth }}" placeholder="toi@exemple.fr" style="width:100%;min-height:40px;font:500 14px 'Archivo',sans-serif;color:#0a0a0a;background:#fbfbf9;border:1px solid #0a0a0a;padding:0 12px" style-focus="background:#fdf4d6" />
+        </label>
+      </sc-if>
+      <sc-if value="{{ showPw }}" hint-placeholder-val="{{ true }}">
+        <label style="display:flex;flex-direction:column;gap:6px">
+          <span style="display:flex;align-items:baseline;gap:8px"><span style="font:600 8.5px 'Archivo',sans-serif;letter-spacing:.18em;text-transform:uppercase;color:#6b6b66;white-space:nowrap;flex-shrink:0">mot de passe</span><span style="font:600 8px 'Archivo',sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#9c9c98;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0">{{ pwHint }}</span></span>
+          <span style="display:flex;align-items:stretch">
+            <input type="{{ pwType }}" autocomplete="current-password" value="{{ aPw }}" onChange="{{ onAPw }}" onKeyDown="{{ submitAuth }}" style="width:100%;min-height:40px;font:500 14px 'Archivo',sans-serif;color:#0a0a0a;background:#fbfbf9;border:1px solid #0a0a0a;padding:0 12px;flex:1;min-width:0;border-right:none" style-focus="background:#fdf4d6" />
+            <button type="button" onClick="{{ togglePw }}" style="flex-shrink:0;width:76px;border:1px solid #0a0a0a;background:transparent;cursor:pointer;font:600 8.5px 'Archivo',sans-serif;letter-spacing:.14em;text-transform:uppercase" style-hover="background:#f2c015">{{ pwToggle }}</button>
+          </span>
+        </label>
+      </sc-if>
+      <sc-if value="{{ showPw2 }}" hint-placeholder-val="{{ false }}">
+        <label style="display:flex;flex-direction:column;gap:6px">
+          <span style="font:600 8.5px 'Archivo',sans-serif;letter-spacing:.18em;text-transform:uppercase;color:#6b6b66;white-space:nowrap">confirmer le mot de passe</span>
+          <input type="{{ pwType }}" autocomplete="new-password" value="{{ aPw2 }}" onChange="{{ onAPw2 }}" onKeyDown="{{ submitAuth }}" style="width:100%;min-height:40px;font:500 14px 'Archivo',sans-serif;color:#0a0a0a;background:#fbfbf9;border:1px solid #0a0a0a;padding:0 12px" style-focus="background:#fdf4d6" />
+        </label>
+      </sc-if>
+      <sc-if value="{{ hasErr }}" hint-placeholder-val="{{ false }}">
+        <div style="padding:9px 11px;background:#e8402a;color:#fbfbf9;font:600 9.5px 'Archivo',sans-serif;letter-spacing:.12em;text-transform:uppercase">{{ aErr }}</div>
+      </sc-if>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <button onClick="{{ submitAuth }}" style="min-height:44px;border:none;background:#0a0a0a;color:#fbfbf9;cursor:pointer;font:800 10.5px 'Archivo',sans-serif;letter-spacing:.18em;text-transform:uppercase" style-hover="background:#f2c015;color:#0a0a0a">{{ authCta }}</button>
+        <sc-if value="{{ isLogin }}" hint-placeholder-val="{{ true }}">
+          <button onClick="{{ goForgot }}" style="align-self:flex-start;border:none;background:transparent;cursor:pointer;padding:4px 0;font:600 9px 'Archivo',sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#4a4a46;text-decoration:underline;text-underline-offset:3px" style-hover="color:#e8402a">mot de passe oublié ?</button>
+        </sc-if>
+      </div>
+      <sc-if value="{{ showSwitch }}" hint-placeholder-val="{{ true }}">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding-top:14px;border-top:1px solid #e0e0d9">
+          <span style="font:600 9px 'Archivo',sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#6b6b66;white-space:nowrap">{{ switchText }}</span>
+          <button onClick="{{ onSwitch }}" style="border:1px solid #0a0a0a;background:transparent;cursor:pointer;padding:7px 12px;font:800 9px 'Archivo',sans-serif;letter-spacing:.14em;text-transform:uppercase;white-space:nowrap" style-hover="background:#f2c015">{{ switchCta }}</button>
+        </div>
+      </sc-if>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ authed }}" hint-placeholder-val="{{ true }}">
+<div style="height:100vh;display:flex;background:#fbfbf9;color:#0a0a0a;font-family:'Archivo',system-ui,sans-serif;overflow:hidden">
+
+  <div style="width:232px;flex-shrink:0;border-right:1px solid #0a0a0a;display:flex;flex-direction:column;min-height:0">
+    <div style="display:flex;align-items:baseline;gap:8px;padding:9px 12px;border-bottom:1px solid #0a0a0a;flex-shrink:0">
+      <span style="font:800 11px 'Archivo',sans-serif;letter-spacing:.16em;text-transform:uppercase">le fil</span>
+      <span style="font:600 9px 'Archivo',sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#6b6b66;white-space:nowrap">{{ todayShort }}</span>
+      <button onClick="{{ onReset }}" title="réinitialiser la démo" style="margin-left:auto;flex-shrink:0;white-space:nowrap;border:none;background:transparent;cursor:pointer;padding:0;font:600 8px 'Archivo',sans-serif;letter-spacing:.12em;text-transform:uppercase;color:{{ resetFg }}" style-hover="color:#e8402a">{{ resetLabel }}</button>
+    </div>
+
+    <input value="{{ q }}" onChange="{{ onQ }}" placeholder="CHERCHER" style="flex-shrink:0;font:600 9.5px 'Archivo',sans-serif;letter-spacing:.16em;color:#0a0a0a;background:transparent;border:none;border-bottom:1px solid #0a0a0a;padding:9px 12px" />
+
+    <button onClick="{{ toggleLate }}" style="flex-shrink:0;border:none;border-bottom:1px solid #0a0a0a;background:{{ lateBg }};color:{{ lateFg }};cursor:pointer;padding:8px 12px;text-align:left;font:600 9.5px 'Archivo',sans-serif;letter-spacing:.14em;text-transform:uppercase;display:flex;justify-content:space-between;gap:8px" style-hover="background:#f2c015;color:#0a0a0a">retard uniquement<span style="color:{{ lateCountFg }}">{{ lateCount }}</span></button>
+
+    <button onClick="{{ toggleNoProj }}" style="flex-shrink:0;border:none;border-bottom:1px solid #0a0a0a;background:{{ npBg }};color:{{ npFg }};cursor:pointer;padding:8px 12px;text-align:left;font:600 11px 'Archivo Narrow',sans-serif;letter-spacing:.06em;text-transform:uppercase;display:flex;justify-content:space-between;gap:8px" style-hover="background:#f2c015;color:#0a0a0a">sans projet<span style="color:{{ npCountFg }}">{{ npCount }}</span></button>
+
+    <div style="flex-shrink:0;display:flex;align-items:center;gap:6px;padding:7px 12px;border-bottom:1px solid #0a0a0a">
+      <span style="font:600 8.5px 'Archivo',sans-serif;letter-spacing:.18em;text-transform:uppercase;color:#6b6b66">projets</span>
+      <span style="font:800 8.5px 'Archivo',sans-serif;letter-spacing:.1em">{{ projCount }}</span>
+      <input value="{{ pq }}" onChange="{{ onPq }}" placeholder="FILTRER" style="margin-left:auto;width:64px;font:600 8.5px 'Archivo',sans-serif;letter-spacing:.14em;color:#0a0a0a;background:transparent;border:none;border-bottom:1px solid #cfcfc8;padding:1px 0" />
+    </div>
+
+    <div style="flex:1;min-height:0;overflow-y:auto">
+      <sc-for list="{{ projectRows }}" as="p" hint-placeholder-count="10">
+        <div draggable="true" title="glisser pour réordonner" onDragStart="{{ p.onDragStart }}" onDragOver="{{ p.onDragOver }}" onDrop="{{ p.onDrop }}" onDragEnd="{{ p.onDragEnd }}" style="border-bottom:1px solid #e0e0d9;border-top:{{ p.dropEdge }};opacity:{{ p.opacity }};cursor:grab">
+          <div style="display:flex;align-items:stretch;background:{{ p.bg }};box-shadow:inset 4px 0 0 {{ p.edge }}">
+            <button onClick="{{ p.onClick }}" style="flex:1;min-width:0;border:none;background:transparent;color:{{ p.fg }};cursor:pointer;padding:7px 0 7px 13px;text-align:left;display:flex;align-items:center;gap:8px;transition:background .12s linear" style-hover="background:#f2c015;color:#0a0a0a">
+              <span style="width:11px;height:11px;flex-shrink:0;border:1.5px solid {{ p.boxBorder }};background:{{ p.boxBg }};color:{{ p.markFg }};font:800 7px 'Archivo',sans-serif;line-height:8px;text-align:center">{{ p.mark }}</span>
+              <span style="font:{{ p.weight }} 11.5px 'Archivo Narrow',sans-serif;letter-spacing:.04em;text-transform:uppercase;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ p.name }}</span>
+              <span style="margin-left:auto;font:800 9px 'Archivo',sans-serif;letter-spacing:.08em;color:{{ p.countFg }};white-space:nowrap">{{ p.count }}</span>
+            </button>
+            <button onClick="{{ p.onColor }}" title="couleur du projet" style="width:26px;flex-shrink:0;border:none;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0" style-hover="background:#f2c015">
+              <span style="font:800 9px 'Archivo',sans-serif;letter-spacing:.04em;color:{{ p.dotBorder }}">{{ p.pickMark }}</span>
+            </button>
+          </div>
+          <sc-if value="{{ p.picking }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;flex-direction:column;gap:7px;padding:8px 10px;background:#f1f1ec;border-top:1px solid #e0e0d9">
+              <input value="{{ p.nameVal }}" onChange="{{ p.onRename }}" placeholder="NOM DU PROJET" style="width:100%;font:600 11px 'Archivo Narrow',sans-serif;letter-spacing:.04em;text-transform:uppercase;color:#0a0a0a;background:#fbfbf9;border:1px solid #cfcfc8;padding:5px 7px" />
+              <div style="display:grid;grid-template-columns:repeat(8,1fr);gap:4px">
+              <sc-for list="{{ p.swatches }}" as="w" hint-placeholder-count="28">
+                <button onClick="{{ w.onClick }}" title="{{ w.name }}" style="height:18px;border:{{ w.border }};background:{{ w.hex }};cursor:pointer;padding:0" style-hover="outline:2px solid #0a0a0a"></button>
+              </sc-for>
+              </div>
+              <button onClick="{{ p.onDelete }}" style="border:1px solid #e8402a;background:{{ p.delBg }};color:{{ p.delFg }};cursor:pointer;padding:5px 7px;font:600 8.5px 'Archivo',sans-serif;letter-spacing:.16em;text-transform:uppercase" style-hover="background:#e8402a;color:#fbfbf9">{{ p.delLabel }}</button>
+            </div>
+          </sc-if>
+        </div>
+      </sc-for>
+      <sc-if value="{{ noProjects }}" hint-placeholder-val="{{ false }}">
+        <div style="padding:10px 12px;font:600 9px 'Archivo',sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#6b6b66">aucun projet</div>
+      </sc-if>
+    </div>
+
+    <div style="flex-shrink:0;display:flex;align-items:stretch;border-top:1px solid #0a0a0a">
+      <input value="{{ pdraft }}" onChange="{{ onPdraft }}" onKeyDown="{{ addProject }}" placeholder="+ NOUVEAU PROJET" style="flex:1;min-width:0;font:600 9.5px 'Archivo',sans-serif;letter-spacing:.14em;color:#0a0a0a;background:transparent;border:none;padding:9px 12px" />
+      <sc-if value="{{ hasPdraft }}" hint-placeholder-val="{{ false }}">
+        <button onClick="{{ addProject }}" style="border:none;border-left:1px solid #0a0a0a;background:#0a0a0a;color:#fbfbf9;cursor:pointer;padding:9px 12px;font:800 10px 'Archivo',sans-serif" style-hover="background:#f2c015;color:#0a0a0a">↵</button>
+      </sc-if>
+    </div>
+
+    <sc-if value="{{ hasSel }}" hint-placeholder-val="{{ false }}">
+      <button onClick="{{ clearSel }}" style="flex-shrink:0;border:none;border-top:1px solid #0a0a0a;background:#0a0a0a;color:#fbfbf9;cursor:pointer;padding:9px 12px;text-align:left;font:600 9px 'Archivo',sans-serif;letter-spacing:.16em;text-transform:uppercase">vider la sélection ✕</button>
+    </sc-if>
+
+    <div style="flex-shrink:0;border-top:1px solid #0a0a0a;display:flex;flex-direction:column">
+      <sc-if value="{{ acctOpen }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;flex-direction:column;border-bottom:1px solid #e0e0d9;background:#f1f1ec">
+          <span style="padding:9px 12px 7px;font:600 10.5px 'Archivo',sans-serif;color:#0a0a0a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ userEmail }}</span>
+          <button onClick="{{ openCompte }}" style="border:none;border-top:1px solid #e0e0d9;background:transparent;cursor:pointer;padding:8px 12px;text-align:left;font:600 8.5px 'Archivo',sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#0a0a0a" style-hover="background:#f2c015">compte &amp; sécurité</button>
+          <button onClick="{{ onOffline }}" style="border:none;border-top:1px solid #e0e0d9;background:transparent;cursor:pointer;padding:8px 12px;text-align:left;font:600 8.5px 'Archivo',sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#4a4a46" style-hover="background:#f2c015;color:#0a0a0a">{{ offlineLabel }}</button>
+          <button onClick="{{ onLogout }}" style="border:none;border-top:1px solid #e0e0d9;background:transparent;cursor:pointer;padding:8px 12px;text-align:left;font:600 8.5px 'Archivo',sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#e8402a" style-hover="background:#e8402a;color:#fbfbf9">se déconnecter</button>
+        </div>
+      </sc-if>
+      <button onClick="{{ toggleAcct }}" title="compte et synchronisation" style="display:flex;align-items:center;gap:8px;border:none;background:transparent;cursor:pointer;padding:9px 12px;text-align:left" style-hover="background:#f2c015">
+        <span style="width:7px;height:7px;flex-shrink:0;background:{{ syncDot }}"></span>
+        <span style="flex:1;min-width:0;font:600 8.5px 'Archivo',sans-serif;letter-spacing:.14em;text-transform:uppercase;color:{{ syncFg }};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ syncLabel }}</span>
+        <span style="font:800 8px 'Archivo',sans-serif;color:#6b6b66">compte</span>
+      </button>
+    </div>
+  </div>
+
+  <div style="flex:1;min-width:0;display:flex;flex-direction:column;min-height:0">
+
+      <div style="display:flex;align-items:stretch;border-bottom:1px solid #0a0a0a;flex-shrink:0">
+        <sc-for list="{{ views }}" as="v" hint-placeholder-count="3">
+          <button onClick="{{ v.onClick }}" style="border:none;border-right:1px solid #0a0a0a;background:{{ v.bg }};color:{{ v.fg }};cursor:pointer;padding:9px 14px;font:600 9px 'Archivo',sans-serif;letter-spacing:.16em;text-transform:uppercase;white-space:nowrap" style-hover="background:#f2c015;color:#0a0a0a">{{ v.label }}</button>
+        </sc-for>
+        <div style="flex:1;min-width:0;display:flex;align-items:center;gap:8px;padding:0 12px;overflow:hidden">
+          <span style="font:800 9.5px 'Archivo',sans-serif;letter-spacing:.12em;text-transform:uppercase;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ selLabel }}</span>
+          <span style="font:600 9px 'Archivo',sans-serif;letter-spacing:.12em;color:#6b6b66;white-space:nowrap">{{ selCount }}</span>
+        </div>
+        <button onClick="{{ toggleSort }}" style="border:none;border-left:1px solid #0a0a0a;background:transparent;cursor:pointer;padding:9px 12px;font:600 9px 'Archivo',sans-serif;letter-spacing:.12em;text-transform:uppercase;white-space:nowrap" style-hover="background:#f2c015">{{ sortLabel }}</button>
+      </div>
+
+      <div style="flex:1;min-height:0;display:flex;overflow:hidden">
+
+        <sc-if value="{{ isList }}" hint-placeholder-val="{{ true }}">
+          <div style="flex:0 1 392px;min-width:252px;border-right:1px solid #0a0a0a;display:flex;flex-direction:column;min-height:0">
+            <sc-if value="{{ noSel }}" hint-placeholder-val="{{ false }}">
+              <div style="flex:1;display:flex;align-items:center;justify-content:center;padding:22px;text-align:center;font:600 9.5px/1.8 'Archivo',sans-serif;letter-spacing:.2em;text-transform:uppercase;color:#6b6b66">volet 2 — les lots<br>sélectionne un projet<br>ou « sans projet »</div>
+            </sc-if>
+            <sc-if value="{{ hasSel }}" hint-placeholder-val="{{ true }}">
+            <div style="display:flex;align-items:stretch;border-bottom:1px solid #0a0a0a;flex-shrink:0">
+              <button onClick="{{ focusDraft }}" title="nouveau lot" style="width:32px;flex-shrink:0;border:none;border-right:1px solid #0a0a0a;background:transparent;cursor:text;font:800 19px 'Archivo',sans-serif;color:#e8402a;padding:0">+</button>
+              <input value="{{ draft }}" onChange="{{ onDraft }}" onKeyDown="{{ onDraftKey }}" ref="{{ draftRef }}" placeholder="{{ draftHint }}" style="flex:1;min-width:0;font:500 13px 'Archivo',sans-serif;color:#0a0a0a;background:transparent;border:none;padding:9px 11px" />
+              <sc-if value="{{ hasDraft }}" hint-placeholder-val="{{ false }}">
+                <button onClick="{{ commitClick }}" style="border:none;border-left:1px solid #0a0a0a;background:#0a0a0a;color:#fbfbf9;cursor:pointer;padding:0 12px;font:600 9px 'Archivo',sans-serif;letter-spacing:.14em;text-transform:uppercase">garder ⏎</button>
+              </sc-if>
+            </div>
+            <div style="flex:1;min-height:0;overflow-y:auto;overflow-x:hidden">
+              <sc-for list="{{ thread }}" as="n" hint-placeholder-count="10">
+                <button onClick="{{ n.onPick }}" draggable="true" title="glisser pour réordonner" onDragStart="{{ n.onDragStart }}" onDragOver="{{ n.onDragOver }}" onDrop="{{ n.onDrop }}" onDragEnd="{{ n.onDragEnd }}" style="width:100%;border:none;border-bottom:1px solid {{ n.rule }};border-top:{{ n.dropEdge }};opacity:{{ n.opacity }};background:{{ n.bg }};cursor:pointer;padding:0;display:flex;align-items:stretch;text-align:left;transition:background .12s linear" style-hover="background:{{ n.hoverBg }}">
+                  <span style="width:7px;flex-shrink:0;background:{{ n.color }}"></span>
+                  <span style="width:64px;flex-shrink:0;overflow:hidden;border-right:1px solid {{ n.gridLine }};background:{{ n.dateBg }};padding:8px 7px;display:flex;flex-direction:column;gap:1px">
+                    <span style="font:800 12px 'Archivo',sans-serif;letter-spacing:-.01em;color:{{ n.dateFg }};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ n.dateTop }}</span>
+                    <span style="font:600 7.5px 'Archivo',sans-serif;letter-spacing:.04em;text-transform:uppercase;color:{{ n.dateSubFg }};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ n.dateSub }}</span>
+                  </span>
+                  <span style="flex:1;min-width:0;padding:8px 10px;display:flex;flex-direction:column;gap:2px">
+                    <span style="font:{{ n.titleFont }};letter-spacing:-.012em;color:{{ n.titleFg }};text-decoration:{{ n.deco }};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ n.title }}</span>
+                    <span style="display:flex;align-items:baseline;gap:8px">
+                      <span style="font:600 8.5px 'Archivo',sans-serif;letter-spacing:.12em;text-transform:uppercase;color:{{ n.metaFg }};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ n.projName }}</span>
+                      <span style="margin-left:auto;font:600 8.5px 'Archivo',sans-serif;letter-spacing:.08em;color:{{ n.taskFg }};white-space:nowrap">{{ n.taskLine }}</span>
+                    </span>
+                  </span>
+                </button>
+              </sc-for>
+              <sc-if value="{{ empty }}" hint-placeholder-val="{{ false }}">
+                <div style="padding:16px 12px;font:600 10px 'Archivo',sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#6b6b66">rien ici — {{ emptyHint }}</div>
+              </sc-if>
+            </div>
+            </sc-if>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isCal }}" hint-placeholder-val="{{ false }}">
+          <div style="flex:1;min-width:0;border-right:1px solid #0a0a0a;display:flex;flex-direction:column;min-height:0">
+            <div style="display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;padding:7px 12px;border-bottom:1px solid #0a0a0a;flex-shrink:0">
+              <button onClick="{{ calPrev }}" style="border:1px solid #0a0a0a;background:transparent;cursor:pointer;padding:3px 9px;font:800 10px 'Archivo',sans-serif" style-hover="background:#f2c015">‹</button>
+              <span style="font:800 11px 'Archivo',sans-serif;letter-spacing:.14em;text-transform:uppercase;white-space:nowrap">{{ calTitle }}</span>
+              <button onClick="{{ calNext }}" style="border:1px solid #0a0a0a;background:transparent;cursor:pointer;padding:3px 9px;font:800 10px 'Archivo',sans-serif" style-hover="background:#f2c015">›</button>
+              <span style="font:600 8.5px 'Archivo',sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#6b6b66;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1 1 0;min-width:0">clic = ouvrir · glisser = changer la date</span>
+              <div style="display:flex;flex-shrink:0;border:1px solid #0a0a0a">
+                <sc-for list="{{ calModes }}" as="m" hint-placeholder-count="2">
+                  <button onClick="{{ m.onClick }}" style="border:none;background:{{ m.bg }};color:{{ m.fg }};cursor:pointer;padding:3px 9px;font:600 8.5px 'Archivo',sans-serif;letter-spacing:.14em;text-transform:uppercase" style-hover="background:#f2c015;color:#0a0a0a">{{ m.label }}</button>
+                </sc-for>
+              </div>
+              <button onClick="{{ toggleCalTasks }}" style="flex-shrink:0;border:1px solid #0a0a0a;background:{{ ctBg }};color:{{ ctFg }};cursor:pointer;padding:3px 9px;font:600 8.5px 'Archivo',sans-serif;letter-spacing:.14em;text-transform:uppercase;white-space:nowrap" style-hover="background:#f2c015;color:#0a0a0a">{{ ctLabel }}</button>
+            </div>
+            <div style="display:flex;border-bottom:1px solid #0a0a0a;flex-shrink:0">
+              <sc-for list="{{ calHead }}" as="h" hint-placeholder-count="7">
+                <div style="flex:1;min-width:0;padding:4px 7px;border-right:1px solid #e0e0d9;font:600 8.5px 'Archivo',sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#6b6b66">{{ h }}</div>
+              </sc-for>
+            </div>
+            <div style="flex:1;min-height:0;display:flex;flex-direction:column">
+              <sc-for list="{{ calRows }}" as="r" hint-placeholder-count="5">
+                <div style="flex:1;min-height:0;display:flex;border-bottom:1px solid #e0e0d9">
+                  <sc-for list="{{ r.cells }}" as="c" hint-placeholder-count="7">
+                    <div onDragOver="{{ c.onDragOver }}" onDrop="{{ c.onDrop }}" style="flex:1;min-width:0;border-right:1px solid #e0e0d9;background:{{ c.bg }};box-shadow:{{ c.ring }};display:flex;flex-direction:column;min-height:0">
+                      <div style="display:flex;align-items:baseline;gap:5px;padding:3px 6px 1px;flex-shrink:0">
+                        <span style="font:800 10px 'Archivo',sans-serif;color:{{ c.numFg }};white-space:nowrap">{{ c.num }}</span>
+                        <span style="font:600 7.5px 'Archivo',sans-serif;letter-spacing:.1em;color:#e8402a">{{ c.flag }}</span>
+                      </div>
+                      <div style="flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:1px;padding:0 3px 3px">
+                        <sc-for list="{{ c.items }}" as="i" hint-placeholder-count="1">
+                          <button onClick="{{ i.onClick }}" draggable="true" onDragStart="{{ i.onDragStart }}" onDragEnd="{{ i.onDragEnd }}" style="flex-shrink:0;text-align:left;font:{{ i.font }};color:{{ i.fg }};background:{{ i.bg }};text-decoration:{{ i.deco }};opacity:{{ i.opacity }};border:none;border-left:3px solid {{ i.edge }};cursor:grab;padding:2px 4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;transition:background .12s linear" style-hover="background:#f2c015;color:#0a0a0a">{{ i.label }}</button>
+                        </sc-for>
+                      </div>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isGantt }}" hint-placeholder-val="{{ false }}">
+          <div style="flex:1;min-width:0;border-right:1px solid #0a0a0a;display:flex;flex-direction:column;min-height:0">
+            <div style="display:flex;align-items:center;gap:10px;padding:7px 12px;border-bottom:1px solid #0a0a0a;flex-shrink:0">
+              <span style="font:800 11px 'Archivo',sans-serif;letter-spacing:.14em;text-transform:uppercase;white-space:nowrap">{{ ganttTitle }}</span>
+              <span style="font:600 8.5px 'Archivo',sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#6b6b66;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ ganttHint }}</span>
+              <button onClick="{{ toggleGanttTasks }}" style="margin-left:auto;flex-shrink:0;border:1px solid #0a0a0a;background:{{ gtBg }};color:{{ gtFg }};cursor:pointer;padding:3px 9px;font:600 8.5px 'Archivo',sans-serif;letter-spacing:.14em;text-transform:uppercase;white-space:nowrap" style-hover="background:#f2c015;color:#0a0a0a">{{ gtLabel }}</button>
+            </div>
+            <div style="display:flex;border-bottom:1px solid #0a0a0a;flex-shrink:0">
+              <div style="width:148px;flex-shrink:0;border-right:1px solid #0a0a0a"></div>
+              <div style="flex:1;min-width:0;display:flex">
+                <sc-for list="{{ ganttMonths }}" as="m" hint-placeholder-count="3">
+                  <div style="flex:1;min-width:0;border-right:1px solid #e0e0d9;padding:4px 6px;font:600 8.5px 'Archivo',sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#6b6b66;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ m }}</div>
+                </sc-for>
+              </div>
+            </div>
+            <div style="flex:1;min-height:0;overflow-y:auto">
+              <sc-for list="{{ ganttRows }}" as="g" hint-placeholder-count="8">
+                <div style="display:flex;align-items:stretch;border-bottom:1px solid #e0e0d9;background:{{ g.rowBg }}">
+                  <button onClick="{{ g.onClick }}" style="width:148px;flex-shrink:0;overflow:hidden;border:none;border-right:1px solid #e0e0d9;background:transparent;cursor:{{ g.cursor }};padding:6px 9px 6px {{ g.indent }};text-align:left;display:flex;align-items:center;gap:7px" style-hover="background:#f2c015">
+                    <span style="width:8px;height:8px;flex-shrink:0;background:{{ g.dot }};border:1px solid {{ g.dotBorder }}"></span>
+                    <span style="font:{{ g.font }};letter-spacing:.03em;text-transform:{{ g.tt }};color:{{ g.fg }};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ g.label }}</span>
+                  </button>
+                  <div style="flex:1;min-width:0;position:relative;padding:6px 0">
+                    <div style="position:absolute;inset:0;background:linear-gradient(to right,#e0e0d9 1px,transparent 1px) 0 0/33.33% 100%"></div>
+                    <div style="position:absolute;top:0;bottom:0;left:{{ nowLeft }};width:1px;background:#e8402a"></div>
+                    <sc-if value="{{ g.hasBar }}" hint-placeholder-val="{{ true }}">
+                      <div title="{{ g.barTitle }}" style="position:relative;height:{{ g.barH }};margin-left:{{ g.left }};width:{{ g.width }};background:{{ g.barBg }};border:{{ g.barBorder }}"></div>
+                    </sc-if>
+                    <sc-if value="{{ g.noBar }}" hint-placeholder-val="{{ false }}">
+                      <div style="position:relative;height:12px;display:flex;align-items:center;font:600 8px 'Archivo',sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#6b6b66;padding-left:6px">sans date</div>
+                    </sc-if>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ showV3 }}" hint-placeholder-val="{{ true }}">
+        <div style="flex:{{ v3Flex }};min-width:336px;display:flex;flex-direction:column;min-height:0">
+          <sc-if value="{{ hasOpen }}" hint-placeholder-val="{{ true }}">
+            <div style="flex:1;min-width:0;display:flex;flex-direction:column;min-height:0;background:#0a0a0a;color:#fbfbf9">
+              <div style="height:8px;flex-shrink:0;background:{{ openColor }}"></div>
+              <div style="display:flex;align-items:center;gap:10px;padding:0 0 0 16px;border-bottom:1px solid #3a3a38;flex-shrink:0">
+                <span style="flex:1;min-width:0;display:flex;gap:10px;overflow:hidden">
+                  <span style="min-width:0;font:600 9px 'Archivo',sans-serif;letter-spacing:.18em;text-transform:uppercase;color:#9c9c98;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ openProj }}</span>
+                  <span style="flex-shrink:0;font:600 9px 'Archivo',sans-serif;letter-spacing:.12em;text-transform:uppercase;color:{{ openDueFg }};white-space:nowrap">{{ openDueLabel }}</span>
+                </span>
+                <button onClick="{{ toggleMove }}" title="déplacer / supprimer" style="flex-shrink:0;border:none;border-left:1px solid #3a3a38;background:transparent;color:#9c9c98;cursor:pointer;padding:9px 11px;font:800 11px 'Archivo',sans-serif" style-hover="background:#f2c015;color:#0a0a0a">⋯</button>
+                <button onClick="{{ onDone }}" style="flex-shrink:0;border:none;border-left:1px solid #3a3a38;background:transparent;color:{{ doneFg }};cursor:pointer;padding:9px 13px;font:600 9px 'Archivo',sans-serif;letter-spacing:.14em;text-transform:uppercase;white-space:nowrap" style-hover="background:#f2c015;color:#0a0a0a">{{ doneLabel }}</button>
+                <button onClick="{{ closeOpen }}" title="fermer le lot" style="flex-shrink:0;border:none;border-left:1px solid #3a3a38;background:transparent;color:#9c9c98;cursor:pointer;padding:9px 12px;font:600 10px 'Archivo',sans-serif" style-hover="background:#f2c015;color:#0a0a0a">✕</button>
+              </div>
+              <sc-if value="{{ moveOpen }}" hint-placeholder-val="{{ false }}">
+                <div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center;padding:9px 16px;border-bottom:1px solid #3a3a38;background:#151513;flex-shrink:0">
+                  <span style="width:100%;display:flex;align-items:center;font:600 8px 'Archivo',sans-serif;letter-spacing:.18em;text-transform:uppercase;color:#9c9c98">déplacer vers
+                    <button onClick="{{ onDeleteLot }}" style="margin-left:auto;border:1px solid #e8402a;background:{{ delLotBg }};color:{{ delLotFg }};cursor:pointer;padding:4px 8px;font:600 8.5px 'Archivo',sans-serif;letter-spacing:.12em;text-transform:uppercase" style-hover="background:#e8402a;color:#fbfbf9">{{ delLotLabel }}</button>
+                  </span>
+                  <sc-for list="{{ moveTargets }}" as="m" hint-placeholder-count="6">
+                    <button onClick="{{ m.onClick }}" style="font:600 9.5px 'Archivo Narrow',sans-serif;letter-spacing:.05em;text-transform:uppercase;color:{{ m.fg }};background:{{ m.bg }};border:1px solid {{ m.border }};cursor:pointer;padding:4px 8px">{{ m.name }}</button>
+                  </sc-for>
+                </div>
+              </sc-if>
+              <div style="flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;display:flex;flex-wrap:wrap;align-items:stretch">
+                <div style="flex:1 1 260px;min-width:0;padding:18px 20px 22px;display:flex;flex-direction:column;gap:14px">
+                  <input value="{{ openTitle }}" onChange="{{ onTitle }}" style="font:800 24px 'Archivo',sans-serif;letter-spacing:-.028em;color:#fbfbf9;background:transparent;border:none;padding:0;width:100%" />
+                  <textarea value="{{ openBody }}" onChange="{{ onBody }}" ref="{{ taRef }}" rows="1" placeholder="…" style="font:400 15px/1.6 'Archivo',system-ui,sans-serif;color:#e4e4e0;background:transparent;border:none;resize:none;width:100%;max-width:66ch;padding:0"></textarea>
+                  <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding-top:2px">
+                    <span style="font:600 8.5px 'Archivo',sans-serif;letter-spacing:.18em;text-transform:uppercase;color:#9c9c98;margin-right:3px">échéance</span>
+                    <sc-for list="{{ dateChoices }}" as="d" hint-placeholder-count="5">
+                      <button onClick="{{ d.onClick }}" style="font:600 9px 'Archivo',sans-serif;letter-spacing:.1em;text-transform:uppercase;color:{{ d.fg }};background:{{ d.bg }};border:1px solid {{ d.border }};cursor:pointer;padding:5px 9px">{{ d.label }}</button>
+                    </sc-for>
+                  </div>
+                </div>
+                <div style="flex:1 1 240px;min-width:0;border-left:4px solid {{ openColor }};display:flex;flex-direction:column">
+                  <div style="display:flex;align-items:baseline;gap:8px;padding:8px 13px;border-bottom:1px solid #3a3a38">
+                    <span style="width:10px;height:10px;flex-shrink:0;background:{{ openColor }}"></span>
+                    <span style="font:600 8.5px 'Archivo',sans-serif;letter-spacing:.2em;text-transform:uppercase;color:#9c9c98">tâches</span>
+                    <span style="margin-left:auto;font:800 9px 'Archivo',sans-serif;letter-spacing:.08em;color:#c9c9c4">{{ openTaskLine }}</span>
+                  </div>
+                  <sc-for list="{{ openTasks }}" as="t" hint-placeholder-count="3">
+                    <div style="border-bottom:1px solid #3a3a38">
+                      <div style="display:flex;align-items:stretch">
+                        <button onClick="{{ t.onToggle }}" style="flex:1;min-width:0;display:flex;align-items:center;gap:10px;text-align:left;border:none;background:transparent;cursor:pointer;padding:9px 0 9px 13px;transition:background .12s linear" style-hover="background:#f2c015;color:#0a0a0a">
+                          <span style="width:13px;height:13px;flex-shrink:0;border:1.5px solid {{ t.border }};background:{{ t.box }};color:#0a0a0a;font:800 8px 'Archivo',sans-serif;line-height:10px;text-align:center">{{ t.mark }}</span>
+                          <span style="font:500 12.5px 'Archivo',sans-serif;color:{{ t.fg }};text-decoration:{{ t.deco }};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ t.label }}</span>
+                        </button>
+                        <button onClick="{{ t.onPickDate }}" title="échéance de la tâche" style="flex-shrink:0;border:none;border-left:1px solid #3a3a38;background:transparent;cursor:pointer;padding:9px 11px;font:600 8.5px 'Archivo',sans-serif;letter-spacing:.1em;text-transform:uppercase;color:{{ t.dueFg }};white-space:nowrap" style-hover="background:#f2c015;color:#0a0a0a">{{ t.dueLabel }}</button>
+                      </div>
+                      <sc-if value="{{ t.picking }}" hint-placeholder-val="{{ false }}">
+                        <div style="display:flex;gap:5px;flex-wrap:wrap;padding:8px 13px;background:#151513;border-top:1px solid #3a3a38">
+                          <sc-for list="{{ t.choices }}" as="c" hint-placeholder-count="5">
+                            <button onClick="{{ c.onClick }}" style="font:600 8.5px 'Archivo',sans-serif;letter-spacing:.1em;text-transform:uppercase;color:{{ c.fg }};background:{{ c.bg }};border:1px solid {{ c.border }};cursor:pointer;padding:4px 8px">{{ c.label }}</button>
+                          </sc-for>
+                          <button onClick="{{ t.onRemove }}" style="margin-left:auto;font:600 8.5px 'Archivo',sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#e8402a;background:transparent;border:1px solid #e8402a;cursor:pointer;padding:4px 8px" style-hover="background:#e8402a;color:#fbfbf9">supprimer</button>
+                        </div>
+                      </sc-if>
+                    </div>
+                  </sc-for>
+                  <input value="{{ taskDraft }}" onChange="{{ onTaskDraft }}" onKeyDown="{{ onTaskKey }}" placeholder="+ AJOUTER UNE TÂCHE" style="font:600 9px 'Archivo',sans-serif;letter-spacing:.12em;color:#fbfbf9;background:transparent;border:none;border-bottom:1px solid #3a3a38;padding:9px 13px" />
+                </div>
+              </div>
+            </div>
+          </sc-if>
+        </div>
+        </sc-if>
+
+      </div>
+    </div>
+
+  <sc-if value="{{ compteOpen }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ closeCompte }}" style="position:fixed;inset:0;background:rgba(10,10,10,.45);z-index:30"></div>
+    <div style="position:fixed;top:0;right:0;bottom:0;width:420px;max-width:100%;background:#fbfbf9;border-left:1px solid #0a0a0a;z-index:31;display:flex;flex-direction:column">
+      <div style="display:flex;align-items:center;padding:0 0 0 20px;border-bottom:1px solid #0a0a0a;background:#0a0a0a;color:#fbfbf9;flex-shrink:0">
+        <span style="font:800 11px 'Archivo',sans-serif;letter-spacing:.18em;text-transform:uppercase">compte &amp; sécurité</span>
+        <button onClick="{{ closeCompte }}" title="fermer" style="margin-left:auto;border:none;border-left:1px solid #3a3a38;background:transparent;color:#fbfbf9;cursor:pointer;padding:12px 15px;font:600 11px 'Archivo',sans-serif" style-hover="background:#f2c015;color:#0a0a0a">✕</button>
+      </div>
+      <div style="flex:1;min-height:0;overflow-y:auto">
+        <div style="display:flex;flex-direction:column;gap:10px;padding:16px 20px;border-bottom:1px solid #0a0a0a">
+          <span style="font:800 8.5px 'Archivo',sans-serif;letter-spacing:.2em;text-transform:uppercase">adresse e-mail</span>
+          <span style="font:600 15px 'Archivo',sans-serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ userEmail }}</span>
+          <span style="font:600 8px 'Archivo',sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#6b6b66">{{ compteStats }}</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px;padding:16px 20px;border-bottom:1px solid #0a0a0a">
+          <span style="font:800 8.5px 'Archivo',sans-serif;letter-spacing:.2em;text-transform:uppercase">changer le mot de passe</span>
+          <label style="display:flex;flex-direction:column;gap:5px"><span style="font:600 8px 'Archivo',sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#6b6b66;white-space:nowrap">actuel</span><input type="password" autocomplete="current-password" value="{{ cOld }}" onChange="{{ onCOld }}" onKeyDown="{{ changePw }}" style="width:100%;min-height:36px;font:500 13.5px 'Archivo',sans-serif;color:#0a0a0a;background:#fbfbf9;border:1px solid #0a0a0a;padding:0 11px" style-focus="background:#fdf4d6" /></label>
+          <label style="display:flex;flex-direction:column;gap:5px"><span style="font:600 8px 'Archivo',sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#6b6b66;white-space:nowrap">nouveau · 8 caractères minimum</span><input type="password" autocomplete="new-password" value="{{ cNew }}" onChange="{{ onCNew }}" onKeyDown="{{ changePw }}" style="width:100%;min-height:36px;font:500 13.5px 'Archivo',sans-serif;color:#0a0a0a;background:#fbfbf9;border:1px solid #0a0a0a;padding:0 11px" style-focus="background:#fdf4d6" /></label>
+          <label style="display:flex;flex-direction:column;gap:5px"><span style="font:600 8px 'Archivo',sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#6b6b66;white-space:nowrap">confirmer</span><input type="password" autocomplete="new-password" value="{{ cNew2 }}" onChange="{{ onCNew2 }}" onKeyDown="{{ changePw }}" style="width:100%;min-height:36px;font:500 13.5px 'Archivo',sans-serif;color:#0a0a0a;background:#fbfbf9;border:1px solid #0a0a0a;padding:0 11px" style-focus="background:#fdf4d6" /></label>
+          <sc-if value="{{ hasCErr }}" hint-placeholder-val="{{ false }}"><div style="padding:8px 10px;background:#e8402a;color:#fbfbf9;font:600 9px 'Archivo',sans-serif;letter-spacing:.12em;text-transform:uppercase">{{ cErr }}</div></sc-if>
+          <sc-if value="{{ hasCOk }}" hint-placeholder-val="{{ false }}"><div style="padding:8px 10px;background:#2f6f5e;color:#fbfbf9;font:600 9px 'Archivo',sans-serif;letter-spacing:.12em;text-transform:uppercase">{{ cOk }}</div></sc-if>
+          <button onClick="{{ changePw }}" style="min-height:34px;border:1px solid #0a0a0a;background:transparent;cursor:pointer;padding:0 13px;font:800 9px 'Archivo',sans-serif;letter-spacing:.14em;text-transform:uppercase;align-self:flex-start;background:#0a0a0a;color:#fbfbf9" style-hover="background:#f2c015;color:#0a0a0a">enregistrer</button>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px;padding:16px 20px;border-bottom:1px solid #0a0a0a">
+          <span style="font:800 8.5px 'Archivo',sans-serif;letter-spacing:.2em;text-transform:uppercase">appareils connectés</span>
+          <div style="display:flex;align-items:center;gap:9px">
+            <span style="width:7px;height:7px;flex-shrink:0;background:#2f6f5e"></span>
+            <span style="font:600 13px 'Archivo',sans-serif">{{ deviceName }}</span>
+            <span style="margin-left:auto;font:600 8px 'Archivo',sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#6b6b66;white-space:nowrap">cet appareil</span>
+          </div>
+          <button onClick="{{ onOthers }}" style="min-height:34px;border:1px solid #0a0a0a;background:transparent;cursor:pointer;padding:0 13px;font:800 9px 'Archivo',sans-serif;letter-spacing:.14em;text-transform:uppercase;align-self:flex-start" style-hover="background:#f2c015">déconnecter les autres appareils</button>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px;padding:16px 20px;border-bottom:1px solid #0a0a0a">
+          <span style="font:800 8.5px 'Archivo',sans-serif;letter-spacing:.2em;text-transform:uppercase">données</span>
+          <span style="font:400 12.5px/1.5 'Archivo',sans-serif;color:#4a4a46">Projets, lots et tâches dans un fichier JSON lisible.</span>
+          <button onClick="{{ onExport }}" style="min-height:34px;border:1px solid #0a0a0a;background:transparent;cursor:pointer;padding:0 13px;font:800 9px 'Archivo',sans-serif;letter-spacing:.14em;text-transform:uppercase;align-self:flex-start" style-hover="background:#f2c015">exporter mes données</button>
+        </div>
+        <div style="padding:16px 20px">
+          <button onClick="{{ onLogout }}" style="min-height:34px;border:1px solid #0a0a0a;background:transparent;cursor:pointer;padding:0 13px;font:800 9px 'Archivo',sans-serif;letter-spacing:.14em;text-transform:uppercase;border-color:#e8402a;color:#e8402a" style-hover="background:#e8402a;color:#fbfbf9">se déconnecter</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;left:244px;bottom:16px;background:#0a0a0a;color:#fbfbf9;border:1px solid #fbfbf9;padding:8px 13px;font:600 9px 'Archivo',sans-serif;letter-spacing:.16em;text-transform:uppercase;z-index:40">{{ toast }}</div>
+  </sc-if>
+</div>
+</sc-if>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:900},&quot;sortBy&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;urgence&quot;,&quot;récent&quot;],&quot;default&quot;:&quot;urgence&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Le fil&quot;}}">
+const TODAY = new Date(2026, 9, 5);
+const RED = '#e8402a';
+const YELLOW = '#f2c015';
+const INK = '#0a0a0a';
+const PAPER = '#fbfbf9';
+const GREY = '#6b6b66';
+const NOPROJ = '__none';
+const MSHORT = ['JANV', 'FÉVR', 'MARS', 'AVR', 'MAI', 'JUIN', 'JUIL', 'AOÛT', 'SEPT', 'OCT', 'NOV', 'DÉC'];
+const MLONG = ['JANVIER', 'FÉVRIER', 'MARS', 'AVRIL', 'MAI', 'JUIN', 'JUILLET', 'AOÛT', 'SEPTEMBRE', 'OCTOBRE', 'NOVEMBRE', 'DÉCEMBRE'];
+const DAYS = ['DIM', 'LUN', 'MAR', 'MER', 'JEU', 'VEN', 'SAM'];
+const HEAD = ['LUN', 'MAR', 'MER', 'JEU', 'VEN', 'SAM', 'DIM'];
+
+const STORE = 'lefil.grille3.v1';
+const AUTH = 'lefil.auth.v1';
+
+const PAL = [
+  { hex: '#8f1d10', name: 'brique' }, { hex: '#9a5a10', name: 'ambre foncé' }, { hex: '#7a6a12', name: 'olive' },
+  { hex: '#1f5140', name: 'sapin' }, { hex: '#14555f', name: 'sarcelle foncé' }, { hex: '#1e3a7a', name: 'outremer' },
+  { hex: '#4d2f73', name: 'aubergine' }, { hex: '#6e2f52', name: 'prune' },
+  { hex: '#e8402a', name: 'rouge' }, { hex: '#e07f23', name: 'orange' }, { hex: '#f2c015', name: 'jaune' },
+  { hex: '#2f6f5e', name: 'vert' }, { hex: '#2a8a97', name: 'sarcelle' }, { hex: '#2f4f9e', name: 'bleu' },
+  { hex: '#7a4fa3', name: 'violet' }, { hex: '#b0466f', name: 'framboise' },
+  { hex: '#f3a79b', name: 'rose pâle' }, { hex: '#f5c48f', name: 'abricot' }, { hex: '#f7e08a', name: 'paille' },
+  { hex: '#9fc9ba', name: 'menthe' }, { hex: '#9fd0d8', name: 'ciel' }, { hex: '#a3b4e2', name: 'bleu pâle' },
+  { hex: '#c3aada', name: 'lilas' }, { hex: '#e8adc1', name: 'dragée' },
+  { hex: '#0a0a0a', name: 'encre' }, { hex: '#4a4a46', name: 'ardoise' },
+  { hex: '#8a6a3a', name: 'brun' }, { hex: '#9c9c98', name: 'gris' },
+];
+
+const PROJECTS = [
+  { id: 'sdb', name: 'Salle de bain' },
+  { id: 'news', name: 'Newsletter' },
+  { id: 'impots', name: 'Impôts 2026' },
+  { id: 'jardin', name: 'Jardin — terrasse' },
+  { id: 'velo', name: 'Vélo à réparer' },
+  { id: 'assur', name: 'Assurance habitation' },
+  { id: 'cv', name: 'Refonte du CV' },
+  { id: 'voyage', name: 'Voyage Lisbonne' },
+  { id: 'cave', name: 'Vider la cave' },
+  { id: 'banque', name: 'Rachat de crédit' },
+  { id: 'photo', name: 'Albums photo' },
+  { id: 'anniv', name: 'Anniversaire Léa' },
+  { id: 'garage', name: 'Garage — rangement' },
+  { id: 'mutuelle', name: 'Changer de mutuelle' },
+];
+
+function d(day, month) { return new Date(2026, month - 1, day); }
+
+const SEED = [
+  { id: 1, title: 'Plomberie — devis', project: 'sdb', due: d(2, 10),
+    body: "Nicolas passe jeudi pour le relevé. Il faut lui confirmer l'accès avant, et surtout comparer avec le devis de l'autre entreprise — l'écart était de presque 900 € sur la même prestation.",
+    tasks: [{ label: 'Rappeler le plombier', done: false, due: d(2, 10) }, { label: 'Comparer les 3 devis', done: false, due: d(9, 10) }, { label: 'Prendre les mesures', done: true, due: null }] },
+  { id: 5, title: 'Newsletter interne — relancer', project: 'news', due: d(5, 10),
+    body: "L'idée : un envoi mensuel, court, trois sujets max. Le format long de l'an dernier n'a jamais tenu plus de deux numéros.",
+    tasks: [{ label: 'Écrire le brief', done: true, due: null }, { label: "Valider avec l'équipe", done: false, due: d(5, 10) }] },
+  { id: 3, title: 'Carrelage — choix', project: 'sdb', due: d(12, 10),
+    body: "Deux finitions en tête : le grès mat gris clair, et le zellige blanc cassé (plus cher, pose plus longue). Décider avant la commande du 12.",
+    tasks: [{ label: 'Commander les échantillons', done: true, due: null }, { label: 'Trancher mat ou zellige', done: false, due: d(12, 10) }] },
+  { id: 7, title: 'Déclaration trimestrielle', project: 'impots', due: d(15, 10),
+    body: "Tout est prêt sauf le récapitulatif des frais de septembre.",
+    tasks: [{ label: 'Rassembler les justificatifs', done: false, due: d(13, 10) }, { label: 'Saisir en ligne', done: false, due: d(15, 10) }] },
+  { id: 10, title: 'Révision chaudière', project: null, due: d(28, 10),
+    body: "Contrat annuel — prendre rendez-vous avant la fin du mois.", tasks: [] },
+  { id: 2, title: 'Contacts artisans', project: null, due: d(4, 10),
+    body: "Plombier Nicolas · 06 12 44 21 08\nCarreleur (recommandé par Léa) · devis sous 48 h\nÉlectricien — ne rappelle jamais, à éviter.", tasks: [] },
+  { id: 4, title: 'Budget travaux', project: 'sdb', due: null,
+    body: "Enveloppe max : 9 000 €. Déjà engagé : 1 200 € (acompte). Garder 1 500 € de marge pour les imprévus — il y en aura.", tasks: [] },
+  { id: 6, title: 'Point équipe — notes du 2 oct.', project: 'news', due: null,
+    body: "Deux sujets bloquants côté outils. Léa reprend la partie éditoriale. Prochaine revue dans deux semaines.", tasks: [] },
+  { id: 8, title: 'Idée : cloison vitrée au lieu du mur', project: null, due: null,
+    body: "Ça ouvrirait la pièce. À chiffrer — sans doute trop cher, mais à demander pendant le devis.", tasks: [] },
+  { id: 9, title: 'Article — taux de crédit à surveiller', project: null, due: null,
+    body: "À relire avant de parler à la banque.", tasks: [] },
+  { id: 11, title: 'Réserver le garage', project: 'garage', due: null, done: true,
+    body: "Fait le 28 septembre.", tasks: [] },
+  { id: 12, title: 'Commander les dalles', project: 'jardin', due: d(9, 10),
+    body: "Trois palettes, livraison sur rue — prévoir quelqu'un pour aider.", tasks: [] },
+  { id: 13, title: 'Changer les plaquettes', project: 'velo', due: d(1, 10),
+    body: "Le frein arrière ne mord plus du tout.", tasks: [] },
+  { id: 14, title: 'Comparer les garanties', project: 'assur', due: d(20, 10),
+    body: "Le contrat actuel se reconduit le 1er décembre.", tasks: [] },
+  { id: 15, title: 'Réécrire la partie expérience', project: 'cv', due: null,
+    body: "Trop long, trop de jargon. Deux lignes par poste maximum.", tasks: [] },
+  { id: 16, title: 'Réserver les billets', project: 'voyage', due: d(18, 10),
+    body: "Départ visé : première semaine de février.", tasks: [] },
+  { id: 17, title: 'Louer une benne', project: 'cave', due: null,
+    body: "Deux week-ends devraient suffire si on trie avant.", tasks: [] },
+  { id: 18, title: 'Rassembler les offres', project: 'banque', due: d(30, 10),
+    body: "Trois banques contactées, une seule a répondu.", tasks: [] },
+];
+
+const DATE_CHOICES = [
+  { key: 'late', label: 'hier', offset: -1 },
+  { key: 'today', label: "aujourd'hui", offset: 0 },
+  { key: 'week', label: 'cette semaine', offset: 4 },
+  { key: 'soon', label: 'bientôt', offset: 18 },
+  { key: 'none', label: 'sans date', offset: null },
+];
+
+const GANTT_START = new Date(2026, 8, 1);
+const GANTT_SPAN = 91;
+const BAR_DAYS = 8;
+
+class Component extends DCLogic {
+  state = {
+    notes: SEED.map(n => ({ ...n, done: !!n.done, tasks: n.tasks.map(t => ({ ...t })) })),
+    sel: [], lateOnly: false, q: '', pq: '', open: null,
+    view: 'liste', sort: null, colors: {}, picker: null, ganttTasks: true, projects: PROJECTS.slice(), porder: PROJECTS.map(p => p.id), drag: null, over: null, pdraft: '', confirmDel: null,
+    compte: false, cOld: '', cNew: '', cNew2: '', cErr: '', cOk: '', user: null, authMode: 'login', aEmail: '', aPw: '', aPw2: '', aErr: '', aShow: false, sentTo: '', acctOpen: false, sync: 'ok', offline: false, pending: 0,
+    norder: [], ndrag: null, nover: null, tdate: null, moveOpen: false, confirmLot: false, confirmReset: false, calMonth: 9, calMode: 'mois', calWeek: 0, calTasks: true, cdrag: null, cover: null, draft: '', taskDraft: '', toast: null, nextId: 100,
+  };
+
+  fit(el) { if (!el) return; el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; }
+  fitAll = () => this.fit(this._ta);
+  readAuth() { try { return JSON.parse(localStorage.getItem(AUTH) || '{}') || {}; } catch (err) { return {}; } }
+  writeAuth(d) { try { localStorage.setItem(AUTH, JSON.stringify(d)); } catch (err) { /* noop */ } }
+  hashPw(str) { let h = 5381; for (let i = 0; i < str.length; i++) h = ((h << 5) + h + str.charCodeAt(i)) | 0; return (h >>> 0).toString(36); }
+  initAuth() { const d = this.readAuth(); if (d.session) this.setState({ user: d.session }); }
+  switchAuth(mode) { this.setState({ authMode: mode, aErr: '', aPw: '', aPw2: '' }); }
+
+  submitAuth = e => {
+    if (e && e.key && e.key !== 'Enter') return;
+    const s = this.state;
+    if (s.authMode === 'sent') { this.switchAuth('login'); return; }
+    const email = s.aEmail.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { this.setState({ aErr: 'adresse e-mail invalide' }); return; }
+    const d = this.readAuth();
+    d.accounts = d.accounts || {};
+    if (s.authMode === 'forgot') { this.setState({ authMode: 'sent', sentTo: email, aErr: '' }); return; }
+    if (s.authMode === 'signup') {
+      if (d.accounts[email]) { this.setState({ aErr: 'un compte existe déjà avec cette adresse' }); return; }
+      if (s.aPw.length < 8) { this.setState({ aErr: 'mot de passe : 8 caractères minimum' }); return; }
+      if (s.aPw !== s.aPw2) { this.setState({ aErr: 'les deux mots de passe diffèrent' }); return; }
+      d.accounts[email] = this.hashPw(s.aPw);
+    } else if (!d.accounts[email] || d.accounts[email] !== this.hashPw(s.aPw)) {
+      this.setState({ aErr: 'e-mail ou mot de passe incorrect' });
+      return;
+    }
+    d.session = email;
+    this.writeAuth(d);
+    this.setState({ user: email, aPw: '', aPw2: '', aErr: '', authMode: 'login', aShow: false });
+  };
+
+  logout() {
+    const d = this.readAuth();
+    d.session = null;
+    this.writeAuth(d);
+    this.setState({ user: null, acctOpen: false, authMode: 'login', aPw: '', aPw2: '' });
+  }
+
+  markSync() {
+    const s = this.state;
+    if (s.notes === this._ln && s.projects === this._lp && s.colors === this._lc && s.porder === this._lo) return;
+    const first = this._ln === undefined;
+    this._ln = s.notes; this._lp = s.projects; this._lc = s.colors; this._lo = s.porder;
+    if (first || !s.user) return;
+    if (s.offline) { this.setState(st => ({ pending: st.pending + 1 })); return; }
+    this.setState({ sync: 'saving' });
+    clearTimeout(this._sy);
+    this._sy = setTimeout(() => this.setState({ sync: 'ok' }), 700);
+  }
+
+  toggleOffline() {
+    if (this.state.offline) {
+      this.setState({ offline: false, sync: 'saving' });
+      clearTimeout(this._sy);
+      this._sy = setTimeout(() => this.setState({ sync: 'ok', pending: 0 }), 900);
+    } else {
+      this.setState({ offline: true });
+    }
+  }
+
+  deviceName() {
+    const ua = (typeof navigator !== 'undefined' && navigator.userAgent) || '';
+    const os = /iPhone/.test(ua) ? 'iPhone' : /iPad/.test(ua) ? 'iPad' : /Android/.test(ua) ? 'Android' : /Mac/.test(ua) ? 'Mac' : /Windows/.test(ua) ? 'Windows' : 'Appareil';
+    const br = /Firefox/.test(ua) ? 'Firefox' : /Edg/.test(ua) ? 'Edge' : /Chrome/.test(ua) ? 'Chrome' : /Safari/.test(ua) ? 'Safari' : 'navigateur';
+    return os + ' · ' + br;
+  }
+
+  changePw = e => {
+    if (e && e.key && e.key !== 'Enter') return;
+    const s = this.state;
+    const d = this.readAuth();
+    d.accounts = d.accounts || {};
+    if (d.accounts[s.user] !== this.hashPw(s.cOld)) { this.setState({ cErr: 'mot de passe actuel incorrect', cOk: '' }); return; }
+    if (s.cNew.length < 8) { this.setState({ cErr: 'nouveau mot de passe : 8 caractères minimum', cOk: '' }); return; }
+    if (s.cNew !== s.cNew2) { this.setState({ cErr: 'les deux mots de passe diffèrent', cOk: '' }); return; }
+    d.accounts[s.user] = this.hashPw(s.cNew);
+    this.writeAuth(d);
+    this.setState({ cOld: '', cNew: '', cNew2: '', cErr: '', cOk: 'mot de passe modifié' });
+  };
+
+  exportData() {
+    const s = this.state;
+    const data = {
+      exportedAt: new Date().toISOString(), account: s.user,
+      projects: s.projects.map(p => ({ ...p, color: this.projColor(p.id) })),
+      order: s.porder,
+      lots: s.notes.map(n => ({
+        id: n.id, title: n.title, project: n.project, body: n.body, done: !!n.done,
+        due: n.due ? n.due.toISOString().slice(0, 10) : null,
+        tasks: n.tasks.map(t => ({ label: t.label, done: !!t.done, due: t.due ? t.due.toISOString().slice(0, 10) : null })),
+      })),
+    };
+    const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));
+    const a = document.createElement('a');
+    a.href = url; a.download = 'le-fil-export.json';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    this.flash('export téléchargé');
+  }
+
+  compteVals() {
+    const s = this.state;
+    return {
+      cOld: s.cOld, cNew: s.cNew, cNew2: s.cNew2,
+      onCOld: e => this.setState({ cOld: e.target.value, cErr: '', cOk: '' }),
+      onCNew: e => this.setState({ cNew: e.target.value, cErr: '', cOk: '' }),
+      onCNew2: e => this.setState({ cNew2: e.target.value, cErr: '', cOk: '' }),
+      changePw: this.changePw,
+      hasCErr: !!s.cErr, cErr: s.cErr,
+      hasCOk: !!s.cOk, cOk: s.cOk,
+      deviceName: this.deviceName(),
+      onExport: () => this.exportData(),
+      onOthers: () => this.flash('autres appareils déconnectés'),
+      openCompte: () => this.setState({ compte: true, acctOpen: false, cErr: '', cOk: '' }),
+      closeCompte: () => this.setState({ compte: false, cOld: '', cNew: '', cNew2: '' }),
+      compteOpen: !!s.compte && !!s.user,
+      compteStats: s.projects.length + ' projets · ' + s.notes.length + ' lots · ' + s.notes.reduce((a, n) => a + n.tasks.length, 0) + ' tâches',
+    };
+  }
+
+  authVals() {
+    const s = this.state;
+    const m = s.authMode;
+    return {
+      authed: !!s.user,
+      needAuth: !s.user,
+      authTitle: { login: 'Se connecter', signup: 'Créer un compte', forgot: 'Mot de passe oublié', sent: 'Vérifie ta boîte' }[m],
+      authSub: {
+        login: 'Retrouve tes projets sur tous tes écrans.',
+        signup: 'Une adresse e-mail et un mot de passe suffisent.',
+        forgot: 'Tu recevras un lien pour choisir un nouveau mot de passe.',
+        sent: 'Lien de réinitialisation envoyé à ' + s.sentTo + '. Il reste valable 30 minutes.',
+      }[m],
+      showEmail: m !== 'sent',
+      showPw: m === 'login' || m === 'signup',
+      showPw2: m === 'signup',
+      isLogin: m === 'login',
+      aEmail: s.aEmail, aPw: s.aPw, aPw2: s.aPw2,
+      onAEmail: e => this.setState({ aEmail: e.target.value, aErr: '' }),
+      onAPw: e => this.setState({ aPw: e.target.value, aErr: '' }),
+      onAPw2: e => this.setState({ aPw2: e.target.value, aErr: '' }),
+      pwType: s.aShow ? 'text' : 'password',
+      pwToggle: s.aShow ? 'masquer' : 'afficher',
+      togglePw: () => this.setState(st => ({ aShow: !st.aShow })),
+      pwHint: m === 'signup' ? '8 caractères minimum' : '',
+      hasErr: !!s.aErr,
+      aErr: s.aErr,
+      authCta: { login: 'se connecter', signup: 'créer le compte', forgot: 'envoyer le lien', sent: 'retour à la connexion' }[m],
+      submitAuth: this.submitAuth,
+      goForgot: () => this.switchAuth('forgot'),
+      showSwitch: m !== 'sent',
+      switchText: m === 'signup' || m === 'forgot' ? 'déjà un compte ?' : 'pas encore de compte ?',
+      switchCta: m === 'signup' || m === 'forgot' ? 'se connecter' : 'créer un compte',
+      onSwitch: () => this.switchAuth(m === 'login' ? 'signup' : 'login'),
+      authColors: PAL.slice(8, 16).map(c => ({ hex: c.hex })),
+      userEmail: s.user || '',
+      acctOpen: !!s.acctOpen,
+      toggleAcct: () => this.setState(st => ({ acctOpen: !st.acctOpen })),
+      syncDot: s.offline ? RED : (s.sync === 'saving' ? YELLOW : '#2f6f5e'),
+      syncLabel: s.offline ? 'hors ligne · ' + s.pending + ' en attente' : (s.sync === 'saving' ? 'synchronisation…' : 'synchronisé'),
+      syncFg: s.offline ? RED : GREY,
+      offlineLabel: s.offline ? 'repasser en ligne' : 'simuler hors ligne',
+      onOffline: () => this.toggleOffline(),
+      onLogout: () => this.logout(),
+    };
+  }
+
+  componentDidUpdate() { this.fitAll(); this.persist(); this.markSync(); }
+
+  persist() {
+    clearTimeout(this._persist);
+    this._persist = setTimeout(() => {
+      const s = this.state;
+      try {
+        localStorage.setItem(STORE, JSON.stringify({
+          v: 1,
+          projects: s.projects,
+          porder: s.porder,
+          colors: s.colors,
+          sel: s.sel,
+          view: s.view,
+          calMonth: s.calMonth,
+          ganttTasks: s.ganttTasks,
+          calMode: s.calMode,
+          calTasks: s.calTasks,
+          sort: s.sort,
+          norder: s.norder,
+          open: s.open,
+          nextId: s.nextId,
+          notes: s.notes.map(n => ({
+            id: n.id, title: n.title, project: n.project, body: n.body, done: !!n.done,
+            due: n.due ? n.due.toISOString() : null,
+            tasks: n.tasks.map(t => ({ label: t.label, done: !!t.done, due: t.due ? t.due.toISOString() : null })),
+          })),
+        }));
+      } catch (err) { /* quota / mode privé */ }
+    }, 250);
+  }
+
+  load() {
+    let raw = null;
+    try { raw = localStorage.getItem(STORE); } catch (err) { return; }
+    if (!raw) return;
+    let d;
+    try { d = JSON.parse(raw); } catch (err) { return; }
+    if (!d || d.v !== 1 || !Array.isArray(d.notes)) return;
+    const dt = v => v ? new Date(v) : null;
+    this.setState({
+      projects: Array.isArray(d.projects) && d.projects.length ? d.projects : PROJECTS.slice(),
+      porder: Array.isArray(d.porder) && d.porder.length ? d.porder : PROJECTS.map(p => p.id),
+      colors: d.colors || {},
+      sel: Array.isArray(d.sel) ? d.sel : [],
+      view: d.view || 'liste',
+      calMonth: typeof d.calMonth === 'number' ? d.calMonth : 9,
+      ganttTasks: d.ganttTasks !== false,
+      calMode: d.calMode || 'mois',
+      calTasks: d.calTasks !== false,
+      sort: d.sort || null,
+      norder: Array.isArray(d.norder) ? d.norder : [],
+      open: d.open ?? null,
+      nextId: d.nextId || 100,
+      notes: d.notes.map(n => ({
+        id: n.id, title: n.title, project: n.project || null, body: n.body || '', done: !!n.done,
+        due: dt(n.due),
+        tasks: (n.tasks || []).map(t => ({ label: t.label, done: !!t.done, due: dt(t.due) })),
+      })),
+    });
+  }
+
+  componentDidMount() {
+    this.load();
+    this.initAuth();
+    this.fitAll();
+    window.addEventListener('resize', this.fitAll);
+    this._key = e => {
+      const tag = (e.target && e.target.tagName) || '';
+      if (e.key === 'Escape') { if (e.target && e.target.blur) e.target.blur(); this.setState({ open: null }); return; }
+      if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+      if ((e.key === 'ArrowDown' || e.key === 'ArrowUp') && this.state.view === 'liste') { e.preventDefault(); this.step(e.key === 'ArrowDown' ? 1 : -1); }
+    };
+    window.addEventListener('keydown', this._key);
+  }
+  componentWillUnmount() {
+    window.removeEventListener('keydown', this._key);
+    window.removeEventListener('resize', this.fitAll);
+  }
+
+  flash(msg) {
+    this.setState({ toast: msg });
+    clearTimeout(this._t);
+    this._t = setTimeout(() => this.setState({ toast: null }), 2200);
+  }
+
+  addDays(date, n) { return new Date(date.getFullYear(), date.getMonth(), date.getDate() + n); }
+  days(date) { return date ? Math.round((date - TODAY) / 86400000) : null; }
+  fmt(date) { return date ? date.getDate() + ' ' + MSHORT[date.getMonth()] : ''; }
+  pct(date) { return Math.max(0, Math.min(100, Math.round((date - GANTT_START) / 86400000) / GANTT_SPAN * 100)); }
+
+  urgency(n) {
+    if (n.done) return 'done';
+    const dd = this.days(n.due);
+    if (dd === null) return 'none';
+    if (dd < 0) return 'late';
+    if (dd === 0) return 'today';
+    if (dd <= 6) return 'week';
+    return 'soon';
+  }
+
+  visible() {
+    const s = this.state;
+    return s.notes.filter(n => {
+      const key = n.project || NOPROJ;
+      const scopeAll = s.sel.length === 0 && s.view !== 'liste';
+      if (!scopeAll && !s.sel.includes(key)) return false;
+      if (s.lateOnly && this.urgency(n) !== 'late') return false;
+      if (s.q) {
+        const q = s.q.toLowerCase();
+        const hay = (n.title + ' ' + n.body + ' ' + n.tasks.map(t => t.label).join(' ')).toLowerCase();
+        if (hay.indexOf(q) < 0) return false;
+      }
+      return true;
+    });
+  }
+
+  sorted() {
+    const rank = { late: 0, today: 1, week: 2, soon: 3, none: 4, done: 5 };
+    const mode = this.state.sort || this.props.sortBy || 'urgence';
+    const list = this.visible().slice();
+    if (mode === 'manuel') {
+      const o = this.state.norder;
+      return list.sort((a, b) => {
+        const ia = o.indexOf(a.id), ib = o.indexOf(b.id);
+        return (ia < 0 ? 9999 : ia) - (ib < 0 ? 9999 : ib) || b.id - a.id;
+      });
+    }
+    return list.sort((a, b) => mode === 'récent'
+      ? b.id - a.id
+      : (rank[this.urgency(a)] - rank[this.urgency(b)]) || ((a.due || 0) - (b.due || 0)));
+  }
+
+  reorderNote(from, to) {
+    if (from == null || from === to) return;
+    const base = this.state.norder.length ? this.state.norder : this.sorted().map(n => n.id);
+    this.setState(st => {
+      const o = base.slice();
+      if (o.indexOf(from) < 0) o.push(from);
+      if (o.indexOf(to) < 0) o.push(to);
+      const i = o.indexOf(from), j = o.indexOf(to);
+      o.splice(i, 1);
+      o.splice(o.indexOf(to) + (j > i ? 1 : 0), 0, from);
+      return { norder: o, sort: 'manuel', ndrag: null, nover: null };
+    });
+  }
+
+  step(dir) {
+    const list = this.sorted();
+    if (!list.length) return;
+    const i = list.findIndex(n => n.id === this.state.open);
+    const next = list[Math.max(0, Math.min(list.length - 1, (i < 0 ? 0 : i + dir)))];
+    this.setState({ open: next.id });
+  }
+
+  prune() {
+    const list = this.sorted();
+    if (this.state.open && !list.some(n => n.id === this.state.open)) this.setState({ open: null });
+  }
+
+  ink(hex) {
+    const h = hex.replace('#', '');
+    const r = parseInt(h.slice(0, 2), 16), g = parseInt(h.slice(2, 4), 16), b = parseInt(h.slice(4, 6), 16);
+    return (0.299 * r + 0.587 * g + 0.114 * b) > 150 ? INK : PAPER;
+  }
+
+  projColor(key) {
+    const c = this.state.colors[key];
+    if (c) return c;
+    const i = this.state.projects.findIndex(p => p.id === key);
+    return i < 0 ? '#9c9c98' : PAL[(i + 1) % PAL.length].hex;
+  }
+
+  setColor(key, hex) {
+    this.setState(st => ({ colors: Object.assign({}, st.colors, { [key]: hex }), picker: null }));
+  }
+
+  toggleOpen(n) {
+    this.setState(st => ({ open: st.open === n.id ? null : n.id }));
+  }
+
+  goView(key) {
+    this.setState(st => {
+      const next = { view: key };
+      if (key === 'liste' && st.open) {
+        const n = st.notes.find(x => x.id === st.open);
+        const pk = n ? (n.project || NOPROJ) : null;
+        if (pk && !st.sel.includes(pk)) next.sel = st.sel.concat([pk]);
+      }
+      return next;
+    });
+  }
+
+  renameProject(id, name) {
+    this.setState(st => ({ projects: st.projects.map(p => p.id === id ? { ...p, name } : p) }));
+  }
+
+  deleteProject(id) {
+    if (this.state.confirmDel !== id) { this.setState({ confirmDel: id }); return; }
+    const name = (this.state.projects.find(p => p.id === id) || {}).name;
+    this.setState(st => {
+      const colors = Object.assign({}, st.colors);
+      delete colors[id];
+      return {
+        projects: st.projects.filter(p => p.id !== id),
+        porder: st.porder.filter(k => k !== id),
+        sel: st.sel.filter(k => k !== id),
+        colors, picker: null, confirmDel: null,
+        notes: st.notes.map(n => n.project === id ? { ...n, project: null } : n),
+      };
+    }, () => this.prune());
+    this.flash('projet « ' + name + ' » supprimé — lots passés sans projet');
+  }
+
+  addProject = e => {
+    if (e.key && e.key !== 'Enter') return;
+    const name = this.state.pdraft.trim();
+    if (!name) return;
+    const id = 'p' + Date.now().toString(36);
+    const used = this.state.projects.map(p => this.projColor(p.id));
+    const free = PAL.slice(8, 24).find(c => used.indexOf(c.hex) < 0) || PAL[8 + (this.state.projects.length % 16)];
+    this.setState(st => ({
+      projects: st.projects.concat([{ id, name }]),
+      porder: st.porder.concat([id]),
+      colors: Object.assign({}, st.colors, { [id]: free.hex }),
+      sel: st.sel.concat([id]),
+      pdraft: '', picker: id, view: 'liste',
+    }));
+    this.flash('projet « ' + name + ' » créé');
+  };
+
+  reorder(from, to) {
+    if (!from || from === to) return;
+    this.setState(st => {
+      const o = st.porder.slice();
+      const i = o.indexOf(from), j = o.indexOf(to);
+      if (i < 0 || j < 0) return { drag: null, over: null };
+      o.splice(i, 1);
+      o.splice(o.indexOf(to) + (j > i ? 1 : 0), 0, from);
+      return { porder: o, drag: null, over: null };
+    });
+  }
+
+  toggleSel(key) {
+    this.setState(st => ({ sel: st.sel.includes(key) ? st.sel.filter(x => x !== key) : st.sel.concat([key]) }), () => this.prune());
+  }
+
+  removeTask(i) {
+    const id = this.state.open;
+    this.setState(st => ({ notes: st.notes.map(n => n.id === id ? { ...n, tasks: n.tasks.filter((t, j) => j !== i) } : n), tdate: null }));
+  }
+
+  moveLot(pid) {
+    const id = this.state.open;
+    const name = pid ? (this.state.projects.find(p => p.id === pid) || {}).name : 'sans projet';
+    this.setState(st => ({ notes: st.notes.map(n => n.id === id ? { ...n, project: pid } : n), moveOpen: false }));
+    this.flash('déplacé vers ' + name);
+  }
+
+  deleteLot() {
+    if (!this.state.confirmLot) { this.setState({ confirmLot: true }); return; }
+    const id = this.state.open;
+    this.setState(st => ({ notes: st.notes.filter(n => n.id !== id), open: null, confirmLot: false, moveOpen: false, norder: st.norder.filter(k => k !== id) }));
+    this.flash('lot supprimé');
+  }
+
+  resetDemo() {
+    if (!this.state.confirmReset) {
+      this.setState({ confirmReset: true });
+      clearTimeout(this._rst);
+      this._rst = setTimeout(() => this.setState({ confirmReset: false }), 3000);
+      return;
+    }
+    try { localStorage.removeItem(STORE); } catch (err) { /* noop */ }
+    this.setState({
+      notes: SEED.map(n => ({ ...n, done: !!n.done, tasks: n.tasks.map(t => ({ ...t })) })),
+      projects: PROJECTS.slice(), porder: PROJECTS.map(p => p.id), colors: {},
+      sel: [], lateOnly: false, q: '', pq: '', open: null, view: 'liste', sort: null,
+      picker: null, ganttTasks: true, norder: [], tdate: null, moveOpen: false,
+      confirmLot: false, confirmReset: false, confirmDel: null, calMonth: 9, nextId: 100,
+    });
+    this.flash('démo réinitialisée');
+  }
+
+  dropOn(date) {
+    const dr = this.state.cdrag;
+    if (!dr) return;
+    const due = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    this.setState(st => ({
+      notes: st.notes.map(n => {
+        if (n.id !== dr.id) return n;
+        if (dr.task == null) return { ...n, due };
+        return { ...n, tasks: n.tasks.map((t, j) => j === dr.task ? { ...t, due } : t) };
+      }),
+      cdrag: null, cover: null,
+    }));
+    this.flash('échéance → ' + this.fmt(due));
+  }
+
+  toggleTask(id, i) {
+    this.setState(st => ({ notes: st.notes.map(n => n.id === id
+      ? { ...n, tasks: n.tasks.map((t, j) => j === i ? { ...t, done: !t.done } : t) } : n) }));
+  }
+
+  addTask = e => {
+    if (e.key !== 'Enter') return;
+    const label = this.state.taskDraft.trim();
+    if (!label) return;
+    const id = this.state.open;
+    this.setState(st => ({
+      notes: st.notes.map(n => n.id === id ? { ...n, tasks: n.tasks.concat([{ label, done: false, due: null }]) } : n),
+      taskDraft: '',
+    }));
+  };
+
+  setTaskDue(i, key) {
+    const c = DATE_CHOICES.find(x => x.key === key);
+    const due = c.offset === null ? null : this.addDays(TODAY, c.offset);
+    const id = this.state.open;
+    this.setState(st => ({
+      notes: st.notes.map(n => n.id === id ? { ...n, tasks: n.tasks.map((t, j) => j === i ? { ...t, due } : t) } : n),
+      tdate: null,
+    }));
+  }
+
+  setDue(key) {
+    const c = DATE_CHOICES.find(x => x.key === key);
+    const due = c.offset === null ? null : this.addDays(TODAY, c.offset);
+    const id = this.state.open;
+    this.setState(st => ({ notes: st.notes.map(n => n.id === id ? { ...n, due } : n) }), () => this.prune());
+    this.flash(due ? 'échéance ' + this.fmt(due) : 'sans date');
+  }
+
+  save = () => {
+    const text = this.state.draft.trim();
+    if (!text) return;
+    const s = this.state;
+    const target = s.sel.find(k => k !== NOPROJ) || null;
+    const id = s.nextId;
+    this.setState(st => ({
+      notes: [{ id, title: text, project: target, due: null, done: false, body: '', tasks: [] }].concat(st.notes),
+      draft: '', open: id, lateOnly: false, nextId: st.nextId + 1,
+    }));
+    this.flash(target ? 'gardé dans ' + (this.state.projects.find(p => p.id === target) || {}).name : 'gardé sans projet');
+  };
+
+  renderVals() {
+    const s = this.state;
+    const openNote = s.notes.find(n => n.id === s.open) || null;
+    const mode = s.sort || this.props.sortBy || 'urgence';
+    const matchQ = n => {
+      if (!s.q) return true;
+      const q = s.q.toLowerCase();
+      return (n.title + ' ' + n.body).toLowerCase().indexOf(q) >= 0;
+    };
+
+    const pstats = {};
+    s.projects.forEach(p => {
+      const ns = s.notes.filter(n => n.project === p.id && matchQ(n));
+      pstats[p.id] = { open: ns.filter(n => !n.done).length, late: ns.filter(n => this.urgency(n) === 'late').length };
+    });
+    const npNotes = s.notes.filter(n => !n.project && matchQ(n));
+    const lateAll = s.notes.filter(n => this.urgency(n) === 'late' && matchQ(n)).length;
+
+    const thread = this.sorted().map(n => {
+      const u = this.urgency(n);
+      const p = n.project ? s.projects.find(x => x.id === n.project) : null;
+      const sel = s.open === n.id;
+      const dd = this.days(n.due);
+      const doneT = n.tasks.filter(t => t.done).length;
+      return {
+        title: n.title,
+        color: this.projColor(n.project || NOPROJ),
+        opacity: s.ndrag === n.id ? 0.35 : 1,
+        dropEdge: s.nover === n.id && s.ndrag && s.ndrag !== n.id ? '2px solid #0a0a0a' : '2px solid transparent',
+        onDragStart: e => { if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move'; this.setState({ ndrag: n.id }); },
+        onDragOver: e => { e.preventDefault(); if (this.state.nover !== n.id) this.setState({ nover: n.id }); },
+        onDrop: e => { e.preventDefault(); this.reorderNote(this.state.ndrag, n.id); },
+        onDragEnd: () => this.setState({ ndrag: null, nover: null }),
+        titleFont: (sel ? '800 13.5px' : '500 13.5px') + " 'Archivo',sans-serif",
+        titleFg: sel ? PAPER : (n.done ? GREY : INK),
+        deco: n.done ? 'line-through' : 'none',
+        bg: sel ? INK : PAPER,
+        hoverBg: sel ? INK : '#f1f1ec',
+        rule: sel ? INK : '#e0e0d9',
+        gridLine: sel ? '#3a3a38' : '#e0e0d9',
+        dateBg: !sel && u === 'late' ? RED : 'transparent',
+        dateTop: n.due ? this.fmt(n.due) : '—',
+        dateFg: u === 'late' ? (sel ? RED : PAPER) : (sel ? PAPER : INK),
+        dateSub: u === 'late' ? '−' + Math.abs(dd) + ' J' : (u === 'today' ? 'CE JOUR' : (n.due ? DAYS[n.due.getDay()] : 'SANS DATE')),
+        dateSubFg: u === 'late' ? (sel ? RED : PAPER) : (sel ? '#c9c9c4' : GREY),
+        projName: p ? p.name : 'sans projet',
+        metaFg: sel ? '#c9c9c4' : this.projColor(n.project || NOPROJ),
+        taskFg: sel ? '#c9c9c4' : GREY,
+        taskLine: n.tasks.length ? doneT + '/' + n.tasks.length : '',
+        onPick: () => this.setState({ open: n.id }),
+      };
+    });
+
+    const vis = this.visible();
+
+    const first = new Date(2026, s.calMonth, 1);
+    const offset = (first.getDay() + 6) % 7;
+    const weekStart = this.addDays(TODAY, -((TODAY.getDay() + 6) % 7) + s.calWeek * 7);
+    const isWeek = s.calMode === 'semaine';
+    const qq = (s.q || '').toLowerCase();
+    const buildCell = date => {
+      const inMonth = isWeek || date.getMonth() === s.calMonth;
+      const isToday = date.toDateString() === TODAY.toDateString();
+      const key = date.toDateString();
+      const lots = vis.filter(n => n.due && n.due.toDateString() === key);
+      const items = lots.map(n => {
+        const col = this.projColor(n.project || NOPROJ);
+        const on = s.open === n.id;
+        return {
+          label: n.title, isTask: false,
+          bg: on ? YELLOW : col, fg: on ? INK : this.ink(col),
+          edge: this.urgency(n) === 'late' ? RED : (on ? INK : col),
+          font: "500 " + (isWeek ? '11.5px' : '10px') + " 'Archivo Narrow',sans-serif",
+          deco: n.done ? 'line-through' : 'none',
+          opacity: s.cdrag && s.cdrag.id === n.id && s.cdrag.task == null ? 0.35 : 1,
+          onClick: () => this.toggleOpen(n),
+          onDragStart: e => { if (e.dataTransfer) { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', 'lot'); } this.setState({ cdrag: { id: n.id, task: null } }); },
+          onDragEnd: () => this.setState({ cdrag: null, cover: null }),
+        };
+      });
+      if (s.calTasks) {
+        vis.forEach(n => {
+          const lotHit = !qq || (n.title + ' ' + n.body).toLowerCase().indexOf(qq) >= 0;
+          n.tasks.forEach((t, j) => {
+            if (!t.due || t.due.toDateString() !== key) return;
+            if (!lotHit && t.label.toLowerCase().indexOf(qq) < 0) return;
+            const col = this.projColor(n.project || NOPROJ);
+            const late = this.days(t.due) < 0 && !t.done;
+            items.push({
+              label: '↳ ' + t.label, isTask: true,
+              bg: s.open === n.id ? '#fdf4d6' : PAPER, fg: t.done ? GREY : INK,
+              edge: late ? RED : col,
+              font: "400 " + (isWeek ? '11px' : '9.5px') + " 'Archivo Narrow',sans-serif",
+              deco: t.done ? 'line-through' : 'none',
+              opacity: s.cdrag && s.cdrag.id === n.id && s.cdrag.task === j ? 0.35 : 1,
+              onClick: () => this.toggleOpen(n),
+              onDragStart: e => { if (e.dataTransfer) { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', 'task'); } this.setState({ cdrag: { id: n.id, task: j } }); },
+              onDragEnd: () => this.setState({ cdrag: null, cover: null }),
+            });
+          });
+        });
+      }
+      const over = s.cover === key && s.cdrag;
+      return {
+        num: isWeek ? date.getDate() + ' ' + MSHORT[date.getMonth()] : String(date.getDate()),
+        numFg: !inMonth ? '#c4c4bd' : (isToday ? RED : INK),
+        flag: isToday ? '●' : '',
+        bg: over ? '#fdf4d6' : (!inMonth ? '#f4f4ef' : (isToday ? '#fdf4d6' : PAPER)),
+        ring: over ? 'inset 0 0 0 2px #0a0a0a' : 'none',
+        items,
+        onDragOver: e => { e.preventDefault(); if (this.state.cover !== key) this.setState({ cover: key }); },
+        onDrop: e => { e.preventDefault(); this.dropOn(date); },
+      };
+    };
+    const calRows = [];
+    if (isWeek) {
+      const cells = [];
+      for (let i = 0; i < 7; i++) cells.push(buildCell(this.addDays(weekStart, i)));
+      calRows.push({ cells });
+    } else {
+      for (let w = 0; w < 6; w++) {
+        const cells = [];
+        for (let dd2 = 0; dd2 < 7; dd2++) cells.push(buildCell(new Date(2026, s.calMonth, 1 - offset + w * 7 + dd2)));
+        calRows.push({ cells });
+        if (new Date(2026, s.calMonth, 1 - offset + w * 7 + 6).getMonth() !== s.calMonth && w >= 4) break;
+      }
+    }
+
+    const ganttRows = [];
+    const ganttKeys = s.sel.length ? s.sel : s.porder.filter(k => s.projects.some(p => p.id === k)).concat([NOPROJ]);
+    ganttKeys.forEach(key => {
+      const p = key === NOPROJ ? { id: NOPROJ, name: 'Sans projet' } : s.projects.find(x => x.id === key);
+      if (!p) return;
+      const ns = vis.filter(n => (n.project || NOPROJ) === key);
+      if (!ns.length) return;
+      ganttRows.push({
+        label: p.name, font: "800 10px 'Archivo',sans-serif", tt: 'uppercase', fg: INK,
+        dot: this.projColor(key), dotBorder: INK, barH: '12px', barBorder: 'none', indent: '9px',
+        rowBg: '#f1f1ec', cursor: 'default', hasBar: false, noBar: false,
+        left: '0%', width: '0%', barBg: 'transparent', barTitle: '', onClick: () => {},
+      });
+      ns.slice().sort((a, b) => (a.due || 0) - (b.due || 0)).forEach(n => {
+        const col = this.projColor(key);
+        const u = this.urgency(n);
+        const end = n.due ? this.pct(n.due) : null;
+        const w = BAR_DAYS / GANTT_SPAN * 100;
+        ganttRows.push({
+          label: n.title, font: "500 11.5px 'Archivo Narrow',sans-serif", tt: 'none',
+          dot: 'transparent', dotBorder: 'transparent',
+          fg: n.done ? GREY : INK,
+          rowBg: s.open === n.id ? '#fdf4d6' : PAPER,
+          cursor: 'pointer',
+          hasBar: end !== null,
+          noBar: end === null,
+          left: end !== null ? Math.max(0, end - w) + '%' : '0%',
+          width: w + '%',
+          barBg: n.done ? '#cfcfc8' : col,
+          barH: '12px', barBorder: '1px solid #0a0a0a', indent: '9px',
+          barTitle: n.due ? 'échéance ' + this.fmt(n.due) : 'sans date',
+          onClick: () => this.toggleOpen(n),
+        });
+        if (s.ganttTasks) {
+          const qq = (s.q || '').toLowerCase();
+          const lotHit = !qq || (n.title + ' ' + n.body).toLowerCase().indexOf(qq) >= 0;
+          n.tasks.filter(t => t.due && (lotHit || t.label.toLowerCase().indexOf(qq) >= 0)).slice().sort((a, b) => a.due - b.due).forEach(t => {
+            const tlate = this.days(t.due) < 0 && !t.done;
+            ganttRows.push({
+              label: '↳ ' + t.label,
+              font: "400 10.5px 'Archivo Narrow',sans-serif", tt: 'none',
+              fg: t.done ? GREY : '#4a4a46',
+              dot: 'transparent', dotBorder: 'transparent',
+              rowBg: s.open === n.id ? '#fdf4d6' : PAPER,
+              cursor: 'pointer', hasBar: true, noBar: false,
+              left: this.pct(t.due) + '%', width: BAR_DAYS / GANTT_SPAN * 100 / 1.8 + '%',
+              barBg: t.done ? '#e0e0d9' : (tlate ? RED : col),
+              barH: '7px', barBorder: '1px solid ' + (t.done ? '#cfcfc8' : '#3a3a38'), indent: '26px',
+              barTitle: t.label + ' — ' + this.fmt(t.due),
+              onClick: () => this.toggleOpen(n),
+            });
+          });
+        }
+      });
+    });
+
+    const openU = openNote ? this.urgency(openNote) : null;
+    const openDD = openNote ? this.days(openNote.due) : null;
+    const selNames = s.sel.map(k => k === NOPROJ ? 'Sans projet' : (s.projects.find(p => p.id === k) || {}).name);
+
+    return {
+      ...this.authVals(),
+      ...this.compteVals(),
+      todayShort: 'LUN 5 OCT',
+      resetLabel: s.confirmReset ? 'confirmer ?' : 'réinit.',
+      resetFg: s.confirmReset ? RED : '#9c9c98',
+      onReset: () => this.resetDemo(),
+      moveOpen: s.moveOpen,
+      moveMark: s.moveOpen ? '▴' : '▾',
+      toggleMove: () => this.setState(st => ({ moveOpen: !st.moveOpen, confirmLot: false })),
+      moveTargets: openNote ? [{ id: null, name: 'Sans projet' }].concat(s.porder.map(k => s.projects.find(p => p.id === k)).filter(Boolean)).map(p => {
+        const on = (openNote.project || null) === (p.id || null);
+        const col = p.id ? this.projColor(p.id) : '#9c9c98';
+        return { name: p.name, bg: on ? col : 'transparent', fg: on ? this.ink(col) : '#e4e4e0', border: col, onClick: () => this.moveLot(p.id || null) };
+      }) : [],
+      delLotLabel: s.confirmLot ? 'confirmer ✕' : 'supprimer',
+      delLotFg: s.confirmLot ? PAPER : RED,
+      delLotBg: s.confirmLot ? RED : 'transparent',
+      onDeleteLot: () => this.deleteLot(),
+      q: s.q,
+      onQ: e => this.setState({ q: e.target.value }, () => this.prune()),
+      pq: s.pq,
+      onPq: e => this.setState({ pq: e.target.value }),
+
+      lateBg: s.lateOnly ? RED : PAPER,
+      lateFg: s.lateOnly ? PAPER : INK,
+      lateCount: String(lateAll),
+      lateCountFg: s.lateOnly ? '#f6d5cf' : RED,
+      toggleLate: () => this.setState(st => ({ lateOnly: !st.lateOnly }), () => this.prune()),
+
+      npBg: s.sel.includes(NOPROJ) ? INK : PAPER,
+      npFg: s.sel.includes(NOPROJ) ? PAPER : INK,
+      npCount: String(npNotes.filter(n => !n.done).length),
+      npCountFg: s.sel.includes(NOPROJ) ? '#c9c9c4' : GREY,
+      toggleNoProj: () => this.toggleSel(NOPROJ),
+
+      projCount: String(s.projects.length),
+      projectRows: s.projects
+        .filter(p => !s.pq || p.name.toLowerCase().indexOf(s.pq.toLowerCase()) >= 0)
+        .slice()
+        .sort((a, b) => s.porder.indexOf(a.id) - s.porder.indexOf(b.id))
+        .map(p => {
+          const st2 = pstats[p.id];
+          const on = s.sel.includes(p.id);
+          const col = this.projColor(p.id);
+          const oncol = this.ink(col);
+          return {
+            name: p.name,
+            count: st2.late ? st2.late + ' ⚑' : (st2.open ? String(st2.open) : '—'),
+            bg: col,
+            fg: oncol,
+            edge: on ? oncol : 'transparent',
+            boxBg: on ? oncol : 'transparent',
+            boxBorder: oncol,
+            markFg: col,
+            mark: on ? '×' : '',
+            weight: on ? 800 : 600,
+            countFg: oncol,
+            color: this.projColor(p.id),
+            dotBorder: oncol,
+            pickMark: s.picker === p.id ? '▴' : '▾',
+            nameVal: p.name,
+            onRename: e => this.renameProject(p.id, e.target.value),
+            delLabel: s.confirmDel === p.id ? 'confirmer ✕' : 'supprimer',
+            delBg: s.confirmDel === p.id ? RED : 'transparent',
+            delFg: s.confirmDel === p.id ? PAPER : RED,
+            onDelete: () => this.deleteProject(p.id),
+            opacity: s.drag === p.id ? 0.35 : 1,
+            dropEdge: s.over === p.id && s.drag && s.drag !== p.id ? '3px solid #0a0a0a' : '3px solid transparent',
+            onDragStart: e => { if (e.dataTransfer) { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', p.id); } this.setState({ drag: p.id, picker: null }); },
+            onDragOver: e => { e.preventDefault(); if (this.state.over !== p.id) this.setState({ over: p.id }); },
+            onDrop: e => { e.preventDefault(); this.reorder(this.state.drag || (e.dataTransfer && e.dataTransfer.getData('text/plain')), p.id); },
+            onDragEnd: () => this.setState({ drag: null, over: null }),
+            picking: s.picker === p.id,
+            onColor: () => this.setState(st => ({ picker: st.picker === p.id ? null : p.id })),
+            swatches: PAL.map(c => ({
+              hex: c.hex, name: c.name,
+              border: this.projColor(p.id) === c.hex ? '2px solid #0a0a0a' : '1px solid rgba(10,10,10,.18)',
+              onClick: () => this.setColor(p.id, c.hex),
+            })),
+            onClick: () => this.toggleSel(p.id),
+          };
+        }),
+      noProjects: s.projects.filter(p => !s.pq || p.name.toLowerCase().indexOf(s.pq.toLowerCase()) >= 0).length === 0,
+
+      pdraft: s.pdraft,
+      hasPdraft: s.pdraft.trim().length > 0,
+      onPdraft: e => this.setState({ pdraft: e.target.value }),
+      addProject: this.addProject,
+
+      hasSel: s.sel.length > 0,
+      noSel: s.sel.length === 0,
+      clearSel: () => this.setState({ sel: [], open: null, lateOnly: false }),
+      selLabel: s.sel.length === 0 ? 'aucune sélection' : (selNames.length > 2 ? selNames.length + ' projets' : selNames.join(' + ')),
+      selCount: thread.length + (thread.length > 1 ? ' lots' : ' lot'),
+
+      toggleGanttTasks: () => this.setState(st => ({ ganttTasks: !st.ganttTasks })),
+      gtLabel: s.ganttTasks ? 'tâches · visibles' : 'tâches · masquées',
+      gtBg: s.ganttTasks ? INK : PAPER,
+      gtFg: s.ganttTasks ? PAPER : INK,
+
+      views: [
+        { key: 'liste', label: 'liste' },
+        { key: 'cal', label: 'calendrier' },
+        { key: 'gantt', label: 'gantt' },
+      ].map(v => ({
+        label: v.label,
+        bg: s.view === v.key ? INK : PAPER,
+        fg: s.view === v.key ? PAPER : INK,
+        onClick: () => this.goView(v.key),
+      })),
+      isList: s.view === 'liste',
+      isCal: s.view === 'cal',
+      isGantt: s.view === 'gantt',
+      sortLabel: mode === 'manuel' ? 'tri · manuel' : (mode === 'récent' ? 'tri · récent' : 'tri · urgence'),
+      toggleSort: () => this.setState(st => {
+        const cur = st.sort || this.props.sortBy || 'urgence';
+        return { sort: cur === 'urgence' ? 'récent' : (cur === 'récent' ? 'manuel' : 'urgence') };
+      }),
+
+      draft: s.draft,
+      draftHint: s.sel.length === 1 && s.sel[0] !== NOPROJ ? 'LOT DANS CE PROJET…' : 'ÉCRIS, ON TRIE APRÈS…',
+      hasDraft: s.draft.trim().length > 0,
+      draftRef: el => { this._draft = el; },
+      focusDraft: () => this._draft && this._draft.focus(),
+      commitClick: () => this.save(),
+      onDraft: e => this.setState({ draft: e.target.value }),
+      onDraftKey: e => { if (e.key === 'Enter') this.save(); },
+
+      thread,
+      empty: thread.length === 0,
+      emptyHint: s.lateOnly ? 'aucun retard ici' : (s.q ? 'essaie un autre mot' : 'écris en haut'),
+
+      hasOpen: !!openNote,
+      noOpen: !openNote,
+      showV3: !!openNote,
+      v3Flex: s.view === 'liste' ? '1 1 0' : '0 0 336px',
+      voidHint: s.sel.length === 0 ? 'rien à ouvrir' : 'choisis une note dans le volet 2',
+      closeOpen: () => this.setState({ open: null, moveOpen: false, confirmLot: false }),
+      openTitle: openNote ? openNote.title : '',
+      onTitle: e => { const v = e.target.value; const id = s.open; this.setState(st => ({ notes: st.notes.map(n => n.id === id ? { ...n, title: v } : n) })); },
+      openBody: openNote ? openNote.body : '',
+      taRef: el => { this._ta = el; this.fit(el); },
+      onBody: e => { const v = e.target.value; const id = s.open; this.fit(e.target); this.setState(st => ({ notes: st.notes.map(n => n.id === id ? { ...n, body: v } : n) })); },
+      openProj: openNote ? (openNote.project ? (s.projects.find(p => p.id === openNote.project) || {}).name : 'sans projet') : '',
+      openDueLabel: openNote ? (openU === 'late' ? 'retard ' + Math.abs(openDD) + ' J' : (openNote.due ? this.fmt(openNote.due) : 'SANS DATE')) : '',
+      openDueFg: openU === 'late' ? RED : '#c9c9c4',
+      openColor: openNote ? this.projColor(openNote.project || NOPROJ) : 'transparent',
+      openTaskLine: openNote && openNote.tasks.length ? openNote.tasks.filter(t => t.done).length + '/' + openNote.tasks.length : '0',
+      openTasks: openNote ? openNote.tasks.map((t, i) => ({
+        label: t.label,
+        fg: t.done ? '#9c9c98' : '#e4e4e0',
+        deco: t.done ? 'line-through' : 'none',
+        mark: t.done ? '×' : '',
+        box: t.done ? YELLOW : 'transparent',
+        border: t.done ? YELLOW : (this.days(t.due) < 0 ? RED : '#6f6f6c'),
+        due: t.due ? (this.days(t.due) < 0 ? 'retard ' + Math.abs(this.days(t.due)) + 'J' : this.fmt(t.due)) : '',
+        dueFg: this.days(t.due) < 0 ? RED : '#9c9c98',
+        onToggle: () => this.toggleTask(openNote.id, i),
+        onRemove: () => this.removeTask(i),
+        dueLabel: t.due ? (this.days(t.due) < 0 ? 'retard ' + Math.abs(this.days(t.due)) + 'J' : this.fmt(t.due)) : '+ date',
+        picking: s.tdate === i,
+        onPickDate: () => this.setState(st => ({ tdate: st.tdate === i ? null : i })),
+        choices: DATE_CHOICES.map(c => ({
+          label: c.label,
+          fg: (c.key === 'none' ? !t.due : (t.due && this.days(t.due) === c.offset)) ? INK : '#e4e4e0',
+          bg: (c.key === 'none' ? !t.due : (t.due && this.days(t.due) === c.offset)) ? YELLOW : 'transparent',
+          border: (c.key === 'none' ? !t.due : (t.due && this.days(t.due) === c.offset)) ? YELLOW : '#3a3a38',
+          onClick: () => this.setTaskDue(i, c.key),
+        })),
+      })) : [],
+      taskDraft: s.taskDraft,
+      onTaskDraft: e => this.setState({ taskDraft: e.target.value }),
+      onTaskKey: this.addTask,
+      dateChoices: DATE_CHOICES.map(c => {
+        const cur = openNote ? (c.key === 'none' ? !openNote.due : (openNote.due && this.days(openNote.due) === c.offset)) : false;
+        return {
+          label: c.label,
+          bg: cur ? YELLOW : 'transparent',
+          fg: cur ? INK : '#d4d4d0',
+          border: cur ? YELLOW : '#5a5a57',
+          onClick: () => this.setDue(c.key),
+        };
+      }),
+      doneLabel: openNote && openNote.done ? 'rouvrir' : 'terminer',
+      doneFg: openNote && openNote.done ? YELLOW : '#d4d4d0',
+      onDone: () => {
+        const id = s.open;
+        const was = openNote && openNote.done;
+        this.setState(st => ({ notes: st.notes.map(n => n.id === id ? { ...n, done: !n.done } : n) }), () => this.prune());
+        this.flash(was ? 'remis dans le fil' : 'terminé');
+      },
+
+      calTitle: s.calMode === 'semaine'
+        ? 'semaine du ' + weekStart.getDate() + ' ' + MSHORT[weekStart.getMonth()]
+        : MLONG[s.calMonth] + ' 2026',
+      calModes: ['mois', 'semaine'].map(m => ({
+        label: m, bg: s.calMode === m ? INK : 'transparent', fg: s.calMode === m ? PAPER : INK,
+        onClick: () => this.setState({ calMode: m, calWeek: 0 }),
+      })),
+      toggleCalTasks: () => this.setState(st => ({ calTasks: !st.calTasks })),
+      ctLabel: s.calTasks ? 'tâches ✓' : 'tâches –',
+      ctBg: s.calTasks ? INK : PAPER,
+      ctFg: s.calTasks ? PAPER : INK,
+      calHead: HEAD,
+      calRows,
+      calPrev: () => this.setState(st => st.calMode === 'semaine' ? { calWeek: st.calWeek - 1 } : { calMonth: Math.max(0, st.calMonth - 1) }),
+      calNext: () => this.setState(st => st.calMode === 'semaine' ? { calWeek: st.calWeek + 1 } : { calMonth: Math.min(11, st.calMonth + 1) }),
+
+      ganttTitle: 'SEPT — NOV 2026',
+      ganttHint: 'fin de barre = échéance · clic = ouvrir',
+      ganttMonths: ['SEPTEMBRE', 'OCTOBRE', 'NOVEMBRE'],
+      ganttRows,
+      nowLeft: this.pct(TODAY) + '%',
+
+      toast: s.toast,
+    };
+  }
+}
+</script>
+</body>
+</html>

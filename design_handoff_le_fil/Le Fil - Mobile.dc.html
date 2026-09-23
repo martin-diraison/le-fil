@@ -1,0 +1,1199 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;800&family=Archivo+Narrow:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0; padding: 0; background: #e7e7e1; }
+  * { box-sizing: border-box; }
+  a { color: #1e3a7a; text-decoration: underline; }
+  a:hover { color: #e8402a; }
+  input, textarea, button { font-family: 'Archivo', system-ui, sans-serif; }
+  input:focus, textarea:focus { outline: none; }
+  ::selection { background: #f2c015; color: #0a0a0a; }
+  ::-webkit-scrollbar { width: 0; height: 0; }
+</style>
+</helmet>
+
+<div style="min-height:100vh;display:flex;align-items:flex-start;justify-content:center;padding:22px 14px 40px;background:#e7e7e1">
+  <div style="width:390px;height:844px;flex-shrink:0;border:1px solid #0a0a0a;background:#fbfbf9;color:#0a0a0a;font-family:'Archivo',system-ui,sans-serif;display:flex;flex-direction:column;overflow:hidden">
+
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 0 0 14px;border-bottom:1px solid #e0e0d9;font:600 8.5px 'Archivo',sans-serif;letter-spacing:.14em;color:#6b6b66;flex-shrink:0;white-space:nowrap;min-height:26px">
+      <span>8:41 · {{ todayShort }}</span>
+      <sc-if value="{{ authed }}" hint-placeholder-val="{{ true }}">
+        <button onClick="{{ toggleAcct }}" style="display:flex;align-items:center;gap:6px;border:none;border-left:1px solid #e0e0d9;background:transparent;cursor:pointer;padding:7px 14px;font:600 8.5px 'Archivo',sans-serif;letter-spacing:.14em;text-transform:uppercase;color:{{ syncFg }};white-space:nowrap" style-hover="background:#f2c015;color:#0a0a0a">
+          <span style="width:7px;height:7px;background:{{ syncDot }}"></span>{{ syncLabel }}
+        </button>
+      </sc-if>
+    </div>
+    <sc-if value="{{ acctOpen }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;flex-direction:column;border-bottom:1px solid #0a0a0a;background:#f1f1ec;flex-shrink:0">
+        <span style="padding:12px 14px 10px;font:600 13px 'Archivo',sans-serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ userEmail }}</span>
+        <div style="display:flex;border-top:1px solid #e0e0d9">
+          <button onClick="{{ openCompte }}" style="flex:1;min-height:44px;border:none;border-right:1px solid #e0e0d9;background:transparent;cursor:pointer;font:600 8.5px 'Archivo',sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#0a0a0a" style-hover="background:#f2c015">compte</button>
+          <button onClick="{{ onOffline }}" style="flex:1;min-height:44px;border:none;background:transparent;cursor:pointer;font:600 8.5px 'Archivo',sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#4a4a46" style-hover="background:#f2c015;color:#0a0a0a">{{ offlineLabel }}</button>
+          <button onClick="{{ onLogout }}" style="flex:1;min-height:44px;border:none;border-left:1px solid #e0e0d9;background:transparent;cursor:pointer;font:600 8.5px 'Archivo',sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#e8402a" style-hover="background:#e8402a;color:#fbfbf9">se déconnecter</button>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ needAuth }}" hint-placeholder-val="{{ false }}">
+      <div style="flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column">
+        <div style="background:#0a0a0a;color:#fbfbf9;padding:20px 18px 22px;display:flex;flex-direction:column;gap:18px;flex-shrink:0">
+          <span style="font:800 12px 'Archivo',sans-serif;letter-spacing:.18em;text-transform:uppercase">le fil</span>
+          <span style="font:800 40px/.95 'Archivo',sans-serif;letter-spacing:-.045em">Projets,<br>lots,<br>tâches.</span>
+          <div style="display:flex;gap:3px"><sc-for list="{{ authColors }}" as="c" hint-placeholder-count="8"><span style="width:21px;height:7px;background:{{ c.hex }}"></span></sc-for></div>
+        </div>
+        <div style="padding:22px 18px 28px;display:flex;flex-direction:column;gap:16px">
+
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <span style="font:800 24px/1.05 'Archivo',sans-serif;letter-spacing:-.03em">{{ authTitle }}</span>
+        <span style="font:400 14px/1.5 'Archivo',sans-serif;color:#4a4a46;text-wrap:pretty">{{ authSub }}</span>
+      </div>
+      <sc-if value="{{ showEmail }}" hint-placeholder-val="{{ true }}">
+        <label style="display:flex;flex-direction:column;gap:6px">
+          <span style="font:600 8.5px 'Archivo',sans-serif;letter-spacing:.18em;text-transform:uppercase;color:#6b6b66;white-space:nowrap">adresse e-mail</span>
+          <input type="email" autocomplete="email" value="{{ aEmail }}" onChange="{{ onAEmail }}" onKeyDown="{{ submitAuth }}" placeholder="toi@exemple.fr" style="width:100%;min-height:46px;font:500 15px 'Archivo',sans-serif;color:#0a0a0a;background:#fbfbf9;border:1px solid #0a0a0a;padding:0 12px" style-focus="background:#fdf4d6" />
+        </label>
+      </sc-if>
+      <sc-if value="{{ showPw }}" hint-placeholder-val="{{ true }}">
+        <label style="display:flex;flex-direction:column;gap:6px">
+          <span style="display:flex;align-items:baseline;gap:8px"><span style="font:600 8.5px 'Archivo',sans-serif;letter-spacing:.18em;text-transform:uppercase;color:#6b6b66;white-space:nowrap;flex-shrink:0">mot de passe</span><span style="font:600 8px 'Archivo',sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#9c9c98;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0">{{ pwHint }}</span></span>
+          <span style="display:flex;align-items:stretch">
+            <input type="{{ pwType }}" autocomplete="current-password" value="{{ aPw }}" onChange="{{ onAPw }}" onKeyDown="{{ submitAuth }}" style="width:100%;min-height:46px;font:500 15px 'Archivo',sans-serif;color:#0a0a0a;background:#fbfbf9;border:1px solid #0a0a0a;padding:0 12px;flex:1;min-width:0;border-right:none" style-focus="background:#fdf4d6" />
+            <button type="button" onClick="{{ togglePw }}" style="flex-shrink:0;width:84px;border:1px solid #0a0a0a;background:transparent;cursor:pointer;font:600 8.5px 'Archivo',sans-serif;letter-spacing:.14em;text-transform:uppercase" style-hover="background:#f2c015">{{ pwToggle }}</button>
+          </span>
+        </label>
+      </sc-if>
+      <sc-if value="{{ showPw2 }}" hint-placeholder-val="{{ false }}">
+        <label style="display:flex;flex-direction:column;gap:6px">
+          <span style="font:600 8.5px 'Archivo',sans-serif;letter-spacing:.18em;text-transform:uppercase;color:#6b6b66;white-space:nowrap">confirmer le mot de passe</span>
+          <input type="{{ pwType }}" autocomplete="new-password" value="{{ aPw2 }}" onChange="{{ onAPw2 }}" onKeyDown="{{ submitAuth }}" style="width:100%;min-height:46px;font:500 15px 'Archivo',sans-serif;color:#0a0a0a;background:#fbfbf9;border:1px solid #0a0a0a;padding:0 12px" style-focus="background:#fdf4d6" />
+        </label>
+      </sc-if>
+      <sc-if value="{{ hasErr }}" hint-placeholder-val="{{ false }}">
+        <div style="padding:9px 11px;background:#e8402a;color:#fbfbf9;font:600 9.5px 'Archivo',sans-serif;letter-spacing:.12em;text-transform:uppercase">{{ aErr }}</div>
+      </sc-if>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <button onClick="{{ submitAuth }}" style="min-height:48px;border:none;background:#0a0a0a;color:#fbfbf9;cursor:pointer;font:800 10.5px 'Archivo',sans-serif;letter-spacing:.18em;text-transform:uppercase" style-hover="background:#f2c015;color:#0a0a0a">{{ authCta }}</button>
+        <sc-if value="{{ isLogin }}" hint-placeholder-val="{{ true }}">
+          <button onClick="{{ goForgot }}" style="align-self:flex-start;border:none;background:transparent;cursor:pointer;padding:8px 0;font:600 9px 'Archivo',sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#4a4a46;text-decoration:underline;text-underline-offset:3px" style-hover="color:#e8402a">mot de passe oublié ?</button>
+        </sc-if>
+      </div>
+      <sc-if value="{{ showSwitch }}" hint-placeholder-val="{{ true }}">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding-top:14px;border-top:1px solid #e0e0d9">
+          <span style="font:600 9px 'Archivo',sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#6b6b66;white-space:nowrap">{{ switchText }}</span>
+          <button onClick="{{ onSwitch }}" style="border:1px solid #0a0a0a;background:transparent;cursor:pointer;padding:12px 12px;font:800 9px 'Archivo',sans-serif;letter-spacing:.14em;text-transform:uppercase;white-space:nowrap" style-hover="background:#f2c015">{{ switchCta }}</button>
+        </div>
+      </sc-if>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isFil }}" hint-placeholder-val="{{ true }}">
+      <div style="flex:1;min-height:0;display:flex;flex-direction:column">
+        <div style="display:flex;align-items:center;gap:9px;padding:11px 14px;border-bottom:1px solid #0a0a0a;flex-shrink:0">
+          <span style="font:800 13px 'Archivo',sans-serif;letter-spacing:.18em;text-transform:uppercase">le fil</span>
+          <span style="font:600 9px 'Archivo',sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#6b6b66;white-space:nowrap">{{ filCount }}</span>
+          <button onClick="{{ toggleLate }}" style="margin-left:auto;flex-shrink:0;border:1px solid #0a0a0a;background:{{ lateBg }};color:{{ lateFg }};cursor:pointer;padding:7px 11px;font:600 8.5px 'Archivo',sans-serif;letter-spacing:.14em;text-transform:uppercase;white-space:nowrap">retard {{ lateCount }}</button>
+        </div>
+        <div style="flex:1;min-height:0;overflow-y:auto">
+          <sc-for list="{{ filRows }}" as="r" hint-placeholder-count="9">
+            <div>
+              <sc-if value="{{ r.isHead }}" hint-placeholder-val="{{ false }}">
+                <div style="padding:8px 14px;border-bottom:1px solid #e0e0d9;background:#f1f1ec;font:800 8.5px 'Archivo',sans-serif;letter-spacing:.18em;text-transform:uppercase;color:{{ r.headFg }}">{{ r.label }}</div>
+              </sc-if>
+              <sc-if value="{{ r.isLot }}" hint-placeholder-val="{{ true }}">
+                <div style="display:flex;align-items:stretch;border-bottom:1px solid #e0e0d9">
+                  <span style="width:7px;flex-shrink:0;background:{{ r.color }}"></span>
+                  <button onClick="{{ r.onToggle }}" title="terminer" style="width:46px;flex-shrink:0;border:none;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0" style-hover="background:#f2c015">
+                    <span style="width:20px;height:20px;border:1.5px solid {{ r.boxBorder }};background:{{ r.boxBg }};color:#fbfbf9;font:800 11px 'Archivo',sans-serif;line-height:18px;text-align:center">{{ r.mark }}</span>
+                  </button>
+                  <button onClick="{{ r.onOpen }}" style="flex:1;min-width:0;border:none;border-left:1px solid #e0e0d9;background:transparent;cursor:pointer;padding:11px 12px;text-align:left;display:flex;flex-direction:column;gap:3px" style-hover="background:#f1f1ec">
+                    <span style="font:600 15px/1.2 'Archivo Narrow',sans-serif;color:{{ r.titleFg }};text-decoration:{{ r.deco }};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%">{{ r.title }}</span>
+                    <span style="font:600 8.5px 'Archivo',sans-serif;letter-spacing:.11em;text-transform:uppercase;color:{{ r.metaFg }};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%">{{ r.meta }}</span>
+                  </button>
+                </div>
+              </sc-if>
+            </div>
+          </sc-for>
+          <sc-if value="{{ filEmpty }}" hint-placeholder-val="{{ false }}">
+            <div style="padding:20px 14px;font:600 10px/1.8 'Archivo',sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#6b6b66">rien ici</div>
+          </sc-if>
+        </div>
+        <div style="display:flex;align-items:stretch;border-top:1px solid #0a0a0a;flex-shrink:0">
+          <input value="{{ draft }}" onChange="{{ onDraft }}" onKeyDown="{{ onDraftKey }}" placeholder="NOUVEAU LOT…" style="flex:1;min-width:0;font:600 10.5px 'Archivo',sans-serif;letter-spacing:.14em;color:#0a0a0a;background:transparent;border:none;padding:14px" />
+          <button onClick="{{ addLot }}" style="width:52px;flex-shrink:0;border:none;border-left:1px solid #0a0a0a;background:#0a0a0a;color:#fbfbf9;cursor:pointer;font:800 18px 'Archivo',sans-serif" style-hover="background:#f2c015;color:#0a0a0a">+</button>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isProjets }}" hint-placeholder-val="{{ false }}">
+      <div style="flex:1;min-height:0;display:flex;flex-direction:column">
+        <div style="display:flex;align-items:baseline;gap:9px;padding:11px 14px;border-bottom:1px solid #0a0a0a;flex-shrink:0">
+          <span style="font:800 13px 'Archivo',sans-serif;letter-spacing:.18em;text-transform:uppercase">projets</span>
+          <span style="font:800 9px 'Archivo',sans-serif;letter-spacing:.1em;color:#6b6b66">{{ projCount }}</span>
+          <span style="margin-left:auto;font:600 8px 'Archivo',sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#9c9c98">appui = ouvrir</span>
+        </div>
+        <div style="flex:1;min-height:0;overflow-y:auto">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;padding:1px;background:#0a0a0a">
+            <sc-for list="{{ projectTiles }}" as="p" hint-placeholder-count="8">
+              <button onClick="{{ p.onOpen }}" style="min-height:108px;border:none;padding:13px 13px 11px;background:{{ p.color }};color:{{ p.on }};cursor:pointer;text-align:left;display:flex;flex-direction:column;justify-content:space-between;gap:10px;overflow:hidden" style-hover="outline:3px solid #f2c015;outline-offset:-3px">
+                <span style="font:600 15px/1.15 'Archivo Narrow',sans-serif;letter-spacing:.03em;text-transform:uppercase">{{ p.name }}</span>
+                <span style="display:flex;align-items:baseline;gap:5px">
+                  <span style="font:800 27px 'Archivo',sans-serif;letter-spacing:-.02em;line-height:1">{{ p.count }}</span>
+                  <span style="font:600 8.5px 'Archivo',sans-serif;letter-spacing:.16em;text-transform:uppercase;opacity:.82">{{ p.lotLabel }}</span>
+                </span>
+              </button>
+            </sc-for>
+            <button onClick="{{ openNoProj }}" style="min-height:108px;border:none;padding:13px;background:#f1f1ec;color:#4a4a46;cursor:pointer;text-align:left;display:flex;flex-direction:column;justify-content:space-between;gap:10px;box-shadow:inset 0 0 0 1.5px #cfcfc8" style-hover="outline:3px solid #f2c015;outline-offset:-3px">
+              <span style="font:600 15px/1.15 'Archivo Narrow',sans-serif;letter-spacing:.03em;text-transform:uppercase">sans projet</span>
+              <span style="display:flex;align-items:baseline;gap:5px">
+                <span style="font:800 27px 'Archivo',sans-serif;letter-spacing:-.02em;line-height:1">{{ npCount }}</span>
+                <span style="font:600 8.5px 'Archivo',sans-serif;letter-spacing:.16em;text-transform:uppercase;opacity:.82">{{ npLabel }}</span>
+              </span>
+            </button>
+          </div>
+        </div>
+        <div style="display:flex;align-items:stretch;border-top:1px solid #0a0a0a;flex-shrink:0">
+          <input value="{{ pdraft }}" onChange="{{ onPdraft }}" onKeyDown="{{ onPdraftKey }}" placeholder="NOUVEAU PROJET…" style="flex:1;min-width:0;font:600 10.5px 'Archivo',sans-serif;letter-spacing:.14em;color:#0a0a0a;background:transparent;border:none;padding:14px" />
+          <button onClick="{{ addProject }}" style="width:52px;flex-shrink:0;border:none;border-left:1px solid #0a0a0a;background:#0a0a0a;color:#fbfbf9;cursor:pointer;font:800 18px 'Archivo',sans-serif" style-hover="background:#f2c015;color:#0a0a0a">+</button>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isProjet }}" hint-placeholder-val="{{ false }}">
+      <div style="flex:1;min-height:0;display:flex;flex-direction:column">
+        <div style="display:flex;align-items:stretch;border-bottom:1px solid #0a0a0a;flex-shrink:0">
+          <button onClick="{{ backToProjets }}" style="border:none;background:transparent;cursor:pointer;padding:12px 14px;font:800 10.5px 'Archivo',sans-serif;letter-spacing:.14em;text-transform:uppercase" style-hover="background:#f2c015">← projets</button>
+          <button onClick="{{ togglePicker }}" style="margin-left:auto;border:none;border-left:1px solid #e0e0d9;background:transparent;cursor:pointer;padding:12px 14px;font:600 9px 'Archivo',sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#6b6b66" style-hover="background:#f2c015;color:#0a0a0a">réglages {{ pickMark }}</button>
+        </div>
+        <div style="padding:15px 14px;border-bottom:1px solid #0a0a0a;background:{{ projColor }};color:{{ projOn }};display:flex;flex-direction:column;gap:9px;flex-shrink:0">
+          <span style="font:600 23px/1.1 'Archivo Narrow',sans-serif;letter-spacing:.02em;text-transform:uppercase">{{ projName }}</span>
+          <span style="display:flex;align-items:baseline;gap:6px">
+            <span style="font:800 27px 'Archivo',sans-serif;line-height:1;letter-spacing:-.02em">{{ projCountLots }}</span>
+            <span style="font:600 8.5px 'Archivo',sans-serif;letter-spacing:.16em;text-transform:uppercase;opacity:.85">{{ projMeta }}</span>
+          </span>
+        </div>
+        <sc-if value="{{ pickerOpen }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;flex-direction:column;gap:8px;padding:11px 14px;border-bottom:1px solid #0a0a0a;background:#f1f1ec;flex-shrink:0">
+            <input value="{{ projName }}" onChange="{{ onRename }}" placeholder="NOM DU PROJET" style="width:100%;font:600 13px 'Archivo Narrow',sans-serif;letter-spacing:.04em;text-transform:uppercase;color:#0a0a0a;background:#fbfbf9;border:1px solid #cfcfc8;padding:8px 9px" />
+            <div style="display:grid;grid-template-columns:repeat(8,1fr);gap:4px">
+              <sc-for list="{{ swatches }}" as="w" hint-placeholder-count="28">
+                <button onClick="{{ w.onClick }}" title="{{ w.name }}" style="height:26px;border:{{ w.border }};background:{{ w.hex }};cursor:pointer;padding:0" style-hover="outline:2px solid #0a0a0a"></button>
+              </sc-for>
+            </div>
+            <button onClick="{{ onDelete }}" style="border:1px solid #e8402a;background:{{ delBg }};color:{{ delFg }};cursor:pointer;padding:9px;font:600 9px 'Archivo',sans-serif;letter-spacing:.16em;text-transform:uppercase" style-hover="background:#e8402a;color:#fbfbf9">{{ delLabel }}</button>
+          </div>
+        </sc-if>
+        <div style="flex:1;min-height:0;overflow-y:auto">
+          <sc-for list="{{ projLots }}" as="r" hint-placeholder-count="6">
+            <div style="display:flex;align-items:stretch;border-bottom:1px solid #e0e0d9">
+              <span style="width:7px;flex-shrink:0;background:{{ r.color }}"></span>
+              <button onClick="{{ r.onToggle }}" title="terminer" style="width:46px;flex-shrink:0;border:none;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0" style-hover="background:#f2c015">
+                <span style="width:20px;height:20px;border:1.5px solid {{ r.boxBorder }};background:{{ r.boxBg }};color:#fbfbf9;font:800 11px 'Archivo',sans-serif;line-height:18px;text-align:center">{{ r.mark }}</span>
+              </button>
+              <button onClick="{{ r.onOpen }}" style="flex:1;min-width:0;border:none;border-left:1px solid #e0e0d9;background:transparent;cursor:pointer;padding:0;text-align:left;display:flex;align-items:stretch" style-hover="background:#f1f1ec">
+                <span style="width:66px;flex-shrink:0;border-right:1px solid #e0e0d9;background:{{ r.dateBg }};padding:11px 8px;display:flex;flex-direction:column;gap:2px">
+                  <span style="font:800 12.5px 'Archivo',sans-serif;letter-spacing:-.01em;color:{{ r.dateFg }};white-space:nowrap">{{ r.dateTop }}</span>
+                  <span style="font:600 7.5px 'Archivo',sans-serif;letter-spacing:.06em;text-transform:uppercase;color:{{ r.dateSubFg }};white-space:nowrap">{{ r.dateSub }}</span>
+                </span>
+                <span style="flex:1;min-width:0;padding:11px 12px;display:flex;flex-direction:column;gap:3px">
+                  <span style="font:600 15px/1.2 'Archivo Narrow',sans-serif;color:{{ r.titleFg }};text-decoration:{{ r.deco }};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ r.title }}</span>
+                  <span style="font:600 8px 'Archivo',sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#6b6b66">{{ r.taskLine }}</span>
+                </span>
+              </button>
+            </div>
+          </sc-for>
+          <sc-if value="{{ projEmpty }}" hint-placeholder-val="{{ false }}">
+            <div style="padding:20px 14px;font:600 10px/1.8 'Archivo',sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#6b6b66">aucun lot — écris en bas</div>
+          </sc-if>
+        </div>
+        <div style="display:flex;align-items:stretch;border-top:1px solid #0a0a0a;flex-shrink:0">
+          <input value="{{ draft }}" onChange="{{ onDraft }}" onKeyDown="{{ onDraftKey }}" placeholder="{{ draftHint }}" style="flex:1;min-width:0;font:600 10.5px 'Archivo',sans-serif;letter-spacing:.14em;color:#0a0a0a;background:transparent;border:none;padding:14px" />
+          <button onClick="{{ addLot }}" style="width:52px;flex-shrink:0;border:none;border-left:1px solid #0a0a0a;background:{{ projColor }};color:{{ projOn }};cursor:pointer;font:800 18px 'Archivo',sans-serif" style-hover="background:#f2c015;color:#0a0a0a">+</button>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isLot }}" hint-placeholder-val="{{ false }}">
+      <div style="flex:1;min-height:0;display:flex;flex-direction:column">
+        <div style="display:flex;align-items:stretch;border-bottom:1px solid #0a0a0a;flex-shrink:0">
+          <button onClick="{{ backFromLot }}" style="border:none;background:transparent;cursor:pointer;padding:12px 14px;font:800 10.5px 'Archivo',sans-serif;letter-spacing:.14em;text-transform:uppercase" style-hover="background:#f2c015">{{ backLabel }}</button>
+          <button onClick="{{ onDeleteLot }}" style="margin-left:auto;border:none;border-left:1px solid #e0e0d9;background:{{ delLotBg }};color:{{ delLotFg }};cursor:pointer;padding:12px 14px;font:600 9px 'Archivo',sans-serif;letter-spacing:.14em;text-transform:uppercase" style-hover="background:#e8402a;color:#fbfbf9">{{ delLotLabel }}</button>
+        </div>
+        <div style="height:9px;flex-shrink:0;background:{{ lotColor }}"></div>
+        <div style="flex:1;min-height:0;overflow-y:auto">
+          <div style="padding:15px 14px;border-bottom:1px solid #e0e0d9;background:#0a0a0a;color:#fbfbf9;display:flex;flex-direction:column;gap:9px">
+            <input value="{{ lotTitle }}" onChange="{{ onLotTitle }}" style="font:600 21px/1.15 'Archivo Narrow',sans-serif;color:#fbfbf9;background:transparent;border:none;padding:0;width:100%" />
+            <span style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap">
+              <span style="font:600 8.5px 'Archivo',sans-serif;letter-spacing:.16em;text-transform:uppercase;color:{{ lotProjFg }}">{{ lotProj }}</span>
+              <span style="font:600 8.5px 'Archivo',sans-serif;letter-spacing:.16em;text-transform:uppercase;color:{{ lotDueFg }}">{{ lotDueLabel }}</span>
+            </span>
+          </div>
+          <textarea value="{{ lotBody }}" onChange="{{ onLotBody }}" placeholder="…" rows="4" style="width:100%;font:400 14px/1.55 'Archivo',system-ui,sans-serif;color:#0a0a0a;background:transparent;border:none;border-bottom:1px solid #e0e0d9;resize:none;padding:13px 14px"></textarea>
+          <div style="display:flex;gap:5px;flex-wrap:wrap;padding:11px 14px;border-bottom:1px solid #0a0a0a;background:#f1f1ec">
+            <span style="width:100%;font:600 8px 'Archivo',sans-serif;letter-spacing:.18em;text-transform:uppercase;color:#6b6b66">échéance du lot</span>
+            <sc-for list="{{ lotChoices }}" as="c" hint-placeholder-count="5">
+              <button onClick="{{ c.onClick }}" style="font:600 9px 'Archivo',sans-serif;letter-spacing:.1em;text-transform:uppercase;color:{{ c.fg }};background:{{ c.bg }};border:1px solid {{ c.border }};cursor:pointer;padding:8px 11px">{{ c.label }}</button>
+            </sc-for>
+          </div>
+          <div style="display:flex;align-items:center;gap:9px;padding:9px 14px;border-bottom:1px solid #e0e0d9;border-left:5px solid {{ lotColor }};background:#f1f1ec">
+            <span style="width:10px;height:10px;background:{{ lotColor }}"></span>
+            <span style="font:800 8.5px 'Archivo',sans-serif;letter-spacing:.18em;text-transform:uppercase">tâches</span>
+            <span style="margin-left:auto;font:800 9px 'Archivo',sans-serif;letter-spacing:.08em;color:#6b6b66">{{ lotTaskLine }}</span>
+          </div>
+          <sc-for list="{{ lotTasks }}" as="t" hint-placeholder-count="3">
+            <div style="border-bottom:1px solid #e0e0d9">
+              <div style="display:flex;align-items:stretch">
+                <button onClick="{{ t.onToggle }}" style="flex:1;min-width:0;display:flex;align-items:center;gap:11px;border:none;background:transparent;cursor:pointer;padding:12px 10px 12px 14px;text-align:left" style-hover="background:#f2c015">
+                  <span style="width:19px;height:19px;flex-shrink:0;border:1.5px solid {{ t.border }};background:{{ t.box }};color:#fbfbf9;font:800 11px 'Archivo',sans-serif;line-height:17px;text-align:center">{{ t.mark }}</span>
+                  <span style="font:600 14px 'Archivo Narrow',sans-serif;color:{{ t.fg }};text-decoration:{{ t.deco }};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ t.label }}</span>
+                </button>
+                <button onClick="{{ t.onPickDate }}" title="échéance de la tâche" style="flex-shrink:0;border:none;border-left:1px solid #e0e0d9;background:transparent;cursor:pointer;padding:12px 11px;font:600 8.5px 'Archivo',sans-serif;letter-spacing:.1em;text-transform:uppercase;color:{{ t.dueFg }};white-space:nowrap" style-hover="background:#f2c015">{{ t.dueLabel }}</button>
+              </div>
+              <sc-if value="{{ t.picking }}" hint-placeholder-val="{{ false }}">
+                <div style="display:flex;gap:5px;flex-wrap:wrap;padding:9px 14px;background:#f1f1ec;border-top:1px solid #e0e0d9">
+                  <sc-for list="{{ t.choices }}" as="c" hint-placeholder-count="5">
+                    <button onClick="{{ c.onClick }}" style="font:600 8.5px 'Archivo',sans-serif;letter-spacing:.1em;text-transform:uppercase;color:{{ c.fg }};background:{{ c.bg }};border:1px solid {{ c.border }};cursor:pointer;padding:7px 10px">{{ c.label }}</button>
+                  </sc-for>
+                  <button onClick="{{ t.onRemove }}" style="font:600 8.5px 'Archivo',sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#e8402a;background:transparent;border:1px solid #e8402a;cursor:pointer;padding:7px 10px" style-hover="background:#e8402a;color:#fbfbf9">supprimer</button>
+                </div>
+              </sc-if>
+            </div>
+          </sc-for>
+          <div style="display:flex;align-items:stretch;border-bottom:1px solid #0a0a0a">
+            <input value="{{ taskDraft }}" onChange="{{ onTaskDraft }}" onKeyDown="{{ onTaskKey }}" placeholder="+ AJOUTER UNE TÂCHE" style="flex:1;min-width:0;font:600 10px 'Archivo',sans-serif;letter-spacing:.14em;color:#0a0a0a;background:transparent;border:none;padding:13px 14px" />
+          </div>
+          <button onClick="{{ toggleMove }}" style="width:100%;border:none;background:transparent;cursor:pointer;padding:12px 14px;text-align:left;display:flex;align-items:center;gap:8px;font:600 8.5px 'Archivo',sans-serif;letter-spacing:.18em;text-transform:uppercase;color:#6b6b66" style-hover="background:#f1f1ec">déplacer vers…<span style="margin-left:auto;font:800 9px 'Archivo',sans-serif;color:#0a0a0a">{{ moveMark }}</span></button>
+          <sc-if value="{{ moveOpen }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;gap:6px;flex-wrap:wrap;padding:0 14px 14px">
+            <sc-for list="{{ moveTargets }}" as="m" hint-placeholder-count="6">
+              <button onClick="{{ m.onClick }}" style="font:600 9px 'Archivo Narrow',sans-serif;letter-spacing:.06em;text-transform:uppercase;color:{{ m.fg }};background:{{ m.bg }};border:1px solid {{ m.border }};cursor:pointer;padding:7px 10px">{{ m.name }}</button>
+            </sc-for>
+          </div>
+          </sc-if>
+        </div>
+        <div style="display:flex;border-top:1px solid #0a0a0a;flex-shrink:0">
+          <button onClick="{{ onLotDone }}" style="flex:1;border:none;background:{{ doneBg }};color:{{ doneFg }};cursor:pointer;padding:15px 0;font:800 9.5px 'Archivo',sans-serif;letter-spacing:.16em;text-transform:uppercase" style-hover="background:#f2c015;color:#0a0a0a">{{ doneLabel }}</button>
+          <button onClick="{{ onPlusDay }}" style="width:96px;flex-shrink:0;border:none;border-left:1px solid #0a0a0a;background:transparent;cursor:pointer;padding:15px 0;font:800 9.5px 'Archivo',sans-serif;letter-spacing:.16em;text-transform:uppercase" style-hover="background:#f2c015">+1 j</button>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isCal }}" hint-placeholder-val="{{ false }}">
+      <div style="flex:1;min-height:0;display:flex;flex-direction:column">
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid #0a0a0a;flex-shrink:0">
+          <button onClick="{{ calPrev }}" style="border:1px solid #0a0a0a;background:transparent;cursor:pointer;padding:6px 12px;font:800 11px 'Archivo',sans-serif" style-hover="background:#f2c015">‹</button>
+          <span style="font:800 11.5px 'Archivo',sans-serif;letter-spacing:.14em;text-transform:uppercase">{{ calTitle }}</span>
+          <button onClick="{{ calNext }}" style="border:1px solid #0a0a0a;background:transparent;cursor:pointer;padding:6px 12px;font:800 11px 'Archivo',sans-serif" style-hover="background:#f2c015">›</button>
+          <button onClick="{{ toggleCalTasks }}" style="margin-left:auto;border:1px solid #0a0a0a;background:{{ ctBg }};color:{{ ctFg }};cursor:pointer;padding:6px 9px;font:600 8px 'Archivo',sans-serif;letter-spacing:.12em;text-transform:uppercase" style-hover="background:#f2c015;color:#0a0a0a">tâches</button>
+          <button onClick="{{ toggleCalTall }}" title="agrandir les cases" style="border:1px solid #0a0a0a;background:{{ tallBg }};color:{{ tallFg }};cursor:pointer;padding:6px 9px;font:800 10px 'Archivo',sans-serif" style-hover="background:#f2c015;color:#0a0a0a">{{ tallMark }}</button>
+        </div>
+        <div style="display:flex;border-bottom:1px solid #0a0a0a;flex-shrink:0">
+          <sc-for list="{{ calHead }}" as="h" hint-placeholder-count="7">
+            <div style="flex:1;min-width:0;padding:5px 0;text-align:center;border-right:1px solid #e0e0d9;font:600 8px 'Archivo',sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#6b6b66">{{ h }}</div>
+          </sc-for>
+        </div>
+        <div style="flex:1;min-height:0;overflow-y:auto">
+        <div style="border-bottom:1px solid #0a0a0a">
+          <sc-for list="{{ calRows }}" as="r" hint-placeholder-count="5">
+            <div style="display:flex;border-bottom:1px solid #e0e0d9">
+              <sc-for list="{{ r.cells }}" as="c" hint-placeholder-count="7">
+                <button onClick="{{ c.onClick }}" style="flex:1;min-width:0;min-height:{{ calCellH }};border:none;border-right:1px solid #e0e0d9;background:{{ c.bg }};cursor:pointer;padding:3px 2px 3px;display:flex;flex-direction:column;align-items:stretch;gap:2px;overflow:hidden" style-hover="outline:2px solid #f2c015;outline-offset:-2px">
+                  <span style="text-align:center;font:{{ c.font }};color:{{ c.numFg }}">{{ c.num }}</span>
+                  <sc-for list="{{ c.chips }}" as="d" hint-placeholder-count="1">
+                    <span style="display:block;text-align:left;font:{{ d.font }};line-height:1.25;color:{{ d.fg }};background:{{ d.bg }};border-left:2px solid {{ d.edge }};padding:1px 2px;overflow:hidden;white-space:nowrap;text-overflow:clip">{{ d.label }}</span>
+                  </sc-for>
+                  <sc-if value="{{ c.hasMore }}" hint-placeholder-val="{{ false }}">
+                    <span style="font:800 7.5px 'Archivo',sans-serif;letter-spacing:.06em;color:{{ c.numFg }};text-align:center">{{ c.more }}</span>
+                  </sc-if>
+                </button>
+              </sc-for>
+            </div>
+          </sc-for>
+        </div>
+        <div style="padding:9px 14px;border-bottom:1px solid #e0e0d9;background:#f1f1ec;font:800 8.5px 'Archivo',sans-serif;letter-spacing:.18em;text-transform:uppercase">{{ dayTitle }}</div>
+        <div>
+          <sc-for list="{{ dayRows }}" as="r" hint-placeholder-count="3">
+            <div style="display:flex;align-items:stretch;border-bottom:1px solid #e0e0d9">
+              <span style="width:7px;flex-shrink:0;background:{{ r.color }}"></span>
+              <button onClick="{{ r.onOpen }}" style="flex:1;min-width:0;border:none;background:transparent;cursor:pointer;padding:12px 14px;text-align:left;display:flex;flex-direction:column;gap:3px" style-hover="background:#f1f1ec">
+                <span style="font:600 15px/1.2 'Archivo Narrow',sans-serif;color:{{ r.titleFg }};text-decoration:{{ r.deco }};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%">{{ r.title }}</span>
+                <span style="font:600 8.5px 'Archivo',sans-serif;letter-spacing:.12em;text-transform:uppercase;color:{{ r.metaFg }}">{{ r.meta }}</span>
+              </button>
+            </div>
+          </sc-for>
+          <sc-if value="{{ dayEmpty }}" hint-placeholder-val="{{ false }}">
+            <div style="padding:18px 14px;font:600 9.5px/1.8 'Archivo',sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#6b6b66">aucune échéance ce jour</div>
+          </sc-if>
+        </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ compteOpen }}" hint-placeholder-val="{{ false }}">
+      <div style="flex:1;min-height:0;display:flex;flex-direction:column">
+        <div style="display:flex;align-items:stretch;border-bottom:1px solid #0a0a0a;flex-shrink:0">
+          <button onClick="{{ closeCompte }}" style="border:none;background:transparent;cursor:pointer;padding:12px 14px;font:800 10.5px 'Archivo',sans-serif;letter-spacing:.14em;text-transform:uppercase" style-hover="background:#f2c015">← retour</button>
+          <span style="margin-left:auto;align-self:center;padding-right:14px;font:800 10.5px 'Archivo',sans-serif;letter-spacing:.16em;text-transform:uppercase">compte</span>
+        </div>
+        <div style="flex:1;min-height:0;overflow-y:auto">
+        <div style="display:flex;flex-direction:column;gap:10px;padding:18px 18px;border-bottom:1px solid #0a0a0a">
+          <span style="font:800 8.5px 'Archivo',sans-serif;letter-spacing:.2em;text-transform:uppercase">adresse e-mail</span>
+          <span style="font:600 16px 'Archivo',sans-serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ userEmail }}</span>
+          <span style="font:600 8px 'Archivo',sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#6b6b66">{{ compteStats }}</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px;padding:18px 18px;border-bottom:1px solid #0a0a0a">
+          <span style="font:800 8.5px 'Archivo',sans-serif;letter-spacing:.2em;text-transform:uppercase">changer le mot de passe</span>
+          <label style="display:flex;flex-direction:column;gap:5px"><span style="font:600 8px 'Archivo',sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#6b6b66;white-space:nowrap">actuel</span><input type="password" autocomplete="current-password" value="{{ cOld }}" onChange="{{ onCOld }}" onKeyDown="{{ changePw }}" style="width:100%;min-height:44px;font:500 15px 'Archivo',sans-serif;color:#0a0a0a;background:#fbfbf9;border:1px solid #0a0a0a;padding:0 11px" style-focus="background:#fdf4d6" /></label>
+          <label style="display:flex;flex-direction:column;gap:5px"><span style="font:600 8px 'Archivo',sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#6b6b66;white-space:nowrap">nouveau · 8 caractères minimum</span><input type="password" autocomplete="new-password" value="{{ cNew }}" onChange="{{ onCNew }}" onKeyDown="{{ changePw }}" style="width:100%;min-height:44px;font:500 15px 'Archivo',sans-serif;color:#0a0a0a;background:#fbfbf9;border:1px solid #0a0a0a;padding:0 11px" style-focus="background:#fdf4d6" /></label>
+          <label style="display:flex;flex-direction:column;gap:5px"><span style="font:600 8px 'Archivo',sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#6b6b66;white-space:nowrap">confirmer</span><input type="password" autocomplete="new-password" value="{{ cNew2 }}" onChange="{{ onCNew2 }}" onKeyDown="{{ changePw }}" style="width:100%;min-height:44px;font:500 15px 'Archivo',sans-serif;color:#0a0a0a;background:#fbfbf9;border:1px solid #0a0a0a;padding:0 11px" style-focus="background:#fdf4d6" /></label>
+          <sc-if value="{{ hasCErr }}" hint-placeholder-val="{{ false }}"><div style="padding:8px 10px;background:#e8402a;color:#fbfbf9;font:600 9px 'Archivo',sans-serif;letter-spacing:.12em;text-transform:uppercase">{{ cErr }}</div></sc-if>
+          <sc-if value="{{ hasCOk }}" hint-placeholder-val="{{ false }}"><div style="padding:8px 10px;background:#2f6f5e;color:#fbfbf9;font:600 9px 'Archivo',sans-serif;letter-spacing:.12em;text-transform:uppercase">{{ cOk }}</div></sc-if>
+          <button onClick="{{ changePw }}" style="min-height:44px;border:1px solid #0a0a0a;background:transparent;cursor:pointer;padding:0 13px;font:800 9px 'Archivo',sans-serif;letter-spacing:.14em;text-transform:uppercase;align-self:flex-start;background:#0a0a0a;color:#fbfbf9" style-hover="background:#f2c015;color:#0a0a0a">enregistrer</button>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px;padding:18px 18px;border-bottom:1px solid #0a0a0a">
+          <span style="font:800 8.5px 'Archivo',sans-serif;letter-spacing:.2em;text-transform:uppercase">appareils connectés</span>
+          <div style="display:flex;align-items:center;gap:9px">
+            <span style="width:7px;height:7px;flex-shrink:0;background:#2f6f5e"></span>
+            <span style="font:600 14px 'Archivo',sans-serif">{{ deviceName }}</span>
+            <span style="margin-left:auto;font:600 8px 'Archivo',sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#6b6b66;white-space:nowrap">cet appareil</span>
+          </div>
+          <button onClick="{{ onOthers }}" style="min-height:44px;border:1px solid #0a0a0a;background:transparent;cursor:pointer;padding:0 13px;font:800 9px 'Archivo',sans-serif;letter-spacing:.14em;text-transform:uppercase;align-self:flex-start" style-hover="background:#f2c015">déconnecter les autres appareils</button>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px;padding:18px 18px;border-bottom:1px solid #0a0a0a">
+          <span style="font:800 8.5px 'Archivo',sans-serif;letter-spacing:.2em;text-transform:uppercase">données</span>
+          <span style="font:400 13.5px/1.5 'Archivo',sans-serif;color:#4a4a46">Projets, lots et tâches dans un fichier JSON lisible.</span>
+          <button onClick="{{ onExport }}" style="min-height:44px;border:1px solid #0a0a0a;background:transparent;cursor:pointer;padding:0 13px;font:800 9px 'Archivo',sans-serif;letter-spacing:.14em;text-transform:uppercase;align-self:flex-start" style-hover="background:#f2c015">exporter mes données</button>
+        </div>
+        <div style="padding:18px 18px">
+          <button onClick="{{ onLogout }}" style="min-height:44px;border:1px solid #0a0a0a;background:transparent;cursor:pointer;padding:0 13px;font:800 9px 'Archivo',sans-serif;letter-spacing:.14em;text-transform:uppercase;border-color:#e8402a;color:#e8402a" style-hover="background:#e8402a;color:#fbfbf9">se déconnecter</button>
+        </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ authed }}" hint-placeholder-val="{{ true }}">
+    <div style="display:flex;border-top:1px solid #0a0a0a;flex-shrink:0">
+      <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="3">
+        <button onClick="{{ t.onClick }}" style="flex:1;border:none;border-left:{{ t.edge }};background:{{ t.bg }};color:{{ t.fg }};cursor:pointer;padding:15px 0;font:{{ t.font }};letter-spacing:.18em;text-transform:uppercase" style-hover="background:#f2c015;color:#0a0a0a">{{ t.label }}</button>
+      </sc-for>
+    </div>
+    </sc-if>
+
+  </div>
+</div>
+
+<sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
+  <div style="position:fixed;left:50%;bottom:28px;transform:translateX(-50%);background:#0a0a0a;color:#fbfbf9;padding:11px 16px;font:600 9.5px 'Archivo',sans-serif;letter-spacing:.16em;text-transform:uppercase;z-index:40">{{ toast }}</div>
+</sc-if>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:430,&quot;height&quot;:920}}">
+const TODAY = new Date(2026, 9, 5);
+const RED = '#e8402a';
+const YELLOW = '#f2c015';
+const INK = '#0a0a0a';
+const PAPER = '#fbfbf9';
+const GREY = '#6b6b66';
+const NOPROJ = '__none';
+const MSHORT = ['JANV', 'FÉVR', 'MARS', 'AVR', 'MAI', 'JUIN', 'JUIL', 'AOÛT', 'SEPT', 'OCT', 'NOV', 'DÉC'];
+const MLONG = ['JANVIER', 'FÉVRIER', 'MARS', 'AVRIL', 'MAI', 'JUIN', 'JUILLET', 'AOÛT', 'SEPTEMBRE', 'OCTOBRE', 'NOVEMBRE', 'DÉCEMBRE'];
+const DAYS = ['DIM', 'LUN', 'MAR', 'MER', 'JEU', 'VEN', 'SAM'];
+const HEAD = ['LUN', 'MAR', 'MER', 'JEU', 'VEN', 'SAM', 'DIM'];
+const STORE = 'lefil.grille3.v1';
+const AUTH = 'lefil.auth.v1';
+
+const PAL = [
+  { hex: '#8f1d10', name: 'brique' }, { hex: '#9a5a10', name: 'ambre foncé' }, { hex: '#7a6a12', name: 'olive' },
+  { hex: '#1f5140', name: 'sapin' }, { hex: '#14555f', name: 'sarcelle foncé' }, { hex: '#1e3a7a', name: 'outremer' },
+  { hex: '#4d2f73', name: 'aubergine' }, { hex: '#6e2f52', name: 'prune' },
+  { hex: '#e8402a', name: 'rouge' }, { hex: '#e07f23', name: 'orange' }, { hex: '#f2c015', name: 'jaune' },
+  { hex: '#2f6f5e', name: 'vert' }, { hex: '#2a8a97', name: 'sarcelle' }, { hex: '#2f4f9e', name: 'bleu' },
+  { hex: '#7a4fa3', name: 'violet' }, { hex: '#b0466f', name: 'framboise' },
+  { hex: '#f3a79b', name: 'rose pâle' }, { hex: '#f5c48f', name: 'abricot' }, { hex: '#f7e08a', name: 'paille' },
+  { hex: '#9fc9ba', name: 'menthe' }, { hex: '#9fd0d8', name: 'ciel' }, { hex: '#a3b4e2', name: 'bleu pâle' },
+  { hex: '#c3aada', name: 'lilas' }, { hex: '#e8adc1', name: 'dragée' },
+  { hex: '#0a0a0a', name: 'encre' }, { hex: '#4a4a46', name: 'ardoise' },
+  { hex: '#8a6a3a', name: 'brun' }, { hex: '#9c9c98', name: 'gris' },
+];
+
+const PROJECTS = [
+  { id: 'sdb', name: 'Salle de bain' },
+  { id: 'news', name: 'Newsletter' },
+  { id: 'impots', name: 'Impôts 2026' },
+  { id: 'jardin', name: 'Jardin — terrasse' },
+  { id: 'velo', name: 'Vélo à réparer' },
+  { id: 'assur', name: 'Assurance habitation' },
+  { id: 'cv', name: 'Refonte du CV' },
+  { id: 'voyage', name: 'Voyage Lisbonne' },
+  { id: 'cave', name: 'Vider la cave' },
+  { id: 'banque', name: 'Rachat de crédit' },
+  { id: 'photo', name: 'Albums photo' },
+  { id: 'anniv', name: 'Anniversaire Léa' },
+  { id: 'garage', name: 'Garage — rangement' },
+  { id: 'mutuelle', name: 'Changer de mutuelle' },
+];
+
+function d(day, month) { return new Date(2026, month - 1, day); }
+
+const SEED = [
+  { id: 1, title: 'Plomberie — devis', project: 'sdb', due: d(2, 10),
+    body: "Nicolas passe jeudi pour le relevé. Il faut lui confirmer l'accès avant, et surtout comparer avec le devis de l'autre entreprise — l'écart était de presque 900 € sur la même prestation.",
+    tasks: [{ label: 'Rappeler le plombier', done: false, due: d(2, 10) }, { label: 'Comparer les 3 devis', done: false, due: d(9, 10) }, { label: 'Prendre les mesures', done: true, due: null }] },
+  { id: 5, title: 'Newsletter interne — relancer', project: 'news', due: d(5, 10),
+    body: "L'idée : un envoi mensuel, court, trois sujets max.",
+    tasks: [{ label: 'Écrire le brief', done: true, due: null }, { label: "Valider avec l'équipe", done: false, due: d(5, 10) }] },
+  { id: 3, title: 'Carrelage — choix', project: 'sdb', due: d(12, 10),
+    body: "Deux finitions en tête : grès mat gris clair, ou zellige blanc cassé.",
+    tasks: [{ label: 'Commander les échantillons', done: true, due: null }, { label: 'Trancher mat ou zellige', done: false, due: d(12, 10) }] },
+  { id: 7, title: 'Déclaration trimestrielle', project: 'impots', due: d(15, 10),
+    body: "Tout est prêt sauf le récapitulatif des frais de septembre.",
+    tasks: [{ label: 'Rassembler les justificatifs', done: false, due: d(13, 10) }, { label: 'Saisir en ligne', done: false, due: d(15, 10) }] },
+  { id: 10, title: 'Révision chaudière', project: null, due: d(28, 10), body: "Contrat annuel — prendre rendez-vous avant la fin du mois.", tasks: [] },
+  { id: 2, title: 'Contacts artisans', project: null, due: d(4, 10), body: "Plombier Nicolas · 06 12 44 21 08", tasks: [] },
+  { id: 4, title: 'Budget travaux', project: 'sdb', due: null, body: "Enveloppe max : 9 000 €. Déjà engagé : 1 200 €.", tasks: [] },
+  { id: 6, title: 'Point équipe — 2 oct.', project: 'news', due: null, body: "Léa reprend la partie éditoriale.", tasks: [] },
+  { id: 8, title: 'Idée : cloison vitrée', project: null, due: null, body: "Ça ouvrirait la pièce. À chiffrer.", tasks: [] },
+  { id: 11, title: 'Réserver le garage', project: 'garage', due: null, done: true, body: "Fait le 28 septembre.", tasks: [] },
+  { id: 12, title: 'Commander les dalles', project: 'jardin', due: d(9, 10), body: "Trois palettes, livraison sur rue.", tasks: [] },
+  { id: 13, title: 'Changer les plaquettes', project: 'velo', due: d(1, 10), body: "Le frein arrière ne mord plus.", tasks: [] },
+  { id: 14, title: 'Comparer les garanties', project: 'assur', due: d(20, 10), body: "Reconduction le 1er décembre.", tasks: [] },
+  { id: 15, title: 'Réécrire la partie expérience', project: 'cv', due: null, body: "Deux lignes par poste maximum.", tasks: [] },
+  { id: 16, title: 'Réserver les billets', project: 'voyage', due: d(18, 10), body: "Départ visé : première semaine de février.", tasks: [] },
+  { id: 17, title: 'Louer une benne', project: 'cave', due: null, body: "Deux week-ends si on trie avant.", tasks: [] },
+  { id: 18, title: 'Rassembler les offres', project: 'banque', due: d(30, 10), body: "Une seule banque a répondu.", tasks: [] },
+];
+
+const DATE_CHOICES = [
+  { key: 'today', label: "auj.", offset: 0 },
+  { key: 'tom', label: 'demain', offset: 1 },
+  { key: 'week', label: '+7 j', offset: 7 },
+  { key: 'month', label: '+30 j', offset: 30 },
+  { key: 'none', label: 'sans date', offset: null },
+];
+
+class Component extends DCLogic {
+  state = {
+    notes: SEED.map(n => ({ ...n, done: !!n.done, body: n.body || '', tasks: n.tasks.map(t => ({ ...t })) })),
+    projects: PROJECTS.slice(),
+    porder: PROJECTS.map(p => p.id),
+    colors: {},
+    tab: 'fil', openProj: null, openLot: null, lateOnly: false,
+    draft: '', taskDraft: '', picker: false, tdate: null, confirmDel: null, confirmLot: false,
+    calMonth: 9, calDay: 5, toast: null, nextId: 100,
+    compte: false, cOld: '', cNew: '', cNew2: '', cErr: '', cOk: '', user: null, authMode: 'login', aEmail: '', aPw: '', aPw2: '', aErr: '', aShow: false, sentTo: '', acctOpen: false, sync: 'ok', offline: false, pending: 0,
+  };
+
+  readAuth() { try { return JSON.parse(localStorage.getItem(AUTH) || '{}') || {}; } catch (err) { return {}; } }
+  writeAuth(d) { try { localStorage.setItem(AUTH, JSON.stringify(d)); } catch (err) { /* noop */ } }
+  hashPw(str) { let h = 5381; for (let i = 0; i < str.length; i++) h = ((h << 5) + h + str.charCodeAt(i)) | 0; return (h >>> 0).toString(36); }
+  initAuth() { const d = this.readAuth(); if (d.session) this.setState({ user: d.session }); }
+  switchAuth(mode) { this.setState({ authMode: mode, aErr: '', aPw: '', aPw2: '' }); }
+
+  submitAuth = e => {
+    if (e && e.key && e.key !== 'Enter') return;
+    const s = this.state;
+    if (s.authMode === 'sent') { this.switchAuth('login'); return; }
+    const email = s.aEmail.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { this.setState({ aErr: 'adresse e-mail invalide' }); return; }
+    const d = this.readAuth();
+    d.accounts = d.accounts || {};
+    if (s.authMode === 'forgot') { this.setState({ authMode: 'sent', sentTo: email, aErr: '' }); return; }
+    if (s.authMode === 'signup') {
+      if (d.accounts[email]) { this.setState({ aErr: 'un compte existe déjà avec cette adresse' }); return; }
+      if (s.aPw.length < 8) { this.setState({ aErr: 'mot de passe : 8 caractères minimum' }); return; }
+      if (s.aPw !== s.aPw2) { this.setState({ aErr: 'les deux mots de passe diffèrent' }); return; }
+      d.accounts[email] = this.hashPw(s.aPw);
+    } else if (!d.accounts[email] || d.accounts[email] !== this.hashPw(s.aPw)) {
+      this.setState({ aErr: 'e-mail ou mot de passe incorrect' });
+      return;
+    }
+    d.session = email;
+    this.writeAuth(d);
+    this.setState({ user: email, aPw: '', aPw2: '', aErr: '', authMode: 'login', aShow: false });
+  };
+
+  logout() {
+    const d = this.readAuth();
+    d.session = null;
+    this.writeAuth(d);
+    this.setState({ user: null, acctOpen: false, authMode: 'login', aPw: '', aPw2: '' });
+  }
+
+  markSync() {
+    const s = this.state;
+    if (s.notes === this._ln && s.projects === this._lp && s.colors === this._lc && s.porder === this._lo) return;
+    const first = this._ln === undefined;
+    this._ln = s.notes; this._lp = s.projects; this._lc = s.colors; this._lo = s.porder;
+    if (first || !s.user) return;
+    if (s.offline) { this.setState(st => ({ pending: st.pending + 1 })); return; }
+    this.setState({ sync: 'saving' });
+    clearTimeout(this._sy);
+    this._sy = setTimeout(() => this.setState({ sync: 'ok' }), 700);
+  }
+
+  toggleOffline() {
+    if (this.state.offline) {
+      this.setState({ offline: false, sync: 'saving' });
+      clearTimeout(this._sy);
+      this._sy = setTimeout(() => this.setState({ sync: 'ok', pending: 0 }), 900);
+    } else {
+      this.setState({ offline: true });
+    }
+  }
+
+  deviceName() {
+    const ua = (typeof navigator !== 'undefined' && navigator.userAgent) || '';
+    const os = /iPhone/.test(ua) ? 'iPhone' : /iPad/.test(ua) ? 'iPad' : /Android/.test(ua) ? 'Android' : /Mac/.test(ua) ? 'Mac' : /Windows/.test(ua) ? 'Windows' : 'Appareil';
+    const br = /Firefox/.test(ua) ? 'Firefox' : /Edg/.test(ua) ? 'Edge' : /Chrome/.test(ua) ? 'Chrome' : /Safari/.test(ua) ? 'Safari' : 'navigateur';
+    return os + ' · ' + br;
+  }
+
+  changePw = e => {
+    if (e && e.key && e.key !== 'Enter') return;
+    const s = this.state;
+    const d = this.readAuth();
+    d.accounts = d.accounts || {};
+    if (d.accounts[s.user] !== this.hashPw(s.cOld)) { this.setState({ cErr: 'mot de passe actuel incorrect', cOk: '' }); return; }
+    if (s.cNew.length < 8) { this.setState({ cErr: 'nouveau mot de passe : 8 caractères minimum', cOk: '' }); return; }
+    if (s.cNew !== s.cNew2) { this.setState({ cErr: 'les deux mots de passe diffèrent', cOk: '' }); return; }
+    d.accounts[s.user] = this.hashPw(s.cNew);
+    this.writeAuth(d);
+    this.setState({ cOld: '', cNew: '', cNew2: '', cErr: '', cOk: 'mot de passe modifié' });
+  };
+
+  exportData() {
+    const s = this.state;
+    const data = {
+      exportedAt: new Date().toISOString(), account: s.user,
+      projects: s.projects.map(p => ({ ...p, color: this.projColor(p.id) })),
+      order: s.porder,
+      lots: s.notes.map(n => ({
+        id: n.id, title: n.title, project: n.project, body: n.body, done: !!n.done,
+        due: n.due ? n.due.toISOString().slice(0, 10) : null,
+        tasks: n.tasks.map(t => ({ label: t.label, done: !!t.done, due: t.due ? t.due.toISOString().slice(0, 10) : null })),
+      })),
+    };
+    const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));
+    const a = document.createElement('a');
+    a.href = url; a.download = 'le-fil-export.json';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    this.flash('export téléchargé');
+  }
+
+  compteVals() {
+    const s = this.state;
+    return {
+      cOld: s.cOld, cNew: s.cNew, cNew2: s.cNew2,
+      onCOld: e => this.setState({ cOld: e.target.value, cErr: '', cOk: '' }),
+      onCNew: e => this.setState({ cNew: e.target.value, cErr: '', cOk: '' }),
+      onCNew2: e => this.setState({ cNew2: e.target.value, cErr: '', cOk: '' }),
+      changePw: this.changePw,
+      hasCErr: !!s.cErr, cErr: s.cErr,
+      hasCOk: !!s.cOk, cOk: s.cOk,
+      deviceName: this.deviceName(),
+      onExport: () => this.exportData(),
+      onOthers: () => this.flash('autres appareils déconnectés'),
+      openCompte: () => this.setState({ compte: true, acctOpen: false, cErr: '', cOk: '' }),
+      closeCompte: () => this.setState({ compte: false, cOld: '', cNew: '', cNew2: '' }),
+      compteOpen: !!s.compte && !!s.user,
+      compteStats: s.projects.length + ' projets · ' + s.notes.length + ' lots · ' + s.notes.reduce((a, n) => a + n.tasks.length, 0) + ' tâches',
+    };
+  }
+
+  authVals() {
+    const s = this.state;
+    const m = s.authMode;
+    return {
+      authed: !!s.user,
+      needAuth: !s.user,
+      authTitle: { login: 'Se connecter', signup: 'Créer un compte', forgot: 'Mot de passe oublié', sent: 'Vérifie ta boîte' }[m],
+      authSub: {
+        login: 'Retrouve tes projets sur tous tes écrans.',
+        signup: 'Une adresse e-mail et un mot de passe suffisent.',
+        forgot: 'Tu recevras un lien pour choisir un nouveau mot de passe.',
+        sent: 'Lien de réinitialisation envoyé à ' + s.sentTo + '. Il reste valable 30 minutes.',
+      }[m],
+      showEmail: m !== 'sent',
+      showPw: m === 'login' || m === 'signup',
+      showPw2: m === 'signup',
+      isLogin: m === 'login',
+      aEmail: s.aEmail, aPw: s.aPw, aPw2: s.aPw2,
+      onAEmail: e => this.setState({ aEmail: e.target.value, aErr: '' }),
+      onAPw: e => this.setState({ aPw: e.target.value, aErr: '' }),
+      onAPw2: e => this.setState({ aPw2: e.target.value, aErr: '' }),
+      pwType: s.aShow ? 'text' : 'password',
+      pwToggle: s.aShow ? 'masquer' : 'afficher',
+      togglePw: () => this.setState(st => ({ aShow: !st.aShow })),
+      pwHint: m === 'signup' ? '8 caractères minimum' : '',
+      hasErr: !!s.aErr,
+      aErr: s.aErr,
+      authCta: { login: 'se connecter', signup: 'créer le compte', forgot: 'envoyer le lien', sent: 'retour à la connexion' }[m],
+      submitAuth: this.submitAuth,
+      goForgot: () => this.switchAuth('forgot'),
+      showSwitch: m !== 'sent',
+      switchText: m === 'signup' || m === 'forgot' ? 'déjà un compte ?' : 'pas encore de compte ?',
+      switchCta: m === 'signup' || m === 'forgot' ? 'se connecter' : 'créer un compte',
+      onSwitch: () => this.switchAuth(m === 'login' ? 'signup' : 'login'),
+      authColors: PAL.slice(8, 16).map(c => ({ hex: c.hex })),
+      userEmail: s.user || '',
+      acctOpen: !!s.acctOpen,
+      toggleAcct: () => this.setState(st => ({ acctOpen: !st.acctOpen })),
+      syncDot: s.offline ? RED : (s.sync === 'saving' ? YELLOW : '#2f6f5e'),
+      syncLabel: s.offline ? 'hors ligne · ' + s.pending + ' en attente' : (s.sync === 'saving' ? 'synchronisation…' : 'synchronisé'),
+      syncFg: s.offline ? RED : GREY,
+      offlineLabel: s.offline ? 'repasser en ligne' : 'simuler hors ligne',
+      onOffline: () => this.toggleOffline(),
+      onLogout: () => this.logout(),
+    };
+  }
+
+  componentDidMount() { this.load(); this.initAuth(); }
+  componentDidUpdate() { this.persist(); this.markSync(); }
+  componentWillUnmount() { clearTimeout(this._t); clearTimeout(this._p); }
+
+  persist() {
+    clearTimeout(this._p);
+    this._p = setTimeout(() => {
+      const s = this.state;
+      let base = {};
+      try { base = JSON.parse(localStorage.getItem(STORE) || '{}') || {}; } catch (err) { base = {}; }
+      try {
+        localStorage.setItem(STORE, JSON.stringify(Object.assign({}, base, {
+          v: 1,
+          projects: s.projects, porder: s.porder, colors: s.colors, nextId: s.nextId,
+          notes: s.notes.map(n => ({
+            id: n.id, title: n.title, project: n.project, body: n.body, done: !!n.done,
+            due: n.due ? n.due.toISOString() : null,
+            tasks: n.tasks.map(t => ({ label: t.label, done: !!t.done, due: t.due ? t.due.toISOString() : null })),
+          })),
+        })));
+      } catch (err) { /* quota */ }
+    }, 250);
+  }
+
+  load() {
+    let d2 = null;
+    try { d2 = JSON.parse(localStorage.getItem(STORE) || 'null'); } catch (err) { return; }
+    if (!d2 || d2.v !== 1 || !Array.isArray(d2.notes)) return;
+    const dt = v => v ? new Date(v) : null;
+    this.setState({
+      projects: Array.isArray(d2.projects) && d2.projects.length ? d2.projects : PROJECTS.slice(),
+      porder: Array.isArray(d2.porder) && d2.porder.length ? d2.porder : PROJECTS.map(p => p.id),
+      colors: d2.colors || {},
+      nextId: d2.nextId || 100,
+      notes: d2.notes.map(n => ({
+        id: n.id, title: n.title, project: n.project || null, body: n.body || '', done: !!n.done,
+        due: dt(n.due),
+        tasks: (n.tasks || []).map(t => ({ label: t.label, done: !!t.done, due: dt(t.due) })),
+      })),
+    });
+  }
+
+  flash(msg) {
+    this.setState({ toast: msg });
+    clearTimeout(this._t);
+    this._t = setTimeout(() => this.setState({ toast: null }), 2000);
+  }
+
+  ink(hex) {
+    const h = hex.replace('#', '');
+    const r = parseInt(h.slice(0, 2), 16), g = parseInt(h.slice(2, 4), 16), b = parseInt(h.slice(4, 6), 16);
+    return (0.299 * r + 0.587 * g + 0.114 * b) > 150 ? INK : PAPER;
+  }
+
+  projColor(key) {
+    if (!key || key === NOPROJ) return '#9c9c98';
+    const c = this.state.colors[key];
+    if (c) return c;
+    const i = this.state.projects.findIndex(p => p.id === key);
+    return i < 0 ? '#9c9c98' : PAL[(i + 8) % PAL.length].hex;
+  }
+
+  short(t) {
+    let s = t.split(/ — | – | - |:|\(|,/)[0].trim();
+    const stop = ['le', 'la', 'les', 'de', 'des', 'du', 'un', 'une', "l'", "d'", 'à', 'au', 'aux', 'et', 'en', 'pour', 'sur', 'avec'];
+    const words = s.split(/\s+/).filter(w => stop.indexOf(w.toLowerCase()) < 0);
+    s = words.slice(0, 2).join(' ') || s;
+    return s.length > 11 ? s.slice(0, 10).trimEnd() + '.' : s;
+  }
+
+  addDays(date, n) { return new Date(date.getFullYear(), date.getMonth(), date.getDate() + n); }
+  days(date) { return date ? Math.round((date - TODAY) / 86400000) : null; }
+  fmt(date) { return date ? date.getDate() + ' ' + MSHORT[date.getMonth()] : ''; }
+  same(a, b) { return a && b && a.toDateString() === b.toDateString(); }
+
+  urgency(n) {
+    if (n.done) return 'done';
+    const dd = this.days(n.due);
+    if (dd === null) return 'none';
+    if (dd < 0) return 'late';
+    if (dd === 0) return 'today';
+    if (dd <= 6) return 'week';
+    return 'soon';
+  }
+
+  lotMeta(n) {
+    const p = n.project ? (this.state.projects.find(x => x.id === n.project) || {}).name : 'sans projet';
+    const u = this.urgency(n);
+    const dd = this.days(n.due);
+    const date = u === 'late' ? Math.abs(dd) + ' j de retard' : (u === 'today' ? "aujourd'hui" : (n.due ? this.fmt(n.due) : 'sans date'));
+    const t = n.tasks.length ? ' · ' + n.tasks.filter(x => x.done).length + '/' + n.tasks.length + ' tâches' : '';
+    return date + ' · ' + p + t;
+  }
+
+  toggleDone(id) {
+    this.setState(st => ({ notes: st.notes.map(n => n.id === id ? { ...n, done: !n.done } : n) }));
+    const was = (this.state.notes.find(n => n.id === id) || {}).done;
+    this.flash(was ? 'remis dans le fil' : 'terminé');
+  }
+
+  toggleTask(i) {
+    const id = this.state.openLot;
+    this.setState(st => ({ notes: st.notes.map(n => n.id === id
+      ? { ...n, tasks: n.tasks.map((t, j) => j === i ? { ...t, done: !t.done } : t) } : n) }));
+  }
+
+  removeTask(i) {
+    const id = this.state.openLot;
+    this.setState(st => ({
+      notes: st.notes.map(n => n.id === id ? { ...n, tasks: n.tasks.filter((t, j) => j !== i) } : n),
+      tdate: null,
+    }));
+  }
+
+  setTaskDue(i, key) {
+    const c = DATE_CHOICES.find(x => x.key === key);
+    const due = c.offset === null ? null : this.addDays(TODAY, c.offset);
+    const id = this.state.openLot;
+    this.setState(st => ({
+      notes: st.notes.map(n => n.id === id ? { ...n, tasks: n.tasks.map((t, j) => j === i ? { ...t, due } : t) } : n),
+      tdate: null,
+    }));
+  }
+
+  setLotDue(key) {
+    const c = DATE_CHOICES.find(x => x.key === key);
+    const due = c.offset === null ? null : this.addDays(TODAY, c.offset);
+    const id = this.state.openLot;
+    this.setState(st => ({ notes: st.notes.map(n => n.id === id ? { ...n, due } : n) }));
+    this.flash(due ? 'échéance ' + this.fmt(due) : 'sans date');
+  }
+
+  addTask = e => {
+    if (e.key && e.key !== 'Enter') return;
+    const label = this.state.taskDraft.trim();
+    if (!label) return;
+    const id = this.state.openLot;
+    this.setState(st => ({
+      notes: st.notes.map(n => n.id === id ? { ...n, tasks: n.tasks.concat([{ label, done: false, due: null }]) } : n),
+      taskDraft: '',
+    }));
+  };
+
+  addLot = e => {
+    if (e.key && e.key !== 'Enter') return;
+    const title = this.state.draft.trim();
+    if (!title) return;
+    const id = this.state.nextId;
+    const target = this.state.tab === 'projet' ? this.state.openProj : null;
+    this.setState(st => ({
+      notes: [{ id, title, project: target === NOPROJ ? null : target, due: null, done: false, body: '', tasks: [] }].concat(st.notes),
+      draft: '', nextId: st.nextId + 1, openLot: id, tab: 'lot', from: st.tab,
+    }));
+  };
+
+  addProject = e => {
+    if (e.key && e.key !== 'Enter') return;
+    const name = this.state.pdraft ? this.state.pdraft.trim() : '';
+    if (!name) return;
+    const id = 'p' + Date.now().toString(36);
+    const used = this.state.projects.map(p => this.projColor(p.id));
+    const free = PAL.slice(8, 24).find(c => used.indexOf(c.hex) < 0) || PAL[8 + (this.state.projects.length % 16)];
+    this.setState(st => ({
+      projects: st.projects.concat([{ id, name }]),
+      porder: st.porder.concat([id]),
+      colors: Object.assign({}, st.colors, { [id]: free.hex }),
+      pdraft: '', openProj: id, tab: 'projet', picker: false,
+    }));
+    this.flash('projet créé');
+  };
+
+  deleteProject() {
+    const id = this.state.openProj;
+    if (!id || id === NOPROJ) return;
+    if (!this.state.confirmDel) { this.setState({ confirmDel: id }); return; }
+    this.setState(st => {
+      const colors = Object.assign({}, st.colors);
+      delete colors[id];
+      return {
+        projects: st.projects.filter(p => p.id !== id),
+        porder: st.porder.filter(k => k !== id),
+        colors, confirmDel: null, picker: false, openProj: null, tab: 'projets',
+        notes: st.notes.map(n => n.project === id ? { ...n, project: null } : n),
+      };
+    });
+    this.flash('projet supprimé — lots sans projet');
+  }
+
+  deleteLot() {
+    const id = this.state.openLot;
+    if (!this.state.confirmLot) { this.setState({ confirmLot: true }); return; }
+    this.setState(st => ({
+      notes: st.notes.filter(n => n.id !== id),
+      openLot: null, confirmLot: false, tab: st.from || 'fil',
+    }));
+    this.flash('lot supprimé');
+  }
+
+  openLotId(id, from) { this.setState({ openLot: id, tab: 'lot', from, tdate: null, confirmLot: false }); }
+
+  renderVals() {
+    const s = this.state;
+    const lot = s.notes.find(n => n.id === s.openLot) || null;
+    const proj = s.openProj === NOPROJ ? { id: NOPROJ, name: 'Sans projet' } : (s.projects.find(p => p.id === s.openProj) || null);
+    const rank = { late: 0, today: 1, week: 2, soon: 3, none: 4, done: 5 };
+
+    /* ---- fil ---- */
+    const filList = s.notes.filter(n => !s.lateOnly || this.urgency(n) === 'late')
+      .slice().sort((a, b) => (rank[this.urgency(a)] - rank[this.urgency(b)]) || ((a.due || 0) - (b.due || 0)));
+    const GROUPS = [
+      { key: 'late', label: 'en retard', fg: RED },
+      { key: 'today', label: "aujourd'hui", fg: INK },
+      { key: 'week', label: 'cette semaine', fg: INK },
+      { key: 'soon', label: 'plus tard', fg: INK },
+      { key: 'none', label: 'sans date', fg: GREY },
+      { key: 'done', label: 'terminés', fg: GREY },
+    ];
+    const lotRow = (n, from) => {
+      const u = this.urgency(n);
+      return {
+        isHead: false, isLot: true,
+        title: n.title,
+        meta: this.lotMeta(n),
+        color: this.projColor(n.project || NOPROJ),
+        titleFg: n.done ? GREY : INK,
+        deco: n.done ? 'line-through' : 'none',
+        metaFg: u === 'late' ? RED : GREY,
+        boxBorder: u === 'late' ? RED : INK,
+        boxBg: n.done ? INK : 'transparent',
+        mark: n.done ? '✓' : '',
+        onToggle: () => this.toggleDone(n.id),
+        onOpen: () => this.openLotId(n.id, from),
+      };
+    };
+    const filRows = [];
+    GROUPS.forEach(g => {
+      const ns = filList.filter(n => this.urgency(n) === g.key);
+      if (!ns.length) return;
+      filRows.push({ isHead: true, isLot: false, label: g.label + ' · ' + ns.length, headFg: g.fg });
+      ns.forEach(n => filRows.push(lotRow(n, 'fil')));
+    });
+
+    /* ---- projets ---- */
+    const tiles = s.porder
+      .map(k => s.projects.find(p => p.id === k))
+      .filter(Boolean)
+      .map(p => {
+        const ns = s.notes.filter(n => n.project === p.id && !n.done);
+        const col = this.projColor(p.id);
+        return {
+          name: p.name, count: String(ns.length), lotLabel: ns.length > 1 ? 'lots' : 'lot',
+          color: col, on: this.ink(col),
+          onOpen: () => this.setState({ openProj: p.id, tab: 'projet', picker: false, confirmDel: null }),
+        };
+      });
+    const npLots = s.notes.filter(n => !n.project && !n.done);
+
+    /* ---- projet ouvert ---- */
+    const projNotes = proj
+      ? s.notes.filter(n => (proj.id === NOPROJ ? !n.project : n.project === proj.id))
+        .slice().sort((a, b) => (rank[this.urgency(a)] - rank[this.urgency(b)]) || ((a.due || 0) - (b.due || 0)))
+      : [];
+    const projLate = projNotes.filter(n => this.urgency(n) === 'late').length;
+    const pcol = proj ? this.projColor(proj.id) : INK;
+    const projLots = projNotes.map(n => {
+      const u = this.urgency(n);
+      const dd = this.days(n.due);
+      return {
+        title: n.title,
+        color: this.projColor(n.project || NOPROJ),
+        titleFg: n.done ? GREY : INK,
+        deco: n.done ? 'line-through' : 'none',
+        dateTop: n.due ? this.fmt(n.due) : '—',
+        dateSub: u === 'late' ? '−' + Math.abs(dd) + ' J' : (u === 'today' ? 'CE JOUR' : (n.due ? DAYS[n.due.getDay()] : 'SANS DATE')),
+        dateBg: u === 'late' ? RED : 'transparent',
+        dateFg: u === 'late' ? PAPER : INK,
+        dateSubFg: u === 'late' ? PAPER : GREY,
+        taskLine: n.tasks.length ? n.tasks.filter(t => t.done).length + '/' + n.tasks.length + ' tâches' : 'aucune tâche',
+        boxBorder: u === 'late' ? RED : INK,
+        boxBg: n.done ? INK : 'transparent',
+        mark: n.done ? '✓' : '',
+        onToggle: () => this.toggleDone(n.id),
+        onOpen: () => this.openLotId(n.id, 'projet'),
+      };
+    });
+
+    /* ---- lot ouvert ---- */
+    const lu = lot ? this.urgency(lot) : null;
+    const lcol = lot ? this.projColor(lot.project || NOPROJ) : INK;
+    const lotTasks = lot ? lot.tasks.map((t, i) => {
+      const cur = k => k === 'none' ? !t.due : (t.due && this.days(t.due) === (DATE_CHOICES.find(c => c.key === k) || {}).offset);
+      return {
+        label: t.label,
+        fg: t.done ? GREY : INK,
+        deco: t.done ? 'line-through' : 'none',
+        border: t.due && this.days(t.due) < 0 && !t.done ? RED : INK,
+        box: t.done ? INK : 'transparent',
+        mark: t.done ? '✓' : '',
+        dueLabel: t.due ? (this.days(t.due) < 0 ? 'retard ' + Math.abs(this.days(t.due)) + 'J' : this.fmt(t.due)) : '+ date',
+        dueFg: t.due && this.days(t.due) < 0 && !t.done ? RED : GREY,
+        picking: s.tdate === i,
+        onToggle: () => this.toggleTask(i),
+        onPickDate: () => this.setState(st => ({ tdate: st.tdate === i ? null : i })),
+        onRemove: () => this.removeTask(i),
+        choices: DATE_CHOICES.map(c => ({
+          label: c.label,
+          fg: cur(c.key) ? INK : INK,
+          bg: cur(c.key) ? YELLOW : PAPER,
+          border: cur(c.key) ? INK : '#cfcfc8',
+          onClick: () => this.setTaskDue(i, c.key),
+        })),
+      };
+    }) : [];
+
+    const moveTargets = lot ? [{ id: null, name: 'sans projet' }]
+      .concat(s.porder.map(k => s.projects.find(p => p.id === k)).filter(Boolean))
+      .map(p => {
+        const on = (lot.project || null) === (p.id || null);
+        const col = p.id ? this.projColor(p.id) : '#9c9c98';
+        return {
+          name: p.name,
+          bg: on ? col : PAPER,
+          fg: on ? this.ink(col) : INK,
+          border: col,
+          onClick: () => {
+            const id = lot.id;
+            this.setState(st => ({ notes: st.notes.map(n => n.id === id ? { ...n, project: p.id || null } : n) }));
+            this.flash('déplacé vers ' + p.name);
+          },
+        };
+      }) : [];
+
+    /* ---- calendrier ---- */
+    const first = new Date(2026, s.calMonth, 1);
+    const offset = (first.getDay() + 6) % 7;
+    const calRows = [];
+    for (let w = 0; w < 6; w++) {
+      const cells = [];
+      for (let i = 0; i < 7; i++) {
+        const date = new Date(2026, s.calMonth, 1 - offset + w * 7 + i);
+        const inMonth = date.getMonth() === s.calMonth;
+        const isToday = this.same(date, TODAY);
+        const sel = date.getMonth() === s.calMonth && date.getDate() === s.calDay;
+        const items = s.notes.filter(n => n.due && this.same(n.due, date));
+        const chips = items.map(n => {
+          const col = this.projColor(n.project || NOPROJ);
+          return { label: this.short(n.title), bg: sel ? PAPER : col, fg: sel ? INK : this.ink(col), edge: this.urgency(n) === 'late' ? RED : col, font: "600 8.5px 'Archivo Narrow',sans-serif" };
+        });
+        if (s.calTasks !== false) {
+          s.notes.forEach(n => n.tasks.forEach(t => {
+            if (!t.due || !this.same(t.due, date)) return;
+            const col = this.projColor(n.project || NOPROJ);
+            chips.push({ label: this.short(t.label), bg: sel ? '#2a2a28' : 'transparent', fg: sel ? PAPER : (t.done ? GREY : INK), edge: this.days(t.due) < 0 && !t.done ? RED : col, font: "400 8px 'Archivo Narrow',sans-serif" });
+          }));
+        }
+        const max = s.calTall ? 8 : 3;
+        cells.push({
+          num: String(date.getDate()),
+          numFg: sel ? PAPER : (!inMonth ? '#c4c4bd' : (isToday ? RED : INK)),
+          font: (sel || isToday ? '800 13px ' : '500 13px ') + "'Archivo',sans-serif",
+          bg: sel ? INK : (!inMonth ? '#f4f4ef' : (isToday ? '#fdf4d6' : PAPER)),
+          chips: chips.slice(0, max),
+          hasMore: chips.length > max,
+          more: '+' + (chips.length - max),
+          onClick: () => this.setState({ calMonth: date.getMonth(), calDay: date.getDate() }),
+        });
+      }
+      calRows.push({ cells });
+      const last = new Date(2026, s.calMonth, 1 - offset + w * 7 + 6);
+      if (last.getMonth() !== s.calMonth && w >= 4) break;
+    }
+    const dayDate = new Date(2026, s.calMonth, s.calDay);
+    const dayNotes = s.notes.filter(n => n.due && this.same(n.due, dayDate));
+    const dayTasks = [];
+    s.notes.forEach(n => n.tasks.forEach(t => { if (t.due && this.same(t.due, dayDate)) dayTasks.push({ n, t }); }));
+    const dayRows = dayNotes.map(n => {
+      const u = this.urgency(n);
+      return {
+        title: n.title,
+        meta: this.lotMeta(n),
+        color: this.projColor(n.project || NOPROJ),
+        titleFg: n.done ? GREY : INK,
+        deco: n.done ? 'line-through' : 'none',
+        metaFg: u === 'late' ? RED : GREY,
+        onOpen: () => this.openLotId(n.id, 'cal'),
+      };
+    }).concat(s.calTasks !== false ? dayTasks.map(({ n, t }) => ({
+      title: '↳ ' + t.label,
+      meta: 'tâche · ' + n.title,
+      color: this.projColor(n.project || NOPROJ),
+      titleFg: t.done ? GREY : INK,
+      deco: t.done ? 'line-through' : 'none',
+      metaFg: this.days(t.due) < 0 && !t.done ? RED : GREY,
+      onOpen: () => this.openLotId(n.id, 'cal'),
+    })) : []);
+
+    const tabs = [
+      { key: 'fil', label: 'fil' },
+      { key: 'projets', label: 'projets' },
+      { key: 'cal', label: 'calendrier' },
+    ].map((t, i) => {
+      const on = s.tab === t.key || (t.key === 'projets' && s.tab === 'projet') || (t.key === 'fil' && s.tab === 'lot' && s.from === 'fil') || (t.key === 'cal' && s.tab === 'lot' && s.from === 'cal');
+      return {
+        label: t.label,
+        bg: on ? INK : 'transparent',
+        fg: on ? PAPER : GREY,
+        font: (on ? '800 9.5px ' : '600 9.5px ') + "'Archivo',sans-serif",
+        edge: i === 0 ? 'none' : '1px solid #0a0a0a',
+        onClick: () => this.setState({ tab: t.key, openLot: t.key === 'lot' ? s.openLot : null, compte: false }),
+      };
+    });
+
+    const lateCount = s.notes.filter(n => this.urgency(n) === 'late').length;
+
+    return {
+      ...this.authVals(),
+      ...this.compteVals(),
+      syncLabel: s.offline ? 'hors ligne' + (s.pending ? ' · ' + s.pending : '') : (s.sync === 'saving' ? 'synchro…' : 'synchronisé'),
+      todayShort: DAYS[TODAY.getDay()] + ' ' + TODAY.getDate() + ' ' + MSHORT[TODAY.getMonth()],
+      toast: s.toast,
+      tabs,
+      isFil: !!s.user && !s.compte && s.tab === 'fil',
+      isProjets: !!s.user && !s.compte && s.tab === 'projets',
+      isProjet: !!s.user && !s.compte && s.tab === 'projet',
+      isLot: !!s.user && !s.compte && s.tab === 'lot',
+      isCal: !!s.user && !s.compte && s.tab === 'cal',
+
+      filRows, filEmpty: filRows.length === 0,
+      filCount: s.notes.filter(n => !n.done).length + ' lots ouverts',
+      lateCount: String(lateCount),
+      lateBg: s.lateOnly ? RED : 'transparent',
+      lateFg: s.lateOnly ? PAPER : INK,
+      toggleLate: () => this.setState(st => ({ lateOnly: !st.lateOnly })),
+
+      projectTiles: tiles,
+      projCount: String(s.projects.length),
+      npCount: String(npLots.length),
+      npLabel: npLots.length > 1 ? 'lots' : 'lot',
+      openNoProj: () => this.setState({ openProj: NOPROJ, tab: 'projet', picker: false }),
+      pdraft: s.pdraft || '',
+      onPdraft: e => this.setState({ pdraft: e.target.value }),
+      onPdraftKey: this.addProject,
+      addProject: this.addProject,
+
+      projName: proj ? proj.name : '',
+      projColor: pcol,
+      projOn: this.ink(pcol),
+      projCountLots: String(projNotes.filter(n => !n.done).length),
+      projMeta: (projNotes.length > 1 ? 'lots' : 'lot') + (projLate ? ' · ' + projLate + ' en retard' : ''),
+      projLots, projEmpty: projLots.length === 0,
+      backToProjets: () => this.setState({ tab: 'projets', picker: false, confirmDel: null }),
+      pickerOpen: s.picker && proj && proj.id !== NOPROJ,
+      pickMark: s.picker ? '▴' : '▾',
+      togglePicker: () => this.setState(st => ({ picker: !st.picker, confirmDel: null })),
+      onRename: e => { const v = e.target.value; const id = s.openProj; this.setState(st => ({ projects: st.projects.map(p => p.id === id ? { ...p, name: v } : p) })); },
+      swatches: PAL.map(c => ({
+        hex: c.hex, name: c.name,
+        border: pcol === c.hex ? '2px solid #0a0a0a' : '1px solid rgba(10,10,10,.18)',
+        onClick: () => { const id = s.openProj; this.setState(st => ({ colors: Object.assign({}, st.colors, { [id]: c.hex }) })); },
+      })),
+      delLabel: s.confirmDel ? 'confirmer la suppression ✕' : 'supprimer le projet',
+      delBg: s.confirmDel ? RED : 'transparent',
+      delFg: s.confirmDel ? PAPER : RED,
+      onDelete: () => this.deleteProject(),
+
+      draft: s.draft,
+      draftHint: proj && proj.id !== NOPROJ ? 'NOUVEAU LOT DANS ' + proj.name.toUpperCase() + '…' : 'NOUVEAU LOT…',
+      onDraft: e => this.setState({ draft: e.target.value }),
+      onDraftKey: this.addLot,
+      addLot: this.addLot,
+
+      lotTitle: lot ? lot.title : '',
+      onLotTitle: e => { const v = e.target.value; const id = s.openLot; this.setState(st => ({ notes: st.notes.map(n => n.id === id ? { ...n, title: v } : n) })); },
+      lotBody: lot ? lot.body : '',
+      onLotBody: e => { const v = e.target.value; const id = s.openLot; this.setState(st => ({ notes: st.notes.map(n => n.id === id ? { ...n, body: v } : n) })); },
+      lotColor: lcol,
+      lotProj: lot ? (lot.project ? (s.projects.find(p => p.id === lot.project) || {}).name : 'sans projet') : '',
+      lotProjFg: '#c9c9c4',
+      lotDueLabel: lot ? (lu === 'late' ? 'retard ' + Math.abs(this.days(lot.due)) + ' j' : (lot.due ? this.fmt(lot.due) : 'sans date')) : '',
+      lotDueFg: lu === 'late' ? RED : YELLOW,
+      lotTaskLine: lot && lot.tasks.length ? lot.tasks.filter(t => t.done).length + ' / ' + lot.tasks.length : '0',
+      lotTasks,
+      lotChoices: DATE_CHOICES.map(c => {
+        const cur = lot ? (c.key === 'none' ? !lot.due : (lot.due && this.days(lot.due) === c.offset)) : false;
+        return {
+          label: c.label,
+          fg: INK,
+          bg: cur ? YELLOW : PAPER,
+          border: cur ? INK : '#cfcfc8',
+          onClick: () => this.setLotDue(c.key),
+        };
+      }),
+      taskDraft: s.taskDraft,
+      onTaskDraft: e => this.setState({ taskDraft: e.target.value }),
+      onTaskKey: this.addTask,
+      moveTargets,
+      moveOpen: !!s.moveOpen,
+      moveMark: s.moveOpen ? '▴' : '▾',
+      toggleMove: () => this.setState(st => ({ moveOpen: !st.moveOpen })),
+      backLabel: s.from === 'projet' ? '← ' + (proj ? proj.name.toLowerCase() : 'projet') : (s.from === 'cal' ? '← calendrier' : '← le fil'),
+      backFromLot: () => this.setState({ tab: s.from || 'fil', openLot: null, tdate: null, confirmLot: false }),
+      delLotLabel: s.confirmLot ? 'confirmer ✕' : 'supprimer',
+      delLotBg: s.confirmLot ? RED : 'transparent',
+      delLotFg: s.confirmLot ? PAPER : RED,
+      onDeleteLot: () => this.deleteLot(),
+      doneLabel: lot && lot.done ? 'remettre dans le fil' : 'terminer le lot',
+      doneBg: lot && lot.done ? '#f1f1ec' : INK,
+      doneFg: lot && lot.done ? INK : PAPER,
+      onLotDone: () => this.toggleDone(s.openLot),
+      onPlusDay: () => {
+        const id = s.openLot;
+        const base = lot && lot.due ? lot.due : TODAY;
+        const due = this.addDays(base, 1);
+        this.setState(st => ({ notes: st.notes.map(n => n.id === id ? { ...n, due } : n) }));
+        this.flash('repoussé au ' + this.fmt(due));
+      },
+
+      calHead: HEAD,
+      calCellH: s.calTall ? '112px' : '74px',
+      toggleCalTall: () => this.setState(st => ({ calTall: !st.calTall })),
+      tallMark: s.calTall ? '↑' : '↓',
+      tallBg: s.calTall ? INK : 'transparent',
+      tallFg: s.calTall ? PAPER : INK,
+      toggleCalTasks: () => this.setState(st => ({ calTasks: st.calTasks === false })),
+      ctBg: s.calTasks !== false ? INK : 'transparent',
+      ctFg: s.calTasks !== false ? PAPER : INK,
+      calRows,
+      calTitle: MLONG[s.calMonth] + ' 2026',
+      calPrev: () => this.setState(st => ({ calMonth: (st.calMonth + 11) % 12 })),
+      calNext: () => this.setState(st => ({ calMonth: (st.calMonth + 1) % 12 })),
+      dayTitle: DAYS[dayDate.getDay()] + ' ' + s.calDay + ' ' + MSHORT[s.calMonth] + ' · ' + dayNotes.length + (dayNotes.length > 1 ? ' lots' : ' lot') + (dayTasks.length && s.calTasks !== false ? ' · ' + dayTasks.length + (dayTasks.length > 1 ? ' tâches' : ' tâche') : ''),
+      dayRows, dayEmpty: dayRows.length === 0,
+    };
+  }
+}
+
+</script>
+</body>
+</html>

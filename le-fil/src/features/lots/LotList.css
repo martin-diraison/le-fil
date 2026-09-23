@@ -1,0 +1,156 @@
+.lotPane {
+  flex: 0 1 392px;
+  min-width: 252px;
+  border-right: 1px solid var(--ink);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.lotPane__new {
+  display: flex;
+  align-items: stretch;
+  border-bottom: 1px solid var(--ink);
+  flex-shrink: 0;
+}
+.lotPane__newIcon {
+  width: 32px;
+  flex-shrink: 0;
+  border: none;
+  border-right: 1px solid var(--ink);
+  background: transparent;
+  cursor: text;
+  font: 800 19px var(--font-ui);
+  color: var(--red);
+  padding: 0;
+}
+.lotPane__newInput {
+  flex: 1;
+  min-width: 0;
+  font: 500 13px var(--font-ui);
+  color: var(--ink);
+  background: transparent;
+  border: none;
+  padding: 9px 11px;
+}
+.lotPane__newSubmit {
+  border: none;
+  border-left: 1px solid var(--ink);
+  background: var(--ink);
+  color: var(--paper);
+  cursor: pointer;
+  padding: 0 12px;
+  font: 600 9px var(--font-ui);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.lotPane__newSubmit:hover {
+  background: var(--yellow);
+  color: var(--ink);
+}
+
+.lotPane__list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+.lotPane__empty {
+  padding: 16px 12px;
+  font: 600 10px var(--font-ui);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.lotRow {
+  width: 100%;
+  border: none;
+  border-bottom: 1px solid var(--rule);
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: stretch;
+  text-align: left;
+  transition: var(--transition-bg);
+}
+.lotRow--over {
+  border-top: 2px solid var(--ink);
+}
+.lotRow--dragging {
+  opacity: 0.35;
+}
+.lotRow--selected {
+  background: var(--ink);
+  border-bottom-color: var(--ink);
+}
+.lotRow:not(.lotRow--selected):hover {
+  background: var(--hover);
+}
+
+.lotRow__edge {
+  width: 7px;
+  flex-shrink: 0;
+}
+.lotRow__date {
+  width: 64px;
+  flex-shrink: 0;
+  overflow: hidden;
+  border-right: 1px solid var(--rule);
+  padding: 8px 7px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.lotRow--selected .lotRow__date {
+  border-right-color: #3a3a38;
+}
+.lotRow__dateTop {
+  font: 800 12px var(--font-ui);
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.lotRow__dateSub {
+  font: 600 7.5px var(--font-ui);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lotRow__body {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.lotRow__title {
+  letter-spacing: -0.012em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.lotRow__metaRow {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.lotRow__project {
+  font: 600 8.5px var(--font-ui);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.lotRow__taskCount {
+  margin-left: auto;
+  font: 600 8.5px var(--font-ui);
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
