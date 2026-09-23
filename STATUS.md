@@ -1,6 +1,10 @@
 # Le Fil — état d'avancement
 
-Dernière session : 2026-09-23 (vues Calendrier + Gantt, puis interface mobile). Pour reprendre, il suffit de redemander à Claude Code
+Dernière session : 2026-09-23 (vues Calendrier + Gantt, interface mobile, publication GitHub).
+
+Dépôt public : https://github.com/martin-diraison/le-fil (branche `main`). Les commits
+utilisent l'adresse anonyme GitHub (config locale du dépôt) — ne jamais publier de données
+personnelles ni de clés (`.env.local` est ignoré par git). Pour reprendre, il suffit de redemander à Claude Code
 de continuer — ce fichier + les commentaires du code portent tout le contexte nécessaire.
 
 ## Contenu du dossier
@@ -85,5 +89,13 @@ export NVM_DIR="$HOME/.nvm"; [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
 ```
 
 ## Prochaines étapes proposées (au choix, à la reprise)
-1. Branchement Supabase réel (compte à créer, schéma SQL, RLS)
-2. Hors ligne : cache IndexedDB + file d'attente de synchro
+1. **Branchement Supabase** — en cours côté utilisateur : il fait le ménage dans son compte
+   Supabase et ouvre un nouveau projet. À la reprise : copier `le-fil/.env.example` en
+   `le-fil/.env.local` (URL + clé « anon »), puis écrire le schéma SQL (projects/lots/tasks +
+   préférences), les règles RLS par utilisateur, et remplacer les données de démo par la
+   lecture/écriture Supabase. Penser à désactiver les inscriptions une fois le compte créé.
+2. **Déploiement** — reporté volontairement. Piste retenue : GitHub Pages (gratuit, dépôt
+   public, URL `https://martin-diraison.github.io/le-fil/`) via GitHub Actions ; il faudra
+   régler `base: '/le-fil/'` dans Vite et le scope/start_url du manifeste PWA. Une URL HTTPS
+   est indispensable pour installer la PWA sur téléphone.
+3. Hors ligne : cache IndexedDB + file d'attente de synchro
