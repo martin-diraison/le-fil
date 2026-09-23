@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { Lot, Project, SortMode, Task, ViewMode } from '../types/models';
+import type { CalMode, Lot, Project, SortMode, Task, ViewMode } from '../types/models';
 import { computeUrgency, compareUrgency } from '../types/models';
 import { nextProjectColor } from '../lib/palette';
 import { dueFromChoice, type DateChoiceKey } from './dateShortcuts';
@@ -31,6 +31,12 @@ interface State {
   openLotId: string | null;
   sort: SortMode;
   view: ViewMode;
+  calMode: CalMode;
+  calMonth: { year: number; month: number }; // mois affiché (vue mois)
+  calWeek: number; // décalage en semaines depuis la semaine courante (vue semaine)
+  showTasksInCalendar: boolean;
+  showTasksInGantt: boolean;
+  toast: string | null;
 
   // Édition / interactions
   colorPickerProjectId: string | null;
@@ -48,7 +54,8 @@ interface State {
   overLotId: string | null;
 
   // Actions — projets
-  addProject: (name: string) => void;
+  /** Renvoie l'id du projet créé (null si le nom est vide). */
+  addProject: (name: string) => string | null;
   renameProject: (id: string, name: string) => void;
   setProjectColor: (id: string, color: string) => void;
   requestDeleteProject: (id: string) => void;
@@ -60,8 +67,15 @@ interface State {
   clearSelected: () => void;
 
   // Actions — lots
-  addLot: (title: string) => void;
+  /**
+   * Crée un lot et l'ouvre. Sans `projectKey`, il va dans le premier projet sélectionné (desktop) ;
+   * sinon dans le projet indiqué (mobile : projet ouvert, ou `null` / NO_PROJECT = sans projet).
+   */
+  addLot: (title: string, projectKey?: ProjectKey | null) => void;
   openLot: (id: string | null) => void;
+  /** Calendrier / Gantt : ouvre le lot, ou le referme s'il est déjà ouvert (§3.1). */
+  toggleOpenLot: (id: string) => void;
+  setLotDueDate: (id: string, due: string | null) => void;
   updateLotTitle: (id: string, title: string) => void;
   updateLotBody: (id: string, body: string) => void;
   setLotDue: (id: string, key: DateChoiceKey) => void;
@@ -77,6 +91,7 @@ interface State {
   addTask: (lotId: string, label: string) => void;
   toggleTask: (id: string) => void;
   setTaskDue: (id: string, key: DateChoiceKey) => void;
+  setTaskDueDate: (id: string, due: string | null) => void;
   deleteTask: (id: string) => void;
   openTaskDatePicker: (id: string | null) => void;
 
@@ -87,12 +102,21 @@ interface State {
   cycleSort: () => void;
   setView: (v: ViewMode) => void;
 
+  // Actions — calendrier / gantt
+  setCalMode: (m: CalMode) => void;
+  calStep: (delta: 1 | -1) => void;
+  toggleTasksInCalendar: () => void;
+  toggleTasksInGantt: () => void;
+  flash: (msg: string) => void;
+
   // Drag state setters (menu projets)
   setDragProject: (id: string | null) => void;
   setOverProject: (id: string | null) => void;
   setDragLot: (id: string | null) => void;
   setOverLot: (id: string | null) => void;
 }
+
+let toastTimer: ReturnType<typeof setTimeout> | undefined;
 
 const SORT_CYCLE: SortMode[] = ['urgence', 'récent', 'manuel'];
 
@@ -108,6 +132,12 @@ export const useStore = create<State>((set, get) => ({
   openLotId: null,
   sort: 'urgence',
   view: 'liste',
+  calMode: 'mois',
+  calMonth: { year: new Date().getFullYear(), month: new Date().getMonth() },
+  calWeek: 0,
+  showTasksInCalendar: true,
+  showTasksInGantt: true,
+  toast: null,
 
   colorPickerProjectId: null,
   projectRenameDraft: '',
@@ -125,7 +155,7 @@ export const useStore = create<State>((set, get) => ({
 
   addProject: (rawName) => {
     const name = rawName.trim();
-    if (!name) return;
+    if (!name) return null;
     const { projects } = get();
     const id = uid('proj');
     const color = nextProjectColor(projects.map((p) => p.color));
@@ -137,6 +167,7 @@ export const useStore = create<State>((set, get) => ({
       colorPickerProjectId: id,
       view: 'liste',
     }));
+    return id;
   },
 
   renameProject: (id, name) => {
@@ -196,11 +227,15 @@ export const useStore = create<State>((set, get) => ({
 
   clearSelected: () => set({ selected: [] }),
 
-  addLot: (rawTitle) => {
+  addLot: (rawTitle, projectKey) => {
     const title = rawTitle.trim();
     if (!title) return;
-    const { selected } = get();
-    const target = selected.find((k) => k !== NO_PROJECT) as string | undefined;
+    const target =
+      projectKey === undefined
+        ? (get().selected.find((k) => k !== NO_PROJECT) as string | undefined)
+        : projectKey === NO_PROJECT
+          ? null
+          : projectKey;
     const id = uid('lot');
     const now = nowIso();
     set((s) => ({
@@ -226,6 +261,15 @@ export const useStore = create<State>((set, get) => ({
   },
 
   openLot: (id) => set({ openLotId: id, moveMenuOpen: false, confirmDeleteLot: false, taskDatePickerId: null }),
+
+  toggleOpenLot: (id) => {
+    const { openLotId, openLot } = get();
+    openLot(openLotId === id ? null : id);
+  },
+
+  setLotDueDate: (id, due) => {
+    set((s) => ({ lots: s.lots.map((l) => (l.id === id ? { ...l, due, updatedAt: nowIso() } : l)) }));
+  },
 
   updateLotTitle: (id, title) => {
     set((s) => ({ lots: s.lots.map((l) => (l.id === id ? { ...l, title, updatedAt: nowIso() } : l)) }));
@@ -307,6 +351,10 @@ export const useStore = create<State>((set, get) => ({
     set((s) => ({ tasks: s.tasks.map((t) => (t.id === id ? { ...t, due } : t)), taskDatePickerId: null }));
   },
 
+  setTaskDueDate: (id, due) => {
+    set((s) => ({ tasks: s.tasks.map((t) => (t.id === id ? { ...t, due } : t)) }));
+  },
+
   deleteTask: (id) => {
     set((s) => ({ tasks: s.tasks.filter((t) => t.id !== id), taskDatePickerId: null }));
   },
@@ -324,7 +372,40 @@ export const useStore = create<State>((set, get) => ({
     });
   },
 
-  setView: (v) => set({ view: v }),
+  // En repassant en Liste avec un lot ouvert, son projet est ajouté à la sélection (§3.1).
+  setView: (v) => {
+    set((s) => {
+      if (v !== 'liste' || !s.openLotId) return { view: v };
+      const lot = s.lots.find((l) => l.id === s.openLotId);
+      const key = lot ? (lot.projectId ?? NO_PROJECT) : null;
+      if (!key || s.selected.includes(key)) return { view: v };
+      return { view: v, selected: s.selected.concat([key]) };
+    });
+  },
+
+  // Changer de mode ramène à la période courante, comme dans le prototype.
+  setCalMode: (m) => {
+    const now = new Date();
+    set({ calMode: m, calWeek: 0, calMonth: { year: now.getFullYear(), month: now.getMonth() } });
+  },
+
+  calStep: (delta) => {
+    set((s) => {
+      if (s.calMode === 'semaine') return { calWeek: s.calWeek + delta };
+      const d = new Date(s.calMonth.year, s.calMonth.month + delta, 1);
+      return { calMonth: { year: d.getFullYear(), month: d.getMonth() } };
+    });
+  },
+
+  toggleTasksInCalendar: () => set((s) => ({ showTasksInCalendar: !s.showTasksInCalendar })),
+  toggleTasksInGantt: () => set((s) => ({ showTasksInGantt: !s.showTasksInGantt })),
+
+  // Toast : disparaît après ~2 s (§5 « Confirmations et retours »).
+  flash: (msg) => {
+    clearTimeout(toastTimer);
+    set({ toast: msg });
+    toastTimer = setTimeout(() => set({ toast: null }), 2200);
+  },
 
   setDragProject: (id) => set({ dragProjectId: id }),
   setOverProject: (id) => set({ overProjectId: id }),
@@ -348,4 +429,32 @@ export function sortLots(lots: Lot[], mode: SortMode): Lot[] {
     if (byUrgency !== 0) return byUrgency;
     return (a.due ?? '').localeCompare(b.due ?? '');
   });
+}
+
+/**
+ * Lots visibles selon la sélection, le filtre « retard » et la recherche (prototype `visible()`).
+ * Sans sélection, Calendrier et Gantt montrent tous les projets ; la Liste n'en montre aucun (§3.2).
+ * La recherche porte sur le titre, le corps et les libellés de tâches (§1).
+ */
+export function filterLots(
+  s: Pick<State, 'lots' | 'tasks' | 'selected' | 'lateOnly' | 'search' | 'view'>,
+): Lot[] {
+  const q = s.search.toLowerCase();
+  const scopeAll = s.selected.length === 0 && s.view !== 'liste';
+  return s.lots.filter((l) => {
+    if (!scopeAll && !s.selected.includes(l.projectId ?? NO_PROJECT)) return false;
+    if (s.lateOnly && computeUrgency(l) !== 'late') return false;
+    if (q) {
+      const labels = s.tasks.filter((t) => t.lotId === l.id).map((t) => t.label);
+      if (![l.title, l.body, ...labels].join(' ').toLowerCase().includes(q)) return false;
+    }
+    return true;
+  });
+}
+
+/** Dans le Gantt et le calendrier, une tâche reste visible si son lot correspond ou si son libellé correspond (§1). */
+export function taskMatchesSearch(lot: Lot, task: Task, search: string): boolean {
+  const q = search.toLowerCase();
+  if (!q) return true;
+  return (lot.title + ' ' + lot.body).toLowerCase().includes(q) || task.label.toLowerCase().includes(q);
 }

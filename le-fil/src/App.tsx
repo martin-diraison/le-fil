@@ -3,6 +3,7 @@ import type { Session } from '@supabase/supabase-js';
 import { isSupabaseConfigured, supabase } from './lib/supabase';
 import AuthScreen from './features/auth/AuthScreen';
 import DesktopShell from './features/shell/DesktopShell';
+import MobileShell from './features/mobile/MobileShell';
 
 // Session factice utilisée uniquement quand Supabase n'est pas encore configuré (voir
 // .env.example), pour pouvoir développer/prévisualiser l'appli sans compte au préalable.
@@ -10,7 +11,23 @@ import DesktopShell from './features/shell/DesktopShell';
 // src/state/seed.ts) jusqu'au branchement réel.
 const DEMO_SESSION = { user: { email: 'demo@local' } } as unknown as Session;
 
+// Même seuil que la mise en page responsive de l'écran de connexion (AuthScreen.css).
+const MOBILE_QUERY = '(max-width: 760px)';
+
+function useIsMobile(): boolean {
+  const [mobile, setMobile] = useState(() => window.matchMedia(MOBILE_QUERY).matches);
+  useEffect(() => {
+    const mq = window.matchMedia(MOBILE_QUERY);
+    const onChange = () => setMobile(mq.matches);
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
+  return mobile;
+}
+
 export default function App() {
+  const isMobile = useIsMobile();
+  const Shell = isMobile ? MobileShell : DesktopShell;
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(isSupabaseConfigured);
 
@@ -34,12 +51,10 @@ export default function App() {
     if (typeof window !== 'undefined' && window.location.search.includes('showAuth')) {
       return <AuthScreen />;
     }
-    return <DesktopShell session={DEMO_SESSION} />;
+    return <Shell session={DEMO_SESSION} />;
   }
 
   if (!session) return <AuthScreen />;
 
-  // TODO : coquille mobile (onglets fil · projets · calendrier) — voir README §4.
-  // Pour l'instant, le shell desktop s'affiche à toutes les tailles.
-  return <DesktopShell session={session} />;
+  return <Shell session={session} />;
 }

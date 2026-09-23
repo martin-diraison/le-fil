@@ -1,12 +1,11 @@
 // Données de démonstration locales — en attendant le branchement Supabase.
 // Voir design_handoff_le_fil/README.md pour le modèle de données réel.
 import type { Lot, Project, Task } from '../types/models';
+import { shiftDays, toDay } from '../lib/dates';
 
 function iso(offsetDays: number | null): string | null {
   if (offsetDays === null) return null;
-  const d = new Date();
-  d.setDate(d.getDate() + offsetDays);
-  return d.toISOString().slice(0, 10);
+  return toDay(shiftDays(new Date(), offsetDays));
 }
 
 const now = new Date().toISOString();
@@ -96,5 +95,5 @@ export const SEED_TASKS: Task[] = [
   { id: 'task_1', lotId: 'lot_1', label: 'Trouver un numéro', due: null, done: true, position: 0 },
   { id: 'task_2', lotId: 'lot_1', label: 'Prendre rendez-vous', due: iso(-1), done: false, position: 1 },
   { id: 'task_3', lotId: 'lot_2', label: 'Maquette mobile', due: iso(0), done: false, position: 0 },
-  { id: 'task_4', lotId: 'lot_2', label: 'Choisir la typo', due: null, done: false, position: 1 },
+  { id: 'task_4', lotId: 'lot_2', label: 'Choisir la typo', due: iso(9), done: false, position: 1 },
 ];

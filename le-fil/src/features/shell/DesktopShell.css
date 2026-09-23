@@ -95,3 +95,18 @@
   text-transform: uppercase;
   color: var(--text-secondary);
 }
+
+/* Toast — README §5 : en bas, fond encre, texte papier majuscule, ~2 s. */
+.shell__toast {
+  position: fixed;
+  left: 244px;
+  bottom: 16px;
+  z-index: 40;
+  background: var(--ink);
+  color: var(--paper);
+  border: 1px solid var(--paper);
+  padding: 8px 13px;
+  font: 600 9px var(--font-ui);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}

@@ -1,10 +1,12 @@
 import { useMemo, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
-import { NO_PROJECT, sortLots, useStore } from '../../state/store';
+import { NO_PROJECT, filterLots, useStore } from '../../state/store';
 import ProjectMenu from '../projects/ProjectMenu';
 import LotList from '../lots/LotList';
 import LotDetail from '../lots/LotDetail';
 import AccountDrawer from '../account/AccountDrawer';
+import CalendarView from '../calendar/CalendarView';
+import GanttView from '../gantt/GanttView';
 import './DesktopShell.css';
 
 const VIEW_TABS: { key: 'liste' | 'cal' | 'gantt'; label: string }[] = [
@@ -24,27 +26,22 @@ export default function DesktopShell({ session }: { session: Session }) {
   const sort = useStore((s) => s.sort);
   const selected = useStore((s) => s.selected);
   const lots = useStore((s) => s.lots);
+  const tasks = useStore((s) => s.tasks);
   const search = useStore((s) => s.search);
   const lateOnly = useStore((s) => s.lateOnly);
   const projects = useStore((s) => s.projects);
   const openLotId = useStore((s) => s.openLotId);
+  const toast = useStore((s) => s.toast);
 
   const setView = useStore((s) => s.setView);
   const cycleSort = useStore((s) => s.cycleSort);
 
   const [accountOpen, setAccountOpen] = useState(false);
 
-  const visibleCount = useMemo(() => {
-    const q = search.toLowerCase();
-    const filtered = lots.filter((l) => {
-      const key = l.projectId ?? NO_PROJECT;
-      if (!selected.includes(key)) return false;
-      if (lateOnly && l.due === null) return false;
-      if (q && !(l.title + ' ' + l.body).toLowerCase().includes(q)) return false;
-      return true;
-    });
-    return sortLots(filtered, sort).length;
-  }, [lots, selected, search, lateOnly, sort]);
+  const visibleCount = useMemo(
+    () => filterLots({ lots, tasks, selected, lateOnly, search, view: 'liste' }).length,
+    [lots, tasks, selected, search, lateOnly],
+  );
 
   const selNames = selected.map((k) =>
     k === NO_PROJECT ? 'Sans projet' : projects.find((p) => p.id === k)?.name ?? '',
@@ -78,9 +75,11 @@ export default function DesktopShell({ session }: { session: Session }) {
             <span className="shell__selLabel">{selLabel}</span>
             {view === 'liste' && <span className="shell__selCount">{selCount}</span>}
           </div>
-          <button className="shell__sortBtn" onClick={cycleSort}>
-            {SORT_LABELS[sort]}
-          </button>
+          {view === 'liste' && (
+            <button className="shell__sortBtn" onClick={cycleSort}>
+              {SORT_LABELS[sort]}
+            </button>
+          )}
         </div>
 
         <div className="shell__content">
@@ -96,16 +95,14 @@ export default function DesktopShell({ session }: { session: Session }) {
             ) : (
               <LotList />
             ))}
-          {view === 'cal' && (
-            <div className="shell__placeholder">vue calendrier — bientôt</div>
-          )}
-          {view === 'gantt' && (
-            <div className="shell__placeholder">vue gantt — bientôt</div>
-          )}
+          {view === 'cal' && <CalendarView />}
+          {view === 'gantt' && <GanttView />}
 
-          {showV3 && <LotDetail />}
+          {showV3 && <LotDetail drawer={view !== 'liste'} />}
         </div>
       </div>
+
+      {toast && <div className="shell__toast">{toast}</div>}
 
       {accountOpen && <AccountDrawer session={session} onClose={() => setAccountOpen(false)} />}
     </div>

@@ -1,6 +1,6 @@
 # Le Fil — état d'avancement
 
-Session mise en pause le 2026-09-23. Pour reprendre, il suffit de redemander à Claude Code
+Dernière session : 2026-09-23 (vues Calendrier + Gantt, puis interface mobile). Pour reprendre, il suffit de redemander à Claude Code
 de continuer — ce fichier + les commentaires du code portent tout le contexte nécessaire.
 
 ## Contenu du dossier
@@ -31,28 +31,47 @@ de continuer — ce fichier + les commentaires du code portent tout le contexte 
   - Tiroir « Compte & sécurité » : changement de mot de passe (via Supabase, avec
     ré-authentification), appareils connectés (`signOut({scope:'others'})`), export
     JSON, déconnexion.
+- **Vue Calendrier** (`src/features/calendar/`) : mois (5-6 rangées) / semaine, lundi en
+  premier, navigation ‹ ›, lots + tâches (bascule « tâches ✓ / – »), clic = ouvre/ferme le
+  volet 3, glisser-déposer = nouvelle échéance (+ toast).
+- **Vue Gantt** (`src/features/gantt/`) : fenêtre de 3 mois (mois précédent · courant ·
+  suivant — le prototype fige SEPT–NOV 2026, on la calcule depuis aujourd'hui), rangée par
+  projet, barres lot 12 px / tâche 7 px, trait rouge « aujourd'hui », bascule tâches.
+- En Calendrier/Gantt, le volet 3 est un tiroir de 336 px ; sans sélection, tous les projets
+  sont affichés ; repasser en Liste avec un lot ouvert ajoute son projet à la sélection.
+- **Interface mobile** (`src/features/mobile/`, sous 760 px de large — même seuil que l'écran
+  de connexion) : barre d'état + synchro, onglets fil · projets · calendrier, Fil groupé par
+  urgence, grille des projets, projet ouvert (réglages : nom, palette, suppression en deux
+  temps), lot ouvert (échéance, tâches, « déplacer vers… » replié, terminer, +1 j), calendrier
+  du mois avec intitulés courts, cases agrandissables et liste du jour, page Compte.
+  Les sections du compte sont partagées avec le tiroir desktop (`AccountPanel.tsx`).
+- Filtre partagé `filterLots()` (store) : la recherche couvre aussi les libellés de tâches.
+- Correctif : les dates « jour » étaient calculées via `toISOString()` (UTC) → décalage d'un
+  jour en heure de Paris. Tout passe désormais par `src/lib/dates.ts` (heure locale).
 - Modèle de données TypeScript fidèle au README (`src/types/models.ts`).
 - Palette de couleurs + contraste automatique (`src/lib/palette.ts`).
 
 ## Écarts documentés entre le README (texte) et le prototype (code réel)
-Le code du prototype fait foi en cas de contradiction — deux cas trouvés et corrigés :
+Le code du prototype fait foi en cas de contradiction :
 1. **Ordre d'urgence** : le README dit *« done › late › today › week › soon › none »*
    mais le code trie *late* en premier et *done* en dernier (cohérent avec les groupes
    du Fil mobile). Voir commentaire dans `src/types/models.ts`.
 2. **Raccourcis d'échéance** : le README dit *« auj. / demain / +7j / +30j / sans date »*
    mais le code utilise *hier(-1) / aujourd'hui(0) / cette semaine(+4) / bientôt(+18) /
-   sans date*. Voir `src/state/dateShortcuts.ts`.
+   sans date*. Le prototype **mobile**, lui, suit bien le README (`MOBILE_DATE_CHOICES`).
+   Voir `src/state/dateShortcuts.ts`.
+3. **Pluriel de l'en-tête du projet ouvert (mobile)** : le prototype affiche « 1 lots » (il
+   accorde sur le total des lots, terminés compris) ; on accorde sur le nombre affiché.
 
 ## Pas encore fait
-- Vues **Calendrier** et **Gantt** (desktop) — actuellement des placeholders dans
-  `DesktopShell.tsx`.
-- **Interface mobile** complète (onglets fil/projets/calendrier, écrans empilés) — voir
-  README §4. `App.tsx` affiche pour l'instant le shell desktop à toutes les tailles.
+- Préférences (vue, mode calendrier, bascules tâches, sélection) non persistées : elles
+  seront stockées avec Supabase (`UserPrefs`).
 - **Branchement Supabase réel** : il faut créer un projet Supabase (gratuit), renseigner
   `le-fil/.env.local` (copier `.env.example`), et écrire le schéma SQL (tables
   projects/lots/tasks + RLS) — pas encore fait.
 - Sync hors-ligne / cache IndexedDB / file d'attente de synchro.
-- Écran « réglages ▾ » du projet ouvert côté mobile, calendrier mobile, etc.
+- « Simuler hors ligne » (démo uniquement dans les prototypes) : volontairement non repris ;
+  l'indicateur de synchro affiche « synchronisé » en attendant la vraie synchro.
 
 ## Pour relancer le serveur de dev
 ```bash
@@ -66,6 +85,5 @@ export NVM_DIR="$HOME/.nvm"; [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
 ```
 
 ## Prochaines étapes proposées (au choix, à la reprise)
-1. Vues Calendrier + Gantt desktop
-2. Interface mobile
-3. Branchement Supabase réel (compte à créer, schéma SQL, RLS)
+1. Branchement Supabase réel (compte à créer, schéma SQL, RLS)
+2. Hors ligne : cache IndexedDB + file d'attente de synchro

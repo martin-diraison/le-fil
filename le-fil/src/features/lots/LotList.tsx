@@ -1,11 +1,12 @@
 import { useMemo, useState } from 'react';
-import { NO_PROJECT, sortLots, useStore } from '../../state/store';
+import { NO_PROJECT, filterLots, sortLots, useStore } from '../../state/store';
 import { computeUrgency } from '../../types/models';
 import { dateSubLabel, formatShortDate } from '../../lib/format';
 import './LotList.css';
 
 export default function LotList() {
   const lots = useStore((s) => s.lots);
+  const tasks = useStore((s) => s.tasks);
   const projects = useStore((s) => s.projects);
   const selected = useStore((s) => s.selected);
   const lateOnly = useStore((s) => s.lateOnly);
@@ -26,16 +27,10 @@ export default function LotList() {
 
   const projectById = useMemo(() => new Map(projects.map((p) => [p.id, p])), [projects]);
 
-  const filtered = useMemo(() => {
-    const q = search.toLowerCase();
-    return lots.filter((l) => {
-      const key = l.projectId ?? NO_PROJECT;
-      if (!selected.includes(key)) return false;
-      if (lateOnly && computeUrgency(l) !== 'late') return false;
-      if (q && !(l.title + ' ' + l.body).toLowerCase().includes(q)) return false;
-      return true;
-    });
-  }, [lots, selected, lateOnly, search]);
+  const filtered = useMemo(
+    () => filterLots({ lots, tasks, selected, lateOnly, search, view: 'liste' }),
+    [lots, tasks, selected, lateOnly, search],
+  );
 
   const sorted = useMemo(() => sortLots(filtered, sort), [filtered, sort]);
 

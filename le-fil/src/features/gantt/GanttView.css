@@ -1,0 +1,208 @@
+/* Vue Gantt desktop — README §3.6 */
+.gantt {
+  flex: 1;
+  min-width: 0;
+  border-right: 1px solid var(--ink);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.gantt__toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 12px;
+  border-bottom: 1px solid var(--ink);
+  flex-shrink: 0;
+}
+.gantt__title {
+  font: 800 11px var(--font-ui);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.gantt__hint {
+  min-width: 0;
+  font: 600 8.5px var(--font-ui);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.gantt__tasksBtn {
+  margin-left: auto;
+  flex-shrink: 0;
+  border: 1px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  cursor: pointer;
+  padding: 3px 9px;
+  font: 600 8.5px var(--font-ui);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  transition: var(--transition-bg);
+}
+.gantt__tasksBtn--on {
+  background: var(--ink);
+  color: var(--paper);
+}
+.gantt__tasksBtn:hover {
+  background: var(--yellow);
+  color: var(--ink);
+}
+
+.gantt__months {
+  display: flex;
+  border-bottom: 1px solid var(--ink);
+  flex-shrink: 0;
+}
+.gantt__labelCol {
+  width: 148px;
+  flex-shrink: 0;
+  border-right: 1px solid var(--ink);
+}
+.gantt__monthTrack {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+}
+.gantt__month {
+  flex-basis: 0;
+  min-width: 0;
+  border-right: 1px solid var(--rule);
+  padding: 4px 6px;
+  font: 600 8.5px var(--font-ui);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.gantt__body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+.gantt__empty {
+  padding: 22px;
+  text-align: center;
+  font: 600 9.5px/1.8 var(--font-ui);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.gantt__row {
+  display: flex;
+  align-items: stretch;
+  border-bottom: 1px solid var(--rule);
+  background: var(--paper);
+}
+.gantt__row--project {
+  background: var(--hover);
+}
+.gantt__row--open {
+  background: var(--yellow-pale);
+}
+
+.gantt__label {
+  width: 148px;
+  flex-shrink: 0;
+  overflow: hidden;
+  border: none;
+  border-right: 1px solid var(--rule);
+  background: transparent;
+  cursor: pointer;
+  padding: 6px 9px;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  transition: var(--transition-bg);
+}
+.gantt__label:hover {
+  background: var(--yellow);
+}
+.gantt__row--project .gantt__label {
+  cursor: default;
+}
+.gantt__row--task .gantt__label {
+  padding-left: 26px;
+}
+.gantt__dot {
+  width: 8px;
+  height: 8px;
+  flex-shrink: 0;
+  border: 1px solid var(--ink);
+}
+.gantt__labelText {
+  font: 500 11.5px var(--font-content);
+  letter-spacing: 0.03em;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.gantt__row--project .gantt__labelText {
+  font: 800 10px var(--font-ui);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+.gantt__row--task .gantt__labelText {
+  font: 400 10.5px var(--font-content);
+  letter-spacing: 0.03em;
+  color: #4a4a46;
+}
+.gantt__row--muted .gantt__labelText {
+  color: var(--text-secondary);
+}
+
+.gantt__track {
+  flex: 1;
+  min-width: 0;
+  position: relative;
+  padding: 6px 0;
+}
+.gantt__gridline {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--rule);
+}
+.gantt__now {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--red);
+}
+.gantt__bar {
+  position: relative;
+  height: 12px;
+  border: 1px solid var(--ink);
+}
+.gantt__row--task .gantt__bar {
+  height: 7px;
+  border-color: var(--rule-on-ink);
+}
+.gantt__row--task.gantt__row--muted .gantt__bar {
+  border-color: var(--border-quiet);
+}
+.gantt__noDate {
+  position: relative;
+  height: 12px;
+  display: flex;
+  align-items: center;
+  padding-left: 6px;
+  font: 600 8px var(--font-ui);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}

@@ -6,7 +6,8 @@ import { DATE_CHOICES, type DateChoiceKey } from '../../state/dateShortcuts';
 import { formatShortDate } from '../../lib/format';
 import './LotDetail.css';
 
-export default function LotDetail() {
+/** `drawer` : en Calendrier et Gantt, le volet 3 est un tiroir fixe de 336 px (§3.1). */
+export default function LotDetail({ drawer = false }: { drawer?: boolean }) {
   const openLotId = useStore((s) => s.openLotId);
   const lots = useStore((s) => s.lots);
   const projects = useStore((s) => s.projects);
@@ -62,7 +63,7 @@ export default function LotDetail() {
   ];
 
   return (
-    <div className="lotDetail">
+    <div className={`lotDetail ${drawer ? 'lotDetail--drawer' : ''}`}>
       <div className="lotDetail__inner">
         <div className="lotDetail__band" style={{ background: color }} />
 
