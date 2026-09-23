@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { NO_PROJECT, filterLots, sortLots, useStore } from '../../state/store';
 import { computeUrgency } from '../../types/models';
 import { dateSubLabel, formatShortDate } from '../../lib/format';
+import { NO_PROJECT_COLOR } from '../../lib/palette';
 import './LotList.css';
 
 export default function LotList() {
@@ -18,6 +19,7 @@ export default function LotList() {
   const overLotId = useStore((s) => s.overLotId);
 
   const addLot = useStore((s) => s.addLot);
+  const cycleSort = useStore((s) => s.cycleSort);
   const openLot = useStore((s) => s.openLot);
   const reorderLots = useStore((s) => s.reorderLots);
   const setDragLot = useStore((s) => s.setDragLot);
@@ -38,6 +40,14 @@ export default function LotList() {
     selected.length === 1 && selected[0] !== NO_PROJECT ? 'LOT DANS CE PROJET…' : 'ÉCRIS, ON TRIE APRÈS…';
   const emptyHint = lateOnly ? 'aucun retard ici' : search ? 'essaie un autre mot' : 'écris en haut';
 
+  // En-tête de la sélection : une pastille par projet, puis les noms (au-delà de 2 : « N projets »).
+  const selItems = selected.map((k) =>
+    k === NO_PROJECT
+      ? { key: k, name: 'Sans projet', color: NO_PROJECT_COLOR }
+      : { key: k, name: projectById.get(k)?.name ?? '', color: projectById.get(k)?.color ?? NO_PROJECT_COLOR },
+  );
+  const selLabel = selItems.length > 2 ? `${selItems.length} projets` : selItems.map((i) => i.name).join(' + ');
+
   function commit() {
     addLot(draftLocal);
     setDraftLocal('');
@@ -45,6 +55,22 @@ export default function LotList() {
 
   return (
     <div className="lotPane">
+      <div className="lotPane__head">
+        <span className="lotPane__dots">
+          {selItems.map((i) => (
+            <span key={i.key} className="lotPane__dot" style={{ background: i.color }} />
+          ))}
+        </span>
+        <span className="lotPane__title" title={selItems.map((i) => i.name).join(' + ')}>
+          {selLabel}
+        </span>
+        <span className="lotPane__count">
+          {sorted.length} {sorted.length > 1 ? 'lots' : 'lot'}
+        </span>
+        <button className="lotPane__sort" onClick={cycleSort}>
+          tri · {sort}
+        </button>
+      </div>
       <div className="lotPane__new">
         <button className="lotPane__newIcon" title="nouveau lot" tabIndex={-1}>
           +

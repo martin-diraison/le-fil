@@ -1,10 +1,23 @@
 .menu {
+  position: relative;
   width: 232px;
   flex-shrink: 0;
-  border-right: 1px solid var(--ink);
   display: flex;
   flex-direction: column;
   min-height: 0;
+}
+/* Filet de séparation avec le volet 2, dessiné en ::after pour qu'une ligne de projet
+   sélectionnée puisse passer par-dessus (effet d'onglet ouvert vers les lots). */
+.menu::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--ink);
+  z-index: 1;
+  pointer-events: none;
 }
 
 .menu__header {
@@ -86,6 +99,8 @@
   background: var(--yellow);
 }
 .menu__noProjToggle--active {
+  position: relative;
+  z-index: 2; /* passe par-dessus le filet .menu::after, comme un projet sélectionné */
   background: var(--ink);
   color: var(--paper);
 }
@@ -147,6 +162,38 @@
 .projectRow__main {
   display: flex;
   align-items: stretch;
+  transition: var(--transition-bg);
+}
+.projectRow__main--selected {
+  position: relative;
+  z-index: 2;
+}
+/* Filets encre dessus, dessous et à gauche : la ligne se lit comme un onglet ouvert à droite. */
+.projectRow__main--selected::before {
+  content: '';
+  position: absolute;
+  inset: -1px 0 -1px 0;
+  border-top: 1px solid var(--ink);
+  border-bottom: 1px solid var(--ink);
+  border-left: 1px solid var(--ink);
+  pointer-events: none;
+}
+.projectRow__check {
+  flex-shrink: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 7px 4px 7px 13px;
+  display: flex;
+  align-items: center;
+  transition: var(--transition-bg);
+}
+.projectRow__check:hover {
+  background: var(--yellow) !important;
+}
+/* !important : la bordure de la case est posée en style inline (couleur de contraste). */
+.projectRow__check:hover .projectRow__mark {
+  border-color: var(--ink) !important;
 }
 .projectRow__select {
   flex: 1;
@@ -154,7 +201,7 @@
   border: none;
   background: transparent;
   cursor: pointer;
-  padding: 7px 0 7px 13px;
+  padding: 7px 0 7px 4px;
   text-align: left;
   display: flex;
   align-items: center;

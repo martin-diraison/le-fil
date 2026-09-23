@@ -29,6 +29,7 @@ export default function ProjectMenu({ userEmail, onOpenAccount }: Props) {
   const overProjectId = useStore((s) => s.overProjectId);
 
   const toggleSelected = useStore((s) => s.toggleSelected);
+  const selectOnly = useStore((s) => s.selectOnly);
   const clearSelected = useStore((s) => s.clearSelected);
   const toggleLateOnly = useStore((s) => s.toggleLateOnly);
   const setSearch = useStore((s) => s.setSearch);
@@ -108,7 +109,7 @@ export default function ProjectMenu({ userEmail, onOpenAccount }: Props) {
 
       <button
         className={`menu__noProjToggle ${selected.includes(NO_PROJECT) ? 'menu__noProjToggle--active' : ''}`}
-        onClick={() => toggleSelected(NO_PROJECT)}
+        onClick={() => selectOnly(NO_PROJECT)}
       >
         sans projet
         <span>{noProjectCount}</span>
@@ -128,7 +129,10 @@ export default function ProjectMenu({ userEmail, onOpenAccount }: Props) {
       <div className="menu__list">
         {visibleProjects.map((p) => {
           const isSel = selected.includes(p.id);
-          const fg = contrastText(p.color);
+          // Dès qu'une sélection existe, les projets non sélectionnés pâlissent ; les sélectionnés
+          // gardent leur aplat et s'ouvrent vers le volet 2 (onglet, voir .projectRow__main--selected).
+          const faded = selected.length > 0 && !isSel;
+          const fg = faded ? 'var(--ink)' : contrastText(p.color);
           const stats = statsFor(p.id);
           const picking = colorPickerProjectId === p.id;
           return (
@@ -158,11 +162,17 @@ export default function ProjectMenu({ userEmail, onOpenAccount }: Props) {
               }}
             >
               <div
-                className="projectRow__main"
-                style={{ background: p.color, boxShadow: `inset 4px 0 0 ${fg}` }}
+                className={`projectRow__main ${isSel ? 'projectRow__main--selected' : ''}`}
+                style={{
+                  background: faded ? `color-mix(in srgb, ${p.color} 22%, var(--paper))` : p.color,
+                  // Liseré intérieur de 4 px : signal de sélection (README §3.2), pas sur toutes les lignes.
+                  boxShadow: isSel ? `inset 4px 0 0 ${fg}` : 'none',
+                }}
               >
+                {/* Case : ajoute / retire ce projet de la sélection (plusieurs projets à la suite). */}
                 <button
-                  className="projectRow__select"
+                  className="projectRow__check"
+                  title={isSel ? 'retirer de la sélection' : 'ajouter à la sélection'}
                   style={{ color: fg }}
                   onClick={() => toggleSelected(p.id)}
                 >
@@ -176,6 +186,9 @@ export default function ProjectMenu({ userEmail, onOpenAccount }: Props) {
                   >
                     {isSel ? '×' : ''}
                   </span>
+                </button>
+                {/* Nom : n'affiche que ce projet. */}
+                <button className="projectRow__select" style={{ color: fg }} onClick={() => selectOnly(p.id)}>
                   <span
                     className="projectRow__name"
                     style={{ fontWeight: isSel ? 800 : 600, fontSize: 11.5 }}

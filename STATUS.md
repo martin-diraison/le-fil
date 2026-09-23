@@ -67,6 +67,23 @@ Le code du prototype fait foi en cas de contradiction :
 3. **Pluriel de l'en-tête du projet ouvert (mobile)** : le prototype affiche « 1 lots » (il
    accorde sur le total des lots, terminés compris) ; on accorde sur le nombre affiché.
 
+## Choix de l'utilisateur qui s'écartent du prototype
+- **Sélection des projets (menu gauche)** : dans le prototype, un clic n'importe où sur la ligne
+  ajoute/retire le projet de la sélection. Désormais : clic sur le **nom** = n'afficher que ce
+  projet (remplace la sélection) ; clic sur la **case** à gauche = ajouter/retirer (compiler
+  plusieurs projets dans le volet 2). « Sans projet » (pas de case) sélectionne seul.
+  Le lot ouvert se referme s'il ne fait plus partie de la sélection. Voir `selectOnly()` /
+  `toggleSelected()` dans `src/state/store.ts`.
+- **Nom de la sélection** : dans le prototype, il est dans la rangée des onglets de vue (liste ·
+  calendrier · gantt), avec le même style que les boutons — ambigu. Il est maintenant en tête du
+  volet 2 (`LotList.tsx`) : pastille(s) de couleur, nom en Archivo Narrow 17 px, nombre de lots,
+  et le bouton de tri. La rangée du haut ne contient plus que les onglets de vue.
+- **Projets sélectionnés plus visibles** : dès qu'une sélection existe, les projets non
+  sélectionnés pâlissent (22 % de leur couleur) ; les sélectionnés gardent leur aplat et
+  passent par-dessus le filet du menu (filet dessiné en `.menu::after`), comme un onglet ouvert
+  vers le volet 2. Le liseré intérieur de 4 px n'est plus que sur les projets sélectionnés
+  (il était auparavant affiché sur toutes les lignes, contrairement au README §3.2).
+
 ## Pas encore fait
 - Préférences (vue, mode calendrier, bascules tâches, sélection) non persistées : elles
   seront stockées avec Supabase (`UserPrefs`).

@@ -1,6 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
-import { NO_PROJECT, filterLots, useStore } from '../../state/store';
+import { useStore } from '../../state/store';
 import ProjectMenu from '../projects/ProjectMenu';
 import LotList from '../lots/LotList';
 import LotDetail from '../lots/LotDetail';
@@ -15,40 +15,15 @@ const VIEW_TABS: { key: 'liste' | 'cal' | 'gantt'; label: string }[] = [
   { key: 'gantt', label: 'gantt' },
 ];
 
-const SORT_LABELS: Record<string, string> = {
-  urgence: 'tri · urgence',
-  récent: 'tri · récent',
-  manuel: 'tri · manuel',
-};
-
 export default function DesktopShell({ session }: { session: Session }) {
   const view = useStore((s) => s.view);
-  const sort = useStore((s) => s.sort);
   const selected = useStore((s) => s.selected);
-  const lots = useStore((s) => s.lots);
-  const tasks = useStore((s) => s.tasks);
-  const search = useStore((s) => s.search);
-  const lateOnly = useStore((s) => s.lateOnly);
-  const projects = useStore((s) => s.projects);
   const openLotId = useStore((s) => s.openLotId);
   const toast = useStore((s) => s.toast);
 
   const setView = useStore((s) => s.setView);
-  const cycleSort = useStore((s) => s.cycleSort);
 
   const [accountOpen, setAccountOpen] = useState(false);
-
-  const visibleCount = useMemo(
-    () => filterLots({ lots, tasks, selected, lateOnly, search, view: 'liste' }).length,
-    [lots, tasks, selected, search, lateOnly],
-  );
-
-  const selNames = selected.map((k) =>
-    k === NO_PROJECT ? 'Sans projet' : projects.find((p) => p.id === k)?.name ?? '',
-  );
-  const selLabel =
-    selected.length === 0 ? 'aucune sélection' : selNames.length > 2 ? `${selNames.length} projets` : selNames.join(' + ');
-  const selCount = `${visibleCount} ${visibleCount > 1 ? 'lots' : 'lot'}`;
 
   const showV3 = !!openLotId;
 
@@ -71,15 +46,9 @@ export default function DesktopShell({ session }: { session: Session }) {
               {v.label}
             </button>
           ))}
-          <div className="shell__selection">
-            <span className="shell__selLabel">{selLabel}</span>
-            {view === 'liste' && <span className="shell__selCount">{selCount}</span>}
-          </div>
-          {view === 'liste' && (
-            <button className="shell__sortBtn" onClick={cycleSort}>
-              {SORT_LABELS[sort]}
-            </button>
-          )}
+          {/* Le nom de la sélection est en tête du volet 2 (LotList), pas ici : cette rangée ne
+              contient que des boutons de vue. */}
+          <div className="shell__headerFill" />
         </div>
 
         <div className="shell__content">

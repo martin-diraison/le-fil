@@ -63,7 +63,10 @@ interface State {
   cancelDeleteProject: () => void;
   reorderProjects: (fromId: string, toId: string) => void;
   toggleProjectPicker: (id: string) => void;
+  /** Case à cocher : ajoute / retire le projet de la sélection (compilation de plusieurs projets). */
   toggleSelected: (key: ProjectKey) => void;
+  /** Clic sur le nom : n'affiche que ce projet (remplace la sélection). */
+  selectOnly: (key: ProjectKey) => void;
   clearSelected: () => void;
 
   // Actions — lots
@@ -114,6 +117,14 @@ interface State {
   setOverProject: (id: string | null) => void;
   setDragLot: (id: string | null) => void;
   setOverLot: (id: string | null) => void;
+}
+
+/** Le lot ouvert reste ouvert seulement si son projet fait encore partie de la sélection. */
+function openLotIfStillVisible(s: State, selected: ProjectKey[]): string | null {
+  if (!s.openLotId) return null;
+  if (selected.length === 0 && s.view !== 'liste') return s.openLotId; // Calendrier/Gantt : tout est visible
+  const lot = s.lots.find((l) => l.id === s.openLotId);
+  return lot && selected.includes(lot.projectId ?? NO_PROJECT) ? s.openLotId : null;
 }
 
 let toastTimer: ReturnType<typeof setTimeout> | undefined;
@@ -220,9 +231,14 @@ export const useStore = create<State>((set, get) => ({
   },
 
   toggleSelected: (key) => {
-    set((s) => ({
-      selected: s.selected.includes(key) ? s.selected.filter((k) => k !== key) : s.selected.concat([key]),
-    }));
+    set((s) => {
+      const selected = s.selected.includes(key) ? s.selected.filter((k) => k !== key) : s.selected.concat([key]);
+      return { selected, openLotId: openLotIfStillVisible(s, selected) };
+    });
+  },
+
+  selectOnly: (key) => {
+    set((s) => ({ selected: [key], openLotId: openLotIfStillVisible(s, [key]) }));
   },
 
   clearSelected: () => set({ selected: [] }),
