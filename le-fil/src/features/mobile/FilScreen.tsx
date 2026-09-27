@@ -18,7 +18,7 @@ const GROUPS: { key: Urgency; label: string; tone?: 'late' | 'muted' }[] = [
 
 // Groupes ouverts par défaut : on ne veut voir tout de suite que ce qui presse ;
 // le reste se déplie au tap (état local, pas persisté — repart replié à chaque ouverture).
-const DEFAULT_OPEN: Urgency[] = ['late', 'today', 'week'];
+const DEFAULT_OPEN: Urgency[] = ['late', 'today', 'week', 'month'];
 
 export default function FilScreen({ nav }: { nav: MobileNav }) {
   const lots = useStore((s) => s.lots);
