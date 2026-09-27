@@ -1,6 +1,7 @@
 # Le Fil — état d'avancement
 
-Dernière session : 2026-09-26 (branchement Supabase : schéma SQL, couche de synchro).
+Dernière session : 2026-09-27 (commit du branchement Supabase, code du déploiement GitHub
+Pages — reste : réglages GitHub/Supabase côté utilisateur puis push).
 
 Dépôt public : https://github.com/martin-diraison/le-fil (branche `main`). Les commits
 utilisent l'adresse anonyme GitHub (config locale du dépôt) — ne jamais publier de données
@@ -95,21 +96,27 @@ Le code du prototype fait foi en cas de contradiction :
 - Compte créé, persistance vérifiée par l'utilisateur en local (`npm run dev`).
 - Ajout : sélecteur de date précis (`<input type="date">`) pour les tâches et les lots
   (desktop `LotDetail.tsx`, mobile `LotScreen.tsx`).
-- **Non commité** à la fin de cette session (Supabase + sélecteur de date) : commiter à la reprise.
+- Commité (2026-09-27, `03bebc4`).
 
-## Reprise : déploiement GitHub Pages (prochaine étape, décidée le 2026-09-26)
+## Déploiement GitHub Pages — en cours (reprise du 2026-09-27)
 Objectif : URL HTTPS pour installer la PWA sur PC/mobile.
-1. Code : `base: '/le-fil/'` dans `vite.config.ts` + `start_url`/`scope` du manifeste et chemins
-   des icônes (aujourd'hui `/`), workflow `.github/workflows/deploy.yml` (build de `le-fil/`,
-   le dépôt git est à la racine `perso/`), repli 404 → index.html.
-2. Utilisateur, GitHub : Settings › Pages › Source = GitHub Actions ; variables Actions
-   `VITE_SUPABASE_URL` et `VITE_SUPABASE_ANON_KEY` (jamais `service_role`).
-3. Utilisateur, Supabase : Authentication › URL Configuration : Site URL =
-   `https://martin-diraison.github.io/le-fil/` + Redirect URLs (garder localhost:5173).
-4. **Audit avant push** (dépôt public) : pas de clé/donnée perso dans les fichiers suivis,
-   e-mail noreply ; ne pas ajouter `App de gestion de projets/` sans accord. Push seulement
-   avec l'accord de l'utilisateur.
-5. Ensuite : désactiver les inscriptions publiques (Authentication › Sign In / Providers) —
+1. ✅ Code (commité en `932f283`) : `base: '/le-fil/'` en production dans `vite.config.ts`
+   (racine en dev), `start_url`/`scope`/icônes du manifeste répercutés, retrait du
+   `<link rel="manifest">` statique redondant, `.github/workflows/deploy.yml` (build de
+   `le-fil/` — le dépôt git est à la racine `perso/` — puis `actions/deploy-pages`), copie
+   `index.html` → `404.html` pour servir l'app sur une route inconnue (sert aussi le lien de
+   réinitialisation de mot de passe qui pointe hors de `/le-fil/`, voir `AuthScreen.tsx`).
+   Build vérifié en local (`npm run build`).
+2. ⬜ Utilisateur, GitHub : Settings › Pages › Source = GitHub Actions ; Settings › Secrets and
+   variables › Actions › Variables : `VITE_SUPABASE_URL` et `VITE_SUPABASE_ANON_KEY` (jamais
+   `service_role`).
+3. ⬜ Utilisateur, Supabase : Authentication › URL Configuration : Site URL =
+   `https://martin-diraison.github.io/le-fil/` + l'ajouter aux Redirect URLs (garder
+   `http://localhost:5173`).
+4. ⬜ **Push** : dépôt public déjà audité pour les 2 commits en attente (pas de clé/donnée
+   perso, e-mail noreply) ; `App de gestion de projets/` reste non ajoutée. Push seulement
+   avec l'accord explicite de l'utilisateur.
+5. ⬜ Ensuite : désactiver les inscriptions publiques (Authentication › Sign In / Providers) —
    les comptes sont partagés avec les autres applis du projet, le faire après création du compte.
 6. Plus tard : Realtime multi-appareils, hors-ligne (IndexedDB + file d'attente).
 
