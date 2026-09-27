@@ -31,6 +31,8 @@ export default function LotDetail({ drawer = false }: { drawer?: boolean }) {
   const setTaskDue = useStore((s) => s.setTaskDue);
   const deleteTask = useStore((s) => s.deleteTask);
   const openTaskDatePicker = useStore((s) => s.openTaskDatePicker);
+  const setTaskDueDate = useStore((s) => s.setTaskDueDate);
+  const setLotDueDate = useStore((s) => s.setLotDueDate);
 
   const [taskDraftLocal, setTaskDraftLocal] = useState(taskDraft);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -165,6 +167,14 @@ export default function LotDetail({ drawer = false }: { drawer?: boolean }) {
                   </button>
                 );
               })}
+              <input
+                type="date"
+                className="lotDetail__dateInput"
+                title="date précise"
+                aria-label="échéance précise du lot"
+                value={lot.due ?? ''}
+                onChange={(e) => setLotDueDate(lot.id, e.target.value || null)}
+              />
             </div>
           </div>
 
@@ -231,6 +241,14 @@ export default function LotDetail({ drawer = false }: { drawer?: boolean }) {
                           </button>
                         );
                       })}
+                      <input
+                        type="date"
+                        className="taskRow__pickerDate"
+                        title="date précise"
+                        aria-label="échéance précise de la tâche"
+                        value={t.due ?? ''}
+                        onChange={(e) => setTaskDueDate(t.id, e.target.value || null)}
+                      />
                       <button className="taskRow__pickerRemove" onClick={() => deleteTask(t.id)}>
                         supprimer
                       </button>

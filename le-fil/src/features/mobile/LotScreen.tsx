@@ -150,6 +150,13 @@ export default function LotScreen({
               {c.label}
             </button>
           ))}
+          <input
+            type="date"
+            className="m__dateInput"
+            aria-label="échéance précise du lot"
+            value={lot.due ?? ''}
+            onChange={(e) => setLotDueDate(lot.id, e.target.value || null)}
+          />
         </div>
 
         <div className="m__tasksHead" style={{ borderLeftColor: color }}>
@@ -193,6 +200,13 @@ export default function LotScreen({
                       {c.label}
                     </button>
                   ))}
+                  <input
+                    type="date"
+                    className="m__dateInput m__dateInput--small"
+                    aria-label="échéance précise de la tâche"
+                    value={t.due ?? ''}
+                    onChange={(e) => setTaskDueDate(t.id, e.target.value || null)}
+                  />
                   <button className="m__chip m__chip--small m__chip--danger" onClick={() => deleteTask(t.id)}>
                     supprimer
                   </button>

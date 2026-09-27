@@ -1,6 +1,6 @@
 # Le Fil — état d'avancement
 
-Dernière session : 2026-09-23 (vues Calendrier + Gantt, interface mobile, publication GitHub).
+Dernière session : 2026-09-26 (branchement Supabase : schéma SQL, couche de synchro).
 
 Dépôt public : https://github.com/martin-diraison/le-fil (branche `main`). Les commits
 utilisent l'adresse anonyme GitHub (config locale du dépôt) — ne jamais publier de données
@@ -84,12 +84,38 @@ Le code du prototype fait foi en cas de contradiction :
   vers le volet 2. Le liseré intérieur de 4 px n'est plus que sur les projets sélectionnés
   (il était auparavant affiché sur toutes les lignes, contrairement au README §3.2).
 
+## Supabase (branché et testé le 2026-09-26)
+- Un seul projet Supabase pour plusieurs applis : Le Fil a son **schéma Postgres `le_fil`**
+  (exposé dans Data API › Exposed schemas). SQL dans `le-fil/supabase/` : `schema.sql` (état
+  final), migrations `02_prefs_selected_text.sql` et `03_fix_check_same_owner.sql` (exécutées).
+  RLS `user_id = auth.uid()` sur toutes les tables.
+- `src/lib/supabase.ts` : client sur le schéma `le_fil`. `src/state/sync.ts` : charge les données
+  au login puis envoie les différences du store (debounce 600 ms, file + retry). Les actions du
+  store restent inchangées. Ids = UUID générés côté client. `App.tsx` gère chargement/erreur.
+- Compte créé, persistance vérifiée par l'utilisateur en local (`npm run dev`).
+- Ajout : sélecteur de date précis (`<input type="date">`) pour les tâches et les lots
+  (desktop `LotDetail.tsx`, mobile `LotScreen.tsx`).
+- **Non commité** à la fin de cette session (Supabase + sélecteur de date) : commiter à la reprise.
+
+## Reprise : déploiement GitHub Pages (prochaine étape, décidée le 2026-09-26)
+Objectif : URL HTTPS pour installer la PWA sur PC/mobile.
+1. Code : `base: '/le-fil/'` dans `vite.config.ts` + `start_url`/`scope` du manifeste et chemins
+   des icônes (aujourd'hui `/`), workflow `.github/workflows/deploy.yml` (build de `le-fil/`,
+   le dépôt git est à la racine `perso/`), repli 404 → index.html.
+2. Utilisateur, GitHub : Settings › Pages › Source = GitHub Actions ; variables Actions
+   `VITE_SUPABASE_URL` et `VITE_SUPABASE_ANON_KEY` (jamais `service_role`).
+3. Utilisateur, Supabase : Authentication › URL Configuration : Site URL =
+   `https://martin-diraison.github.io/le-fil/` + Redirect URLs (garder localhost:5173).
+4. **Audit avant push** (dépôt public) : pas de clé/donnée perso dans les fichiers suivis,
+   e-mail noreply ; ne pas ajouter `App de gestion de projets/` sans accord. Push seulement
+   avec l'accord de l'utilisateur.
+5. Ensuite : désactiver les inscriptions publiques (Authentication › Sign In / Providers) —
+   les comptes sont partagés avec les autres applis du projet, le faire après création du compte.
+6. Plus tard : Realtime multi-appareils, hors-ligne (IndexedDB + file d'attente).
+
 ## Pas encore fait
 - Préférences (vue, mode calendrier, bascules tâches, sélection) non persistées : elles
   seront stockées avec Supabase (`UserPrefs`).
-- **Branchement Supabase réel** : il faut créer un projet Supabase (gratuit), renseigner
-  `le-fil/.env.local` (copier `.env.example`), et écrire le schéma SQL (tables
-  projects/lots/tasks + RLS) — pas encore fait.
 - Sync hors-ligne / cache IndexedDB / file d'attente de synchro.
 - « Simuler hors ligne » (démo uniquement dans les prototypes) : volontairement non repris ;
   l'indicateur de synchro affiche « synchronisé » en attendant la vraie synchro.

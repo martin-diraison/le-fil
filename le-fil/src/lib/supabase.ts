@@ -16,4 +16,8 @@ if (!isSupabaseConfigured) {
 
 // createClient exige une URL syntaxiquement valide même en mode démo (non utilisée tant
 // qu'isSupabaseConfigured est faux — voir App.tsx).
-export const supabase = createClient(url || 'https://placeholder.supabase.co', anonKey || 'placeholder');
+// Le projet Supabase héberge plusieurs applis : Le Fil vit dans son propre schéma Postgres
+// (supabase/schema.sql), qui doit être listé dans Data API › Exposed schemas.
+export const supabase = createClient(url || 'https://placeholder.supabase.co', anonKey || 'placeholder', {
+  db: { schema: 'le_fil' },
+});

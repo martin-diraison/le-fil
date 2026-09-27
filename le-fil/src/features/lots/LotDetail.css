@@ -312,3 +312,20 @@
   border-bottom: 1px solid var(--rule-on-ink);
   padding: 9px 13px;
 }
+
+/* Date précise (sélecteur natif) — échéance du lot et des tâches. */
+.lotDetail__dateInput,
+.taskRow__pickerDate {
+  font: 600 9px var(--font-ui);
+  letter-spacing: 0.06em;
+  color: #e4e4e0;
+  background: transparent;
+  border: 1px solid #5a5a57;
+  padding: 4px 7px;
+  color-scheme: dark;
+  cursor: pointer;
+}
+.lotDetail__dateInput:focus-visible,
+.taskRow__pickerDate:focus-visible {
+  outline: 1px solid var(--yellow);
+}

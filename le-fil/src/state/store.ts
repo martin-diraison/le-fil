@@ -4,13 +4,20 @@ import { computeUrgency, compareUrgency } from '../types/models';
 import { nextProjectColor } from '../lib/palette';
 import { dueFromChoice, type DateChoiceKey } from './dateShortcuts';
 import { SEED_LOTS, SEED_PROJECTS, SEED_TASKS } from './seed';
+import { isSupabaseConfigured } from '../lib/supabase';
 
 /** Sentinel pour la sélection "sans projet" dans le menu gauche (§3.2, §3.6). */
 export const NO_PROJECT = '__no_project__' as const;
 export type ProjectKey = string | typeof NO_PROJECT;
 
-function uid(prefix: string): string {
-  return prefix + '_' + (crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2));
+/** UUID v4 : les identifiants sont créés côté client et stockés tels quels dans Supabase. */
+function uid(_prefix: string): string {
+  if (crypto.randomUUID) return crypto.randomUUID();
+  const b = crypto.getRandomValues(new Uint8Array(16)); // contexte non sécurisé (http hors localhost)
+  b[6] = (b[6] & 0x0f) | 0x40;
+  b[8] = (b[8] & 0x3f) | 0x80;
+  const h = Array.from(b, (x) => x.toString(16).padStart(2, '0')).join('');
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
 }
 
 function nowIso() {
@@ -132,9 +139,10 @@ let toastTimer: ReturnType<typeof setTimeout> | undefined;
 const SORT_CYCLE: SortMode[] = ['urgence', 'récent', 'manuel'];
 
 export const useStore = create<State>((set, get) => ({
-  projects: SEED_PROJECTS,
-  lots: SEED_LOTS,
-  tasks: SEED_TASKS,
+  // Données factices en mode démo uniquement ; avec Supabase, elles sont chargées par sync.ts.
+  projects: isSupabaseConfigured ? [] : SEED_PROJECTS,
+  lots: isSupabaseConfigured ? [] : SEED_LOTS,
+  tasks: isSupabaseConfigured ? [] : SEED_TASKS,
 
   selected: [],
   lateOnly: false,
