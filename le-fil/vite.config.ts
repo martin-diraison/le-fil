@@ -12,12 +12,12 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg'],
+      includeAssets: ['icons/favicon.ico', 'icons/favicon.svg'],
       manifest: {
         name: 'Le Fil',
         short_name: 'Le Fil',
         description: 'Projets, lots, tâches — gestionnaire de projets personnels.',
-        theme_color: '#0a0a0a',
+        theme_color: '#f2c015',
         background_color: '#fbfbf9',
         display: 'standalone',
         start_url: base,
@@ -25,6 +25,12 @@ export default defineConfig({
         icons: [
           { src: `${base}icons/icon-192.png`, sizes: '192x192', type: 'image/png' },
           { src: `${base}icons/icon-512.png`, sizes: '512x512', type: 'image/png' },
+          {
+            src: `${base}icons/icon-maskable-192.png`,
+            sizes: '192x192',
+            type: 'image/png',
+            purpose: 'maskable',
+          },
           {
             src: `${base}icons/icon-maskable-512.png`,
             sizes: '512x512',
@@ -34,7 +40,7 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
+        globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2}'],
       },
     }),
   ],
