@@ -1,7 +1,8 @@
 # Le Fil — état d'avancement
 
-Dernière session : 2026-09-27 (commit du branchement Supabase, code du déploiement GitHub
-Pages — reste : réglages GitHub/Supabase côté utilisateur puis push).
+Dernière session : 2026-09-27 — **l'appli est en ligne et fonctionnelle** :
+https://martin-diraison.github.io/le-fil/ (déployée via GitHub Actions, connexion testée avec
+succès par l'utilisateur).
 
 Dépôt public : https://github.com/martin-diraison/le-fil (branche `main`). Les commits
 utilisent l'adresse anonyme GitHub (config locale du dépôt) — ne jamais publier de données
@@ -98,27 +99,29 @@ Le code du prototype fait foi en cas de contradiction :
   (desktop `LotDetail.tsx`, mobile `LotScreen.tsx`).
 - Commité (2026-09-27, `03bebc4`).
 
-## Déploiement GitHub Pages — en cours (reprise du 2026-09-27)
-Objectif : URL HTTPS pour installer la PWA sur PC/mobile.
-1. ✅ Code (commité en `932f283`) : `base: '/le-fil/'` en production dans `vite.config.ts`
-   (racine en dev), `start_url`/`scope`/icônes du manifeste répercutés, retrait du
-   `<link rel="manifest">` statique redondant, `.github/workflows/deploy.yml` (build de
-   `le-fil/` — le dépôt git est à la racine `perso/` — puis `actions/deploy-pages`), copie
-   `index.html` → `404.html` pour servir l'app sur une route inconnue (sert aussi le lien de
-   réinitialisation de mot de passe qui pointe hors de `/le-fil/`, voir `AuthScreen.tsx`).
-   Build vérifié en local (`npm run build`).
-2. ⬜ Utilisateur, GitHub : Settings › Pages › Source = GitHub Actions ; Settings › Secrets and
-   variables › Actions › Variables : `VITE_SUPABASE_URL` et `VITE_SUPABASE_ANON_KEY` (jamais
-   `service_role`).
-3. ⬜ Utilisateur, Supabase : Authentication › URL Configuration : Site URL =
-   `https://martin-diraison.github.io/le-fil/` + l'ajouter aux Redirect URLs (garder
-   `http://localhost:5173`).
-4. ⬜ **Push** : dépôt public déjà audité pour les 2 commits en attente (pas de clé/donnée
-   perso, e-mail noreply) ; `App de gestion de projets/` reste non ajoutée. Push seulement
-   avec l'accord explicite de l'utilisateur.
-5. ⬜ Ensuite : désactiver les inscriptions publiques (Authentication › Sign In / Providers) —
-   les comptes sont partagés avec les autres applis du projet, le faire après création du compte.
-6. Plus tard : Realtime multi-appareils, hors-ligne (IndexedDB + file d'attente).
+## Déploiement GitHub Pages — ✅ en ligne (2026-09-27)
+URL : **https://martin-diraison.github.io/le-fil/**, installable en PWA (mobile/PC).
+- Code : `base: '/le-fil/'` en production dans `vite.config.ts` (racine en dev),
+  `start_url`/`scope`/icônes du manifeste répercutés, `.github/workflows/deploy.yml` (build de
+  `le-fil/` — le dépôt git est à la racine `perso/` — puis `actions/deploy-pages`), copie
+  `index.html` → `404.html` pour servir l'app sur une route inconnue.
+- GitHub : Pages en source « GitHub Actions » ; variables Actions `VITE_SUPABASE_URL` /
+  `VITE_SUPABASE_ANON_KEY` réglées.
+- Supabase : Authentication › URL Configuration → Site URL + Redirect URLs incluent
+  `https://martin-diraison.github.io/le-fil/` (localhost:5173 conservé pour le dev).
+- **Bug corrigé** : coquille `.com` au lieu de `.co` dans la variable Actions
+  `VITE_SUPABASE_URL` → échec CORS silencieux sur `auth/v1/token`, masqué par un message
+  d'erreur de connexion trop générique. Corrigés (`b4bf2c6`) : le message de connexion
+  n'affiche « e-mail ou mot de passe incorrect » que pour ce cas précis (sinon le message réel
+  de Supabase s'affiche) ; le lien « mot de passe oublié » suit désormais
+  `import.meta.env.BASE_URL` (il sortait du site Pages, `/reinitialiser` au lieu de `/le-fil/`).
+- Connexion testée avec succès par l'utilisateur sur l'URL en ligne.
+
+## Prochaine étape suggérée
+Désactiver les inscriptions publiques sur Supabase (Authentication › Sign In / Providers) —
+les comptes sont partagés avec les autres applis du projet, à faire maintenant que le compte
+personnel fonctionne. Ensuite (plus tard, sans urgence) : Realtime multi-appareils, hors-ligne
+(IndexedDB + file d'attente).
 
 ## Pas encore fait
 - Préférences (vue, mode calendrier, bascules tâches, sélection) non persistées : elles
