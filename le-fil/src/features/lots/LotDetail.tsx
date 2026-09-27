@@ -22,7 +22,6 @@ export default function LotDetail({ drawer = false }: { drawer?: boolean }) {
   const openLot = useStore((s) => s.openLot);
   const updateLotTitle = useStore((s) => s.updateLotTitle);
   const updateLotBody = useStore((s) => s.updateLotBody);
-  const setLotDue = useStore((s) => s.setLotDue);
   const toggleLotDone = useStore((s) => s.toggleLotDone);
   const moveLotToProject = useStore((s) => s.moveLotToProject);
   const requestDeleteLot = useStore((s) => s.requestDeleteLot);
@@ -158,56 +157,31 @@ export default function LotDetail({ drawer = false }: { drawer?: boolean }) {
               <input
                 type="date"
                 className="lotDetail__dateInput"
-                title="début (pour un lot qui dure plusieurs jours ; laisser vide sinon)"
                 aria-label="début du lot"
                 value={lot.startDate ?? ''}
                 onChange={(e) => setLotStartDate(lot.id, e.target.value || null)}
               />
               <span className="lotDetail__dueShortcutsLabel">au</span>
-              {DATE_CHOICES.map((c) => {
-                const current =
-                  c.key === 'none' ? !lot.due : lot.due && daysFromToday(lot.due) === c.offset;
-                return (
-                  <button
-                    key={c.key}
-                    className="lotDetail__shortcutBtn"
-                    style={{
-                      background: current ? 'var(--yellow)' : 'transparent',
-                      color: current ? 'var(--ink)' : '#d4d4d0',
-                      borderColor: current ? 'var(--yellow)' : '#5a5a57',
-                    }}
-                    onClick={() => setLotDue(lot.id, c.key as DateChoiceKey)}
-                  >
-                    {c.label}
-                  </button>
-                );
-              })}
               <input
                 type="date"
                 className="lotDetail__dateInput"
-                title="date précise"
-                aria-label="échéance précise du lot"
+                aria-label="échéance du lot"
                 value={lot.due ?? ''}
                 onChange={(e) => setLotDueDate(lot.id, e.target.value || null)}
               />
+              <span className="lotDetail__dueShortcutsLabel">répétition</span>
+              <select
+                className="lotDetail__repeatSelect"
+                value={lot.repeat}
+                onChange={(e) => setLotRepeat(lot.id, e.target.value as Repeat)}
+              >
+                {REPEAT_CHOICES.map((c) => (
+                  <option key={c.key} value={c.key}>
+                    {c.label}
+                  </option>
+                ))}
+              </select>
             </div>
-
-            {lot.due && (
-              <div className="lotDetail__dueShortcuts">
-                <span className="lotDetail__dueShortcutsLabel">se répète</span>
-                <select
-                  className="lotDetail__repeatSelect"
-                  value={lot.repeat}
-                  onChange={(e) => setLotRepeat(lot.id, e.target.value as Repeat)}
-                >
-                  {REPEAT_CHOICES.map((c) => (
-                    <option key={c.key} value={c.key}>
-                      {c.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
           </div>
 
           <div className="lotDetail__tasks" style={{ borderLeft: `4px solid ${color}` }}>

@@ -151,44 +151,26 @@ export default function LotScreen({
             onChange={(e) => setLotStartDate(lot.id, e.target.value || null)}
           />
           <span className="m__choicesInline">au</span>
-          {MOBILE_DATE_CHOICES.map((c) => (
-            <button
-              key={c.key}
-              className={`m__chip ${isCurrent(lot.due, c.offset) ? 'm__chip--on' : ''}`}
-              onClick={() => {
-                const due = dueFromOffset(c.offset);
-                setLotDueDate(lot.id, due);
-                flash(due ? 'échéance ' + formatShortDate(due) : 'sans date');
-              }}
-            >
-              {c.label}
-            </button>
-          ))}
           <input
             type="date"
             className="m__dateInput"
-            aria-label="échéance précise du lot"
+            aria-label="échéance du lot"
             value={lot.due ?? ''}
             onChange={(e) => setLotDueDate(lot.id, e.target.value || null)}
           />
+          <span className="m__choicesInline">répétition</span>
+          <select
+            className="m__repeatSelect"
+            value={lot.repeat}
+            onChange={(e) => setLotRepeat(lot.id, e.target.value as Repeat)}
+          >
+            {REPEAT_CHOICES.map((c) => (
+              <option key={c.key} value={c.key}>
+                {c.label}
+              </option>
+            ))}
+          </select>
         </div>
-
-        {lot.due && (
-          <div className="m__choices">
-            <span className="m__choicesLabel">se répète</span>
-            <select
-              className="m__repeatSelect"
-              value={lot.repeat}
-              onChange={(e) => setLotRepeat(lot.id, e.target.value as Repeat)}
-            >
-              {REPEAT_CHOICES.map((c) => (
-                <option key={c.key} value={c.key}>
-                  {c.label}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
 
         <div className="m__tasksHead" style={{ borderLeftColor: color }}>
           <span className="m__tasksDot" style={{ background: color }} />
