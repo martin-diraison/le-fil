@@ -1,8 +1,30 @@
 # Le Fil — état d'avancement
 
-Dernière session : 2026-09-27 — reprise des chantiers d'ajustement d'usage (voir section du
-jour plus bas). Appli en ligne, installée : https://martin-diraison.github.io/le-fil/
-(déployée via GitHub Actions, connexion testée, PWA installée sur smartphone Samsung).
+Dernière session : 2026-09-27 — reprise des chantiers d'ajustement d'usage, puis refonte de
+l'onglet mobile « Fil » (voir sections du jour plus bas). Appli en ligne, installée :
+https://martin-diraison.github.io/le-fil/ (déployée via GitHub Actions, connexion testée, PWA
+installée sur smartphone Samsung).
+
+## Refonte de l'onglet mobile « Fil » (2026-09-27)
+Discuté avant tout code (4 directions proposées avec maquettes ASCII via AskUserQuestion) :
+l'utilisateur a choisi « Focus + repli », avec un ajout explicite — pouvoir identifier le
+projet d'un lot sans ambiguïté. Réalisé (`FilScreen.tsx`, `Mobile.css`, `labels.ts`) :
+- Groupes « retard » et « aujourd'hui » dépliés par défaut ; « cette semaine », « plus tard »,
+  « sans date », « terminés » démarrent repliés (chevron ▸/▾, état local `useState`, non
+  persisté — repart replié à chaque ouverture de l'onglet). Chaque groupe reste cliquable dans
+  les deux sens.
+- Badge coloré + nom de projet sur chaque ligne de lot (`.m__rowProject`), en plus de la barre
+  de couleur `.m__edge` déjà existante mais sans libellé. `lotMeta()` gagne un 4ᵉ paramètre
+  `showProject` (défaut `true`, inchangé pour `CalendarScreen`) pour ne pas dupliquer le nom du
+  projet dans la ligne de méta sous le titre côté Fil.
+- Vérifié visuellement en mobile (390×760, via un nouvel onglet Chrome redimensionné avant
+  navigation — contourne le bug de `resize_window` sur un onglet déjà chargé, noté la session
+  précédente) : repli/dépli, badge, ouverture d'un lot. Au passage, confirme que l'alignement
+  `du`/`au`/`répétition` en grille (commit `25390e7`, non re-vérifié la session précédente) est
+  correct en mobile. `tsc --noEmit` et `npm run build` passent. Commité (`bd17fea`), pas encore
+  poussé/redéployé.
+- L'ouverture par défaut sur « projets » (plutôt que « fil ») peut être reconsidérée maintenant
+  que l'onglet Fil est plus utilisable — à voir à l'usage.
 
 ## Reprise des chantiers d'usage (2026-09-27, suite)
 - **Échéance / début / répétition du lot (desktop + mobile)** : plusieurs allers-retours cette
@@ -32,13 +54,6 @@ jour plus bas). Appli en ligne, installée : https://martin-diraison.github.io/l
   évite de resignaler des points déjà traités (ex. retour à la ligne des intitulés de tâche
   mobile, déjà fait, voir plus bas).
 
-## Prochaine session : refonte de l'onglet mobile « Fil »
-Chantier explicitement demandé pour la reprise. Actuellement une simple liste de lots groupés
-par urgence (`src/features/mobile/FilScreen.tsx`) — jugée peu utile par l'utilisateur (« liste
-de lots en vrac »), d'où l'ouverture par défaut sur « projets » en attendant (voir plus bas).
-Nécessite une vraie réflexion de mise en page (maquettes/options à proposer), pas juste du
-code — commencer par discuter des options avant d'implémenter.
-
 ## Premiers ajustements d'usage (2026-09-27)
 - Mobile : ouverture par défaut sur « projets » (le « fil » reste à repenser, voir plus bas).
 - Export d'une liste de tâches en texte simple (bouton « copier », desktop + mobile) — pratique
@@ -65,11 +80,7 @@ code — commencer par discuter des options avant d'implémenter.
    Supabase + `pg_cron`) qui vérifie les échéances. Fonctionne bien sur Android ; sur iPhone
    seulement depuis iOS 16.4 et uniquement pour l'appli installée. Mis en veille faute de
    priorité claire — à rediscuter.
-2. **Onglet mobile « Fil » à repenser** — l'utilisateur le juge peu utile dans sa forme
-   actuelle (« liste de lots en vrac ») ; en l'état il ne l'utiliserait pas. Nécessite une
-   vraie réflexion de mise en page (maquettes/options à proposer), pas juste du code. À
-   traiter en priorité à la reprise puisque le mobile s'ouvre pour l'instant sur « projets »
-   en attendant.
+2. ~~Onglet mobile « Fil » à repenser~~ — fait le 2026-09-27, voir section dédiée plus haut.
 
 Dépôt public : https://github.com/martin-diraison/le-fil (branche `main`). Les commits
 utilisent l'adresse anonyme GitHub (config locale du dépôt) — ne jamais publier de données
@@ -115,7 +126,8 @@ de continuer — ce fichier + les commentaires du code portent tout le contexte 
   sont affichés ; repasser en Liste avec un lot ouvert ajoute son projet à la sélection.
 - **Interface mobile** (`src/features/mobile/`, sous 760 px de large — même seuil que l'écran
   de connexion) : barre d'état + synchro, onglets fil · projets · calendrier, Fil groupé par
-  urgence, grille des projets, projet ouvert (réglages : nom, palette, suppression en deux
+  urgence avec repli/dépli par groupe et badge de projet par lot (voir section dédiée
+  ci-dessus), grille des projets, projet ouvert (réglages : nom, palette, suppression en deux
   temps), lot ouvert (échéance, tâches, « déplacer vers… » replié, terminer, +1 j), calendrier
   du mois avec intitulés courts, cases agrandissables et liste du jour, page Compte.
   Les sections du compte sont partagées avec le tiroir desktop (`AccountPanel.tsx`).
