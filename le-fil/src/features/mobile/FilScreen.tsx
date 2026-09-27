@@ -10,6 +10,7 @@ const GROUPS: { key: Urgency; label: string; tone?: 'late' | 'muted' }[] = [
   { key: 'late', label: 'en retard', tone: 'late' },
   { key: 'today', label: "aujourd'hui" },
   { key: 'week', label: 'dans les 7 prochains jours' },
+  { key: 'month', label: 'dans les 30 prochains jours' },
   { key: 'soon', label: 'plus tard' },
   { key: 'none', label: 'sans date', tone: 'muted' },
   { key: 'done', label: 'terminés', tone: 'muted' },

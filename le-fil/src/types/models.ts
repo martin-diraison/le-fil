@@ -63,12 +63,14 @@ export type UserPrefs = {
  * NB : le README §1 liste l'ordre en texte comme « done › late › today › week › soon › none »,
  * mais la logique réelle du prototype (Grille 3 volets, `urgency()`/`sorted()`) classe
  * `late` en premier et `done` en dernier — cohérent avec les groupes du Fil mobile
- * (retard · aujourd'hui · dans les 7 prochains jours · plus tard · sans date · terminés).
+ * (retard · aujourd'hui · dans les 7 prochains jours · dans les 30 prochains jours · plus
+ * tard · sans date · terminés).
  * On suit le code du prototype, qui fait foi en cas de contradiction avec le texte.
- * `week` = du lendemain à J+7 ; `soon` = tout ce qui dépasse J+7 (pas de plafond : un lot
- * lointain reste visible sous « plus tard » plutôt que d'être caché, décision utilisateur).
+ * `week` = du lendemain à J+7 ; `month` = J+8 à J+30 ; `soon` = tout ce qui dépasse J+30 (pas
+ * de plafond : un lot lointain reste visible sous « plus tard » plutôt que d'être caché,
+ * décision utilisateur).
  */
-export type Urgency = 'late' | 'today' | 'week' | 'soon' | 'none' | 'done';
+export type Urgency = 'late' | 'today' | 'week' | 'month' | 'soon' | 'none' | 'done';
 
 export function computeUrgency(lot: Pick<Lot, 'done' | 'due'>, today: Date = new Date()): Urgency {
   if (lot.done) return 'done';
@@ -79,6 +81,7 @@ export function computeUrgency(lot: Pick<Lot, 'done' | 'due'>, today: Date = new
   if (diffDays < 0) return 'late';
   if (diffDays === 0) return 'today';
   if (diffDays <= 7) return 'week';
+  if (diffDays <= 30) return 'month';
   return 'soon';
 }
 
@@ -86,9 +89,10 @@ const URGENCY_ORDER: Record<Urgency, number> = {
   late: 0,
   today: 1,
   week: 2,
-  soon: 3,
-  none: 4,
-  done: 5,
+  month: 3,
+  soon: 4,
+  none: 5,
+  done: 6,
 };
 
 export function compareUrgency(a: Urgency, b: Urgency): number {
