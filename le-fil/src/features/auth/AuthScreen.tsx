@@ -61,8 +61,10 @@ export default function AuthScreen() {
     if (mode === 'forgot') {
       setSubmitting(true);
       // Le message de confirmation s'affiche même si l'adresse est inconnue (pas de fuite d'info).
+      // BASE_URL vaut '/le-fil/' en prod (GitHub Pages) et '/' en dev (voir vite.config.ts) :
+      // le lien doit rester sous ce chemin, sinon il tombe hors du site Pages (404 GitHub).
       await supabase.auth.resetPasswordForEmail(trimmed, {
-        redirectTo: `${window.location.origin}/reinitialiser`,
+        redirectTo: `${window.location.origin}${import.meta.env.BASE_URL}`,
       });
       setSubmitting(false);
       setSentTo(trimmed);
@@ -113,7 +115,13 @@ export default function AuthScreen() {
     });
     setSubmitting(false);
     if (signInError) {
-      setError('e-mail ou mot de passe incorrect');
+      // Message clair pour le cas courant ; sinon on affiche l'erreur réelle plutôt que de
+      // la masquer (un souci réseau/config ne doit pas ressembler à un mauvais mot de passe).
+      setError(
+        /invalid login credentials/i.test(signInError.message)
+          ? 'e-mail ou mot de passe incorrect'
+          : signInError.message,
+      );
       return;
     }
     setPassword('');
