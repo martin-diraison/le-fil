@@ -183,7 +183,7 @@
   border: none;
   background: transparent;
   cursor: pointer;
-  padding: 7px 4px 7px 13px;
+  padding: 5px 4px 5px 13px;
   display: flex;
   align-items: center;
   transition: var(--transition-bg);
@@ -201,7 +201,7 @@
   border: none;
   background: transparent;
   cursor: pointer;
-  padding: 7px 0 7px 4px;
+  padding: 5px 0 5px 4px;
   text-align: left;
   display: flex;
   align-items: center;

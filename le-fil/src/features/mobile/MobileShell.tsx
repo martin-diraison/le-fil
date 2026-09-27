@@ -44,7 +44,8 @@ export default function MobileShell({ session }: { session: Session }) {
   const openLotInStore = useStore((s) => s.openLot);
   const toast = useStore((s) => s.toast);
 
-  const [screen, setScreen] = useState<Screen>('fil');
+  // Ouverture par défaut sur « projets » tant que l'onglet « fil » n'est pas retravaillé.
+  const [screen, setScreen] = useState<Screen>('projets');
   const [from, setFrom] = useState<LotOrigin>('fil');
   const [openProj, setOpenProj] = useState<ProjectKey | null>(null);
   const [acctOpen, setAcctOpen] = useState(false);

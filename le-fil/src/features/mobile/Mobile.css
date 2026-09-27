@@ -405,21 +405,24 @@
 }
 
 /* ---------- projets ---------- */
+/* Liste compacte (1 colonne) plutôt qu'une grille de gros pavés : pensée pour
+   accueillir beaucoup de projets sans scroller sur des kilomètres. */
 .m__tiles {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  display: flex;
+  flex-direction: column;
   gap: 1px;
   padding: 1px;
   background: var(--ink);
 }
 .m__tile {
-  min-height: 108px;
+  min-height: 0;
   border: none;
-  padding: 13px 13px 11px;
+  padding: 12px 14px;
   cursor: pointer;
   text-align: left;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  align-items: center;
   justify-content: space-between;
   gap: 10px;
   overflow: hidden;
@@ -429,29 +432,33 @@
   outline-offset: -3px;
 }
 .m__tile--none {
-  padding: 13px;
+  padding: 12px 14px;
   background: var(--hover);
   color: #4a4a46;
   box-shadow: inset 0 0 0 1.5px var(--border-quiet);
 }
 .m__tileName {
-  font: 600 15px/1.15 var(--font-content);
+  font: 600 13.5px/1.2 var(--font-content);
   letter-spacing: 0.03em;
   text-transform: uppercase;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .m__tileCount,
 .m__projCount {
+  flex-shrink: 0;
   display: flex;
   align-items: baseline;
-  gap: 5px;
+  gap: 4px;
 }
 .m__tileNum {
-  font: 800 27px/1 var(--font-ui);
-  letter-spacing: -0.02em;
+  font: 800 15px/1 var(--font-ui);
+  letter-spacing: -0.01em;
 }
 .m__tileUnit {
-  font: 600 8.5px var(--font-ui);
-  letter-spacing: 0.16em;
+  font: 600 8px var(--font-ui);
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   opacity: 0.82;
 }
@@ -647,6 +654,22 @@
   letter-spacing: 0.08em;
   color: var(--text-secondary);
 }
+.m__tasksExport {
+  flex-shrink: 0;
+  border: 1px solid var(--border-quiet);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 4px 9px;
+  font: 600 8px var(--font-ui);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.m__tasksExport:hover {
+  background: var(--yellow);
+  color: var(--ink);
+  border-color: var(--yellow);
+}
 .m__task {
   border-bottom: 1px solid var(--rule);
 }
@@ -687,9 +710,9 @@
 }
 .m__taskLabel {
   font: 600 14px var(--font-content);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: normal;
+  overflow-wrap: break-word;
+  line-height: 1.3;
 }
 .m__taskLabel--done {
   color: var(--text-secondary);
@@ -697,6 +720,8 @@
 }
 .m__taskDue {
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
   border: none;
   border-left: 1px solid var(--rule);
   background: transparent;

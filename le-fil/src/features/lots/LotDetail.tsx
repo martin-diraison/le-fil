@@ -4,6 +4,7 @@ import { contrastText } from '../../lib/palette';
 import { computeUrgency } from '../../types/models';
 import { DATE_CHOICES, type DateChoiceKey } from '../../state/dateShortcuts';
 import { formatShortDate } from '../../lib/format';
+import { copyToClipboard, formatLotTasksAsText } from '../../lib/exportTasks';
 import './LotDetail.css';
 
 /** `drawer` : en Calendrier et Gantt, le volet 3 est un tiroir fixe de 336 px (§3.1). */
@@ -33,6 +34,7 @@ export default function LotDetail({ drawer = false }: { drawer?: boolean }) {
   const openTaskDatePicker = useStore((s) => s.openTaskDatePicker);
   const setTaskDueDate = useStore((s) => s.setTaskDueDate);
   const setLotDueDate = useStore((s) => s.setLotDueDate);
+  const flash = useStore((s) => s.flash);
 
   const [taskDraftLocal, setTaskDraftLocal] = useState(taskDraft);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -185,6 +187,18 @@ export default function LotDetail({ drawer = false }: { drawer?: boolean }) {
               <span className="lotDetail__tasksCount">
                 {lotTasks.length ? `${doneCount}/${lotTasks.length}` : '0'}
               </span>
+              {lotTasks.length > 0 && (
+                <button
+                  className="lotDetail__tasksExport"
+                  title="copier la liste des tâches en texte"
+                  onClick={async () => {
+                    const ok = await copyToClipboard(formatLotTasksAsText(lot, lotTasks));
+                    flash(ok ? 'tâches copiées' : 'copie impossible');
+                  }}
+                >
+                  copier
+                </button>
+              )}
             </div>
 
             {lotTasks.map((t) => {

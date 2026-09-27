@@ -191,7 +191,7 @@ export default function ProjectMenu({ userEmail, onOpenAccount }: Props) {
                 <button className="projectRow__select" style={{ color: fg }} onClick={() => selectOnly(p.id)}>
                   <span
                     className="projectRow__name"
-                    style={{ fontWeight: isSel ? 800 : 600, fontSize: 11.5 }}
+                    style={{ fontWeight: isSel ? 800 : 600, fontSize: 11 }}
                   >
                     {p.name}
                   </span>

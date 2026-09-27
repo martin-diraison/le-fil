@@ -5,6 +5,7 @@ import { contrastText, NO_PROJECT_COLOR } from '../../lib/palette';
 import { daysUntil, dueButtonLabel, formatShortDate } from '../../lib/format';
 import { parseDay, shiftDays, startOfDay, toDay } from '../../lib/dates';
 import { MOBILE_DATE_CHOICES, dueFromOffset } from '../../state/dateShortcuts';
+import { copyToClipboard, formatLotTasksAsText } from '../../lib/exportTasks';
 import { projectColor, projectName } from './labels';
 import type { LotOrigin, MobileNav } from './MobileShell';
 
@@ -165,6 +166,18 @@ export default function LotScreen({
           <span className="m__tasksCount">
             {tasks.length ? `${tasks.filter((t) => t.done).length} / ${tasks.length}` : '0'}
           </span>
+          {tasks.length > 0 && (
+            <button
+              className="m__tasksExport"
+              title="copier la liste des tâches en texte"
+              onClick={async () => {
+                const ok = await copyToClipboard(formatLotTasksAsText(lot, tasks));
+                flash(ok ? 'tâches copiées' : 'copie impossible');
+              }}
+            >
+              copier
+            </button>
+          )}
         </div>
         {tasks.map((t) => {
           const late = !t.done && t.due !== null && daysUntil(t.due)! < 0;
