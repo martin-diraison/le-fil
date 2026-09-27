@@ -637,18 +637,6 @@
   background: var(--red);
   color: var(--paper);
 }
-.m__choices--attached {
-  border-bottom: none;
-  padding-bottom: 0;
-}
-.m__hint {
-  margin: 0;
-  padding: 5px 14px 11px;
-  font: 400 12px/1.4 var(--font-ui);
-  color: var(--text-tertiary);
-  background: var(--hover);
-  border-bottom: 1px solid var(--ink);
-}
 .m__tasksHead {
   display: flex;
   align-items: center;

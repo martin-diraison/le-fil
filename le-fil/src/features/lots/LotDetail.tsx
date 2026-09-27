@@ -41,9 +41,16 @@ export default function LotDetail({ drawer = false }: { drawer?: boolean }) {
   const flash = useStore((s) => s.flash);
 
   const [taskDraftLocal, setTaskDraftLocal] = useState(taskDraft);
+  const [datesExpanded, setDatesExpanded] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const lot = lots.find((l) => l.id === openLotId) ?? null;
+
+  // Repliée par défaut : ne s'ouvre d'elle-même que si le lot a déjà un début ou une
+  // récurrence renseignés (sinon on masquerait une donnée existante à l'ouverture).
+  useEffect(() => {
+    setDatesExpanded(!!(lot?.startDate || (lot?.repeat && lot.repeat !== 'none')));
+  }, [lot?.id]);
   const project = lot?.projectId ? projects.find((p) => p.id === lot.projectId) : null;
   const color = project?.color ?? 'var(--text-tertiary)';
   const lotTasks = lot ? tasks.filter((t) => t.lotId === lot.id) : [];
@@ -181,41 +188,54 @@ export default function LotDetail({ drawer = false }: { drawer?: boolean }) {
                 value={lot.due ?? ''}
                 onChange={(e) => setLotDueDate(lot.id, e.target.value || null)}
               />
+              {!datesExpanded && (
+                <button className="lotDetail__moreBtn2" onClick={() => setDatesExpanded(true)}>
+                  + début / récurrence
+                </button>
+              )}
             </div>
 
-            <div className="lotDetail__dueShortcuts">
-              <span className="lotDetail__dueShortcutsLabel">début (optionnel)</span>
-              <input
-                type="date"
-                className="lotDetail__dateInput"
-                title="début de la fourchette"
-                aria-label="début de la fourchette du lot"
-                value={lot.startDate ?? ''}
-                onChange={(e) => setLotStartDate(lot.id, e.target.value || null)}
-              />
-            </div>
-            <p className="lotDetail__hint">
-              Sert seulement à étirer la barre du lot dans le Gantt, entre cette date et
-              l'échéance. Laisser vide si le lot n'a pas de durée à représenter.
-            </p>
-
-            {lot.due && (
+            {datesExpanded && (
               <div className="lotDetail__dueShortcuts">
-                <span className="lotDetail__dueShortcutsLabel">répétition</span>
-                {REPEAT_CHOICES.map((c) => (
+                <span className="lotDetail__dueShortcutsLabel" title="Étire la barre du lot dans le Gantt entre cette date et l'échéance.">
+                  début (Gantt)
+                </span>
+                <input
+                  type="date"
+                  className="lotDetail__dateInput"
+                  title="début de la période affichée dans le Gantt"
+                  aria-label="début de la fourchette du lot"
+                  value={lot.startDate ?? ''}
+                  onChange={(e) => setLotStartDate(lot.id, e.target.value || null)}
+                />
+                {lot.due && (
+                  <>
+                    <span className="lotDetail__dueShortcutsLabel">répétition</span>
+                    {REPEAT_CHOICES.map((c) => (
+                      <button
+                        key={c.key}
+                        className="lotDetail__shortcutBtn"
+                        style={{
+                          background: lot.repeat === c.key ? 'var(--yellow)' : 'transparent',
+                          color: lot.repeat === c.key ? 'var(--ink)' : '#d4d4d0',
+                          borderColor: lot.repeat === c.key ? 'var(--yellow)' : '#5a5a57',
+                        }}
+                        onClick={() => setLotRepeat(lot.id, c.key as Repeat)}
+                      >
+                        {c.label}
+                      </button>
+                    ))}
+                  </>
+                )}
+                {!lot.startDate && (!lot.repeat || lot.repeat === 'none') && (
                   <button
-                    key={c.key}
-                    className="lotDetail__shortcutBtn"
-                    style={{
-                      background: lot.repeat === c.key ? 'var(--yellow)' : 'transparent',
-                      color: lot.repeat === c.key ? 'var(--ink)' : '#d4d4d0',
-                      borderColor: lot.repeat === c.key ? 'var(--yellow)' : '#5a5a57',
-                    }}
-                    onClick={() => setLotRepeat(lot.id, c.key as Repeat)}
+                    className="lotDetail__moreBtn2"
+                    title="masquer (rien n'est renseigné ici)"
+                    onClick={() => setDatesExpanded(false)}
                   >
-                    {c.label}
+                    masquer
                   </button>
-                ))}
+                )}
               </div>
             )}
           </div>

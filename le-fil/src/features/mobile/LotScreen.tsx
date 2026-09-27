@@ -45,10 +45,17 @@ export default function LotScreen({
   const flash = useStore((s) => s.flash);
 
   const [moveOpen, setMoveOpen] = useState(false);
+  const [datesExpanded, setDatesExpanded] = useState(false);
   const [taskDraft, setTaskDraft] = useState('');
   const bodyRef = useRef<HTMLTextAreaElement>(null);
 
   const lot = lots.find((l) => l.id === lotId) ?? null;
+
+  // Repliée par défaut : ne s'ouvre d'elle-même que si le lot a déjà un début ou une
+  // récurrence renseignés (sinon on masquerait une donnée existante à l'ouverture).
+  useEffect(() => {
+    setDatesExpanded(!!(lot?.startDate || (lot?.repeat && lot.repeat !== 'none')));
+  }, [lot?.id]);
 
   // Texte qui s'agrandit avec son contenu.
   useLayoutEffect(() => {
@@ -164,33 +171,39 @@ export default function LotScreen({
           />
         </div>
 
-        <div className="m__choices m__choices--attached">
-          <span className="m__choicesLabel">début (optionnel)</span>
-          <input
-            type="date"
-            className="m__dateInput"
-            aria-label="début de la fourchette du lot"
-            value={lot.startDate ?? ''}
-            onChange={(e) => setLotStartDate(lot.id, e.target.value || null)}
-          />
-        </div>
-        <p className="m__hint">
-          Sert seulement à étirer la barre du lot dans le Gantt, entre cette date et l'échéance.
-          Laisser vide si le lot n'a pas de durée à représenter.
-        </p>
-
-        {lot.due && (
+        {!datesExpanded ? (
+          <button className="m__moveToggle" onClick={() => setDatesExpanded(true)}>
+            début / récurrence…
+          </button>
+        ) : (
           <div className="m__choices">
-            <span className="m__choicesLabel">répétition</span>
-            {REPEAT_CHOICES.map((c) => (
-              <button
-                key={c.key}
-                className={`m__chip ${lot.repeat === c.key ? 'm__chip--on' : ''}`}
-                onClick={() => setLotRepeat(lot.id, c.key as Repeat)}
-              >
-                {c.label}
+            <span className="m__choicesLabel">début (Gantt)</span>
+            <input
+              type="date"
+              className="m__dateInput"
+              aria-label="début de la fourchette du lot, pour la vue Gantt"
+              value={lot.startDate ?? ''}
+              onChange={(e) => setLotStartDate(lot.id, e.target.value || null)}
+            />
+            {lot.due && (
+              <>
+                <span className="m__choicesLabel">répétition</span>
+                {REPEAT_CHOICES.map((c) => (
+                  <button
+                    key={c.key}
+                    className={`m__chip ${lot.repeat === c.key ? 'm__chip--on' : ''}`}
+                    onClick={() => setLotRepeat(lot.id, c.key as Repeat)}
+                  >
+                    {c.label}
+                  </button>
+                ))}
+              </>
+            )}
+            {!lot.startDate && (!lot.repeat || lot.repeat === 'none') && (
+              <button className="m__chip" onClick={() => setDatesExpanded(false)}>
+                masquer
               </button>
-            ))}
+            )}
           </div>
         )}
 
