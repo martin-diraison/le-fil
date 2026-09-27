@@ -3,28 +3,39 @@
 Dernière session : 2026-09-27 — reprise des chantiers d'ajustement d'usage, puis refonte de
 l'onglet mobile « Fil » (voir sections du jour plus bas). Appli en ligne, installée :
 https://martin-diraison.github.io/le-fil/ (déployée via GitHub Actions, connexion testée, PWA
-installée sur smartphone Samsung).
+installée sur smartphone Samsung). **Tout est commité, poussé et déployé** (dernier commit
+`2390f70`, déploiement GitHub Pages confirmé réussi) — session terminée proprement.
 
 ## Refonte de l'onglet mobile « Fil » (2026-09-27)
 Discuté avant tout code (4 directions proposées avec maquettes ASCII via AskUserQuestion) :
 l'utilisateur a choisi « Focus + repli », avec un ajout explicite — pouvoir identifier le
-projet d'un lot sans ambiguïté. Réalisé (`FilScreen.tsx`, `Mobile.css`, `labels.ts`) :
-- Groupes « retard » et « aujourd'hui » dépliés par défaut ; « cette semaine », « plus tard »,
-  « sans date », « terminés » démarrent repliés (chevron ▸/▾, état local `useState`, non
-  persisté — repart replié à chaque ouverture de l'onglet). Chaque groupe reste cliquable dans
-  les deux sens.
+projet d'un lot sans ambiguïté. Réalisé (`FilScreen.tsx`, `Mobile.css`, `labels.ts`,
+`types/models.ts`), puis affiné à trois reprises suite aux retours de l'utilisateur :
+- Groupes dépliés par défaut : « retard », « aujourd'hui », « dans les 7 prochains jours »,
+  « dans les 30 prochains jours ». Repliés par défaut : « plus tard », « sans date »,
+  « terminés » (chevron ▸/▾, état local `useState`, non persisté — repart replié à chaque
+  ouverture de l'onglet). Chaque groupe reste cliquable dans les deux sens.
+- **Urgence à 4 paliers temporels** (`computeUrgency` dans `types/models.ts`) : `late` (< J),
+  `today` (= J), `week` J+1..J+7 (« dans les 7 prochains jours »), `month` J+8..J+30 (« dans les
+  30 prochains jours »), `soon` au-delà de J+30 (« plus tard », **sans plafond** — un lot très
+  lointain y reste visible plutôt que d'être caché, décision explicite de l'utilisateur après
+  clarification via AskUserQuestion). `URGENCY_ORDER` mis à jour en conséquence ; les autres
+  usages de `computeUrgency` dans l'appli ne testent que `=== 'late'`/`'today'`, donc non
+  affectés par l'ajout du palier `month`.
 - Badge coloré + nom de projet sur chaque ligne de lot (`.m__rowProject`), en plus de la barre
   de couleur `.m__edge` déjà existante mais sans libellé. `lotMeta()` gagne un 4ᵉ paramètre
   `showProject` (défaut `true`, inchangé pour `CalendarScreen`) pour ne pas dupliquer le nom du
   projet dans la ligne de méta sous le titre côté Fil.
-- Vérifié visuellement en mobile (390×760, via un nouvel onglet Chrome redimensionné avant
+- Vérifié visuellement en mobile (390×800, via un nouvel onglet Chrome redimensionné avant
   navigation — contourne le bug de `resize_window` sur un onglet déjà chargé, noté la session
-  précédente) : repli/dépli, badge, ouverture d'un lot. Au passage, confirme que l'alignement
-  `du`/`au`/`répétition` en grille (commit `25390e7`, non re-vérifié la session précédente) est
-  correct en mobile. `tsc --noEmit` et `npm run build` passent. Commité (`bd17fea`), pas encore
-  poussé/redéployé.
+  précédente ; **le contournement marche de façon fiable**, à réutiliser directement la
+  prochaine fois plutôt que de retenter `resize_window` sur un onglet existant). Au passage,
+  confirme que l'alignement `du`/`au`/`répétition` en grille (commit `25390e7`) est correct en
+  mobile. `tsc --noEmit` et `npm run build` passent à chaque étape.
 - L'ouverture par défaut sur « projets » (plutôt que « fil ») peut être reconsidérée maintenant
   que l'onglet Fil est plus utilisable — à voir à l'usage.
+- Commits : `bd17fea` (repli + badge), `6b4f724` (fenêtre 7 jours), `8de2f38` (palier 30
+  jours), `2390f70` (30 jours déplié par défaut). Poussés et déployés.
 
 ## Reprise des chantiers d'usage (2026-09-27, suite)
 - **Échéance / début / répétition du lot (desktop + mobile)** : plusieurs allers-retours cette
