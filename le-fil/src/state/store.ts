@@ -43,6 +43,9 @@ interface State {
   calWeek: number; // décalage en semaines depuis la semaine courante (vue semaine)
   showTasksInCalendar: boolean;
   showTasksInGantt: boolean;
+  /** Fenêtre Gantt : 3 mois autour d'aujourd'hui (défaut) ou étendue à tout ce qui est affiché.
+   *  Éphémère (non persisté) : simple choix d'affichage, pas une donnée utilisateur. */
+  ganttFullRange: boolean;
   toast: string | null;
 
   // Édition / interactions
@@ -120,6 +123,7 @@ interface State {
   calStep: (delta: 1 | -1) => void;
   toggleTasksInCalendar: () => void;
   toggleTasksInGantt: () => void;
+  toggleGanttFullRange: () => void;
   flash: (msg: string) => void;
 
   // Drag state setters (menu projets)
@@ -159,6 +163,7 @@ export const useStore = create<State>((set, get) => ({
   calWeek: 0,
   showTasksInCalendar: true,
   showTasksInGantt: true,
+  ganttFullRange: false,
   toast: null,
 
   colorPickerProjectId: null,
@@ -442,6 +447,7 @@ export const useStore = create<State>((set, get) => ({
 
   toggleTasksInCalendar: () => set((s) => ({ showTasksInCalendar: !s.showTasksInCalendar })),
   toggleTasksInGantt: () => set((s) => ({ showTasksInGantt: !s.showTasksInGantt })),
+  toggleGanttFullRange: () => set((s) => ({ ganttFullRange: !s.ganttFullRange })),
 
   // Toast : disparaît après ~2 s (§5 « Confirmations et retours »).
   flash: (msg) => {

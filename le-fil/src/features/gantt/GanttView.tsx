@@ -24,6 +24,41 @@ type Row =
       bar: { left: number; width: number; bg: string; title: string } | null;
     };
 
+type GanttWindow = {
+  start: Date;
+  span: number;
+  months: { key: string; label: string; days: number; offset: number }[];
+  title: string;
+};
+
+/** Fenêtre mensuelle entre deux 1ers du mois (bornes exclusives sur `end`). */
+function buildWindow(start: Date, end: Date): GanttWindow {
+  const span = Math.max(daysBetween(start, end), 1);
+  const monthCount = Math.max(
+    (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth()),
+    1,
+  );
+  const months = Array.from({ length: monthCount }, (_, i) => {
+    const m = new Date(start.getFullYear(), start.getMonth() + i, 1);
+    const next = new Date(m.getFullYear(), m.getMonth() + 1, 1);
+    return { key: toDay(m), label: MONTHS_LONG[m.getMonth()], days: daysBetween(m, next), offset: daysBetween(start, m) };
+  });
+  const last = new Date(end.getFullYear(), end.getMonth() - 1, 1);
+  const title =
+    monthCount <= 1
+      ? `${MONTHS_SHORT[start.getMonth()]} ${start.getFullYear()}`
+      : `${MONTHS_SHORT[start.getMonth()]} — ${MONTHS_SHORT[last.getMonth()]} ${last.getFullYear()}`;
+  return { start, span, months, title };
+}
+
+/** Fenêtre par défaut : mois précédent · courant · suivant, calculée depuis aujourd'hui. */
+function threeMonthWindow(todayKey: string): GanttWindow {
+  const t = parseDay(todayKey);
+  const start = new Date(t.getFullYear(), t.getMonth() - 1, 1);
+  const end = new Date(t.getFullYear(), t.getMonth() + 2, 1);
+  return buildWindow(start, end);
+}
+
 export default function GanttView() {
   const lots = useStore((s) => s.lots);
   const tasks = useStore((s) => s.tasks);
@@ -34,30 +69,46 @@ export default function GanttView() {
   const openLotId = useStore((s) => s.openLotId);
   const showTasks = useStore((s) => s.showTasksInGantt);
   const toggleTasks = useStore((s) => s.toggleTasksInGantt);
+  const fullRange = useStore((s) => s.ganttFullRange);
+  const toggleFullRange = useStore((s) => s.toggleGanttFullRange);
   const toggleOpenLot = useStore((s) => s.toggleOpenLot);
 
   const today = startOfDay();
   const todayKey = toDay(today);
 
+  const vis = useMemo(
+    () => filterLots({ lots, tasks, selected, lateOnly, search, view: 'gantt' }),
+    [lots, tasks, selected, lateOnly, search],
+  );
+
   const win = useMemo(() => {
-    const t = parseDay(todayKey);
-    const start = new Date(t.getFullYear(), t.getMonth() - 1, 1);
-    const end = new Date(t.getFullYear(), t.getMonth() + 2, 1);
-    const span = daysBetween(start, end);
-    const months = [0, 1, 2].map((i) => {
-      const m = new Date(start.getFullYear(), start.getMonth() + i, 1);
-      const next = new Date(m.getFullYear(), m.getMonth() + 1, 1);
-      return { key: toDay(m), label: MONTHS_LONG[m.getMonth()], days: daysBetween(m, next), offset: daysBetween(start, m) };
-    });
-    const last = new Date(end.getFullYear(), end.getMonth() - 1, 1);
-    const title = `${MONTHS_SHORT[start.getMonth()]} — ${MONTHS_SHORT[last.getMonth()]} ${last.getFullYear()}`;
-    return { start, span, months, title };
-  }, [todayKey]);
+    if (!fullRange) return threeMonthWindow(todayKey);
+    // « tout afficher » : la fenêtre s'étend du plus ancien au plus récent jour utile
+    // (échéances/débuts des lots visibles, + tâches si affichées), aujourd'hui toujours inclus.
+    const days = [todayKey];
+    for (const lot of vis) {
+      if (lot.startDate) days.push(lot.startDate);
+      if (lot.due) days.push(lot.due);
+      if (showTasks) {
+        for (const t of tasks) {
+          if (t.lotId !== lot.id) continue;
+          if (t.startDate) days.push(t.startDate);
+          if (t.due) days.push(t.due);
+        }
+      }
+    }
+    const min = days.reduce((a, b) => (a < b ? a : b));
+    const max = days.reduce((a, b) => (a > b ? a : b));
+    const minD = parseDay(min);
+    const maxD = parseDay(max);
+    const start = new Date(minD.getFullYear(), minD.getMonth(), 1);
+    const end = new Date(maxD.getFullYear(), maxD.getMonth() + 1, 1);
+    return buildWindow(start, end);
+  }, [fullRange, vis, tasks, showTasks, todayKey]);
 
   const rows = useMemo(() => {
     const pct = (day: string) => pctIn(win, day);
     const barW = (BAR_DAYS / win.span) * 100;
-    const vis = filterLots({ lots, tasks, selected, lateOnly, search, view: 'gantt' });
     const keys =
       selected.length > 0
         ? selected
@@ -135,7 +186,7 @@ export default function GanttView() {
       }
     }
     return out;
-  }, [lots, tasks, projects, selected, lateOnly, search, openLotId, showTasks, todayKey, win]);
+  }, [vis, tasks, projects, selected, search, openLotId, showTasks, todayKey, win]);
 
   const nowLeft = pctIn(win, todayKey);
 
@@ -144,6 +195,13 @@ export default function GanttView() {
       <div className="gantt__toolbar">
         <span className="gantt__title">{win.title}</span>
         <span className="gantt__hint">fin de barre = échéance · clic = ouvrir</span>
+        <button
+          className={`gantt__tasksBtn ${fullRange ? 'gantt__tasksBtn--on' : ''}`}
+          title="étendre la fenêtre à tous les lots affichés, plutôt que 3 mois autour d'aujourd'hui"
+          onClick={toggleFullRange}
+        >
+          {fullRange ? 'période · tout' : 'période · 3 mois'}
+        </button>
         <button className={`gantt__tasksBtn ${showTasks ? 'gantt__tasksBtn--on' : ''}`} onClick={toggleTasks}>
           {showTasks ? 'tâches · visibles' : 'tâches · masquées'}
         </button>

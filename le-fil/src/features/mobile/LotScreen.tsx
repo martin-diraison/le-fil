@@ -164,7 +164,7 @@ export default function LotScreen({
           />
         </div>
 
-        <div className="m__choices">
+        <div className="m__choices m__choices--attached">
           <span className="m__choicesLabel">début (optionnel)</span>
           <input
             type="date"
@@ -173,21 +173,26 @@ export default function LotScreen({
             value={lot.startDate ?? ''}
             onChange={(e) => setLotStartDate(lot.id, e.target.value || null)}
           />
-          {lot.due && (
-            <>
-              <span className="m__choicesLabel">répétition</span>
-              {REPEAT_CHOICES.map((c) => (
-                <button
-                  key={c.key}
-                  className={`m__chip ${lot.repeat === c.key ? 'm__chip--on' : ''}`}
-                  onClick={() => setLotRepeat(lot.id, c.key as Repeat)}
-                >
-                  {c.label}
-                </button>
-              ))}
-            </>
-          )}
         </div>
+        <p className="m__hint">
+          Sert seulement à étirer la barre du lot dans le Gantt, entre cette date et l'échéance.
+          Laisser vide si le lot n'a pas de durée à représenter.
+        </p>
+
+        {lot.due && (
+          <div className="m__choices">
+            <span className="m__choicesLabel">répétition</span>
+            {REPEAT_CHOICES.map((c) => (
+              <button
+                key={c.key}
+                className={`m__chip ${lot.repeat === c.key ? 'm__chip--on' : ''}`}
+                onClick={() => setLotRepeat(lot.id, c.key as Repeat)}
+              >
+                {c.label}
+              </button>
+            ))}
+          </div>
+        )}
 
         <div className="m__tasksHead" style={{ borderLeftColor: color }}>
           <span className="m__tasksDot" style={{ background: color }} />

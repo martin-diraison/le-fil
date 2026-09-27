@@ -193,26 +193,31 @@ export default function LotDetail({ drawer = false }: { drawer?: boolean }) {
                 value={lot.startDate ?? ''}
                 onChange={(e) => setLotStartDate(lot.id, e.target.value || null)}
               />
-              {lot.due && (
-                <>
-                  <span className="lotDetail__dueShortcutsLabel">répétition</span>
-                  {REPEAT_CHOICES.map((c) => (
-                    <button
-                      key={c.key}
-                      className="lotDetail__shortcutBtn"
-                      style={{
-                        background: lot.repeat === c.key ? 'var(--yellow)' : 'transparent',
-                        color: lot.repeat === c.key ? 'var(--ink)' : '#d4d4d0',
-                        borderColor: lot.repeat === c.key ? 'var(--yellow)' : '#5a5a57',
-                      }}
-                      onClick={() => setLotRepeat(lot.id, c.key as Repeat)}
-                    >
-                      {c.label}
-                    </button>
-                  ))}
-                </>
-              )}
             </div>
+            <p className="lotDetail__hint">
+              Sert seulement à étirer la barre du lot dans le Gantt, entre cette date et
+              l'échéance. Laisser vide si le lot n'a pas de durée à représenter.
+            </p>
+
+            {lot.due && (
+              <div className="lotDetail__dueShortcuts">
+                <span className="lotDetail__dueShortcutsLabel">répétition</span>
+                {REPEAT_CHOICES.map((c) => (
+                  <button
+                    key={c.key}
+                    className="lotDetail__shortcutBtn"
+                    style={{
+                      background: lot.repeat === c.key ? 'var(--yellow)' : 'transparent',
+                      color: lot.repeat === c.key ? 'var(--ink)' : '#d4d4d0',
+                      borderColor: lot.repeat === c.key ? 'var(--yellow)' : '#5a5a57',
+                    }}
+                    onClick={() => setLotRepeat(lot.id, c.key as Repeat)}
+                  >
+                    {c.label}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="lotDetail__tasks" style={{ borderLeft: `4px solid ${color}` }}>

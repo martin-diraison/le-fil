@@ -23,6 +23,7 @@
   white-space: nowrap;
 }
 .gantt__hint {
+  flex: 1;
   min-width: 0;
   font: 600 8.5px var(--font-ui);
   letter-spacing: 0.14em;
@@ -33,7 +34,6 @@
   text-overflow: ellipsis;
 }
 .gantt__tasksBtn {
-  margin-left: auto;
   flex-shrink: 0;
   border: 1px solid var(--ink);
   background: var(--paper);
