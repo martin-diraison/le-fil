@@ -1,8 +1,40 @@
 # Le Fil — état d'avancement
 
-Dernière session : 2026-09-27 — **l'appli est en ligne, installée et fonctionnelle** :
-https://martin-diraison.github.io/le-fil/ (déployée via GitHub Actions, connexion testée avec
-succès, PWA installée sur smartphone Samsung — icône dédiée, ouverture en plein écran).
+Dernière session : 2026-09-27 — appli en ligne, installée, et premiers ajustements d'usage
+posés : https://martin-diraison.github.io/le-fil/ (déployée via GitHub Actions, connexion
+testée, PWA installée sur smartphone Samsung).
+
+## Premiers ajustements d'usage (2026-09-27)
+- Mobile : ouverture par défaut sur « projets » (le « fil » reste à repenser, voir plus bas).
+- Export d'une liste de tâches en texte simple (bouton « copier », desktop + mobile) — pratique
+  pour un projet « Bugs » à transmettre.
+- Intitulés de tâche longs : retour à la ligne au lieu d'être tronqués.
+- Volet 3 desktop : partie tâches élargie (rappel du lot capé à 300px, tâches absorbent le
+  reste).
+- Listes de projets compactées : lignes fines desktop, liste à une colonne sur mobile (au lieu
+  des gros pavés) — pensé pour beaucoup de projets.
+- **Fourchettes de dates** : champ « début (optionnel) » à côté de l'échéance, sur lots et
+  tâches (desktop + mobile). Le Gantt étire la barre entre les deux dates quand disponibles.
+- **Récurrence des lots** (anniversaires, etc.) : sélecteur aucune/jour/semaine/mois/année ;
+  un lot en retard bascule automatiquement sur sa prochaine occurrence et se rouvre (`lib/
+  recurrence.ts`). Les tâches ne sont **pas** remises à zéro (choix explicite de l'utilisateur).
+  Modèle : `Lot.startDate`, `Lot.repeat`, `Task.startDate` — migration
+  `supabase/04_date_ranges_and_repeat.sql` **exécutée**.
+- Usage prévu : projet « Anniversaires », un lot par personne (récurrence annuelle), les tâches
+  du lot = organisation (cadeau, resto…), état non réinitialisé d'une année sur l'autre.
+- Tout est commité et poussé (dernier commit `4ebf19b`), déployé et vérifié en ligne.
+
+## Chantiers plus conséquents — à traiter dans une prochaine session dédiée
+1. **Notifications** — possible techniquement (Web Push), mais demande un vrai backend :
+   abonnements par appareil, clés VAPID, tâche planifiée côté serveur (ex. Edge Function
+   Supabase + `pg_cron`) qui vérifie les échéances. Fonctionne bien sur Android ; sur iPhone
+   seulement depuis iOS 16.4 et uniquement pour l'appli installée. Mis en veille faute de
+   priorité claire — à rediscuter.
+2. **Onglet mobile « Fil » à repenser** — l'utilisateur le juge peu utile dans sa forme
+   actuelle (« liste de lots en vrac ») ; en l'état il ne l'utiliserait pas. Nécessite une
+   vraie réflexion de mise en page (maquettes/options à proposer), pas juste du code. À
+   traiter en priorité à la reprise puisque le mobile s'ouvre pour l'instant sur « projets »
+   en attendant.
 
 Dépôt public : https://github.com/martin-diraison/le-fil (branche `main`). Les commits
 utilisent l'adresse anonyme GitHub (config locale du dépôt) — ne jamais publier de données
@@ -17,7 +49,8 @@ de continuer — ce fichier + les commentaires du code portent tout le contexte 
 
 ## Décisions prises (voir aussi la conversation)
 - **Stack** : React + TypeScript + Vite, PWA (installable mobile/PC), état local avec
-  Zustand, backend **Supabase** prévu (Postgres + Auth + Realtime) — pas encore branché.
+  Zustand, backend **Supabase** (Postgres + Auth ; Realtime pas encore utilisé — voir
+  « Prochaines étapes »).
 - **Pourquoi Supabase plutôt que Google Sheets/Drive** : pas de vraie gestion de comptes
   utilisateurs ni de sync temps réel côté Sheets ; Supabase fait ça nativement et reste
   gratuit pour un usage perso.
@@ -137,15 +170,13 @@ correcte, ouverture en plein écran.
   d'accueil), Chrome/Edge desktop (icône d'installation dans la barre d'adresse). Firefox
   desktop ne propose pas l'installation de PWA (fonctionnalité retirée du navigateur).
 
-## Prochaines étapes (sans urgence)
-Realtime multi-appareils ; hors-ligne (IndexedDB + file d'attente de synchro).
-
 ## Pas encore fait
-- Préférences (vue, mode calendrier, bascules tâches, sélection) non persistées : elles
-  seront stockées avec Supabase (`UserPrefs`).
-- Sync hors-ligne / cache IndexedDB / file d'attente de synchro.
-- « Simuler hors ligne » (démo uniquement dans les prototypes) : volontairement non repris ;
-  l'indicateur de synchro affiche « synchronisé » en attendant la vraie synchro.
+- Sync hors-ligne / cache IndexedDB / file d'attente de synchro (l'indicateur affiche
+  « synchronisé » en permanence en attendant).
+- Realtime multi-appareils (deux appareils ouverts en même temps ne se voient pas en direct ;
+  il faut recharger).
+- Voir aussi « Chantiers plus conséquents » en haut de ce fichier (notifications, onglet
+  mobile « Fil »).
 
 ## Pour relancer le serveur de dev
 ```bash
@@ -157,15 +188,3 @@ Node est installé via `nvm` (pas installé globalement sur le système) :
 ```bash
 export NVM_DIR="$HOME/.nvm"; [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
 ```
-
-## Prochaines étapes proposées (au choix, à la reprise)
-1. **Branchement Supabase** — en cours côté utilisateur : il fait le ménage dans son compte
-   Supabase et ouvre un nouveau projet. À la reprise : copier `le-fil/.env.example` en
-   `le-fil/.env.local` (URL + clé « anon »), puis écrire le schéma SQL (projects/lots/tasks +
-   préférences), les règles RLS par utilisateur, et remplacer les données de démo par la
-   lecture/écriture Supabase. Penser à désactiver les inscriptions une fois le compte créé.
-2. **Déploiement** — reporté volontairement. Piste retenue : GitHub Pages (gratuit, dépôt
-   public, URL `https://martin-diraison.github.io/le-fil/`) via GitHub Actions ; il faudra
-   régler `base: '/le-fil/'` dans Vite et le scope/start_url du manifeste PWA. Une URL HTTPS
-   est indispensable pour installer la PWA sur téléphone.
-3. Hors ligne : cache IndexedDB + file d'attente de synchro
