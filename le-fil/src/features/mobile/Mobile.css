@@ -611,13 +611,30 @@
   text-transform: uppercase;
   color: var(--text-secondary);
 }
-.m__choicesInline {
-  display: flex;
+/* Échéance du lot : grille à deux colonnes (label · contrôle), pour que du / au /
+   répétition s'alignent en colonnes plutôt que de retomber en désordre. */
+.m__period {
+  display: grid;
+  grid-template-columns: auto 1fr;
   align-items: center;
+  gap: 8px 10px;
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--ink);
+  background: var(--hover);
+}
+.m__period .m__choicesLabel {
+  grid-column: 1 / -1;
+}
+.m__periodLabel {
   font: 600 9px var(--font-ui);
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--text-secondary);
+}
+.m__period .m__dateInput,
+.m__repeatSelect {
+  width: 100%;
+  box-sizing: border-box;
 }
 .m__repeatSelect {
   font: 600 9px var(--font-ui);

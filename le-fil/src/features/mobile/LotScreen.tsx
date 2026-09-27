@@ -140,9 +140,9 @@ export default function LotScreen({
           onChange={(e) => updateLotBody(lot.id, e.target.value)}
         />
 
-        <div className="m__choices">
+        <div className="m__period">
           <span className="m__choicesLabel">échéance du lot</span>
-          <span className="m__choicesInline">du</span>
+          <span className="m__periodLabel">du</span>
           <input
             type="date"
             className="m__dateInput"
@@ -150,7 +150,7 @@ export default function LotScreen({
             value={lot.startDate ?? ''}
             onChange={(e) => setLotStartDate(lot.id, e.target.value || null)}
           />
-          <span className="m__choicesInline">au</span>
+          <span className="m__periodLabel">au</span>
           <input
             type="date"
             className="m__dateInput"
@@ -158,7 +158,7 @@ export default function LotScreen({
             value={lot.due ?? ''}
             onChange={(e) => setLotDueDate(lot.id, e.target.value || null)}
           />
-          <span className="m__choicesInline">répétition</span>
+          <span className="m__periodLabel">répétition</span>
           <select
             className="m__repeatSelect"
             value={lot.repeat}

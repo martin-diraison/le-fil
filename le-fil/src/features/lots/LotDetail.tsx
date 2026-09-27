@@ -152,8 +152,8 @@ export default function LotDetail({ drawer = false }: { drawer?: boolean }) {
               rows={1}
               placeholder="…"
             />
-            <div className="lotDetail__dueShortcuts">
-              <span className="lotDetail__dueShortcutsLabel">du</span>
+            <div className="lotDetail__period">
+              <span className="lotDetail__periodLabel">du</span>
               <input
                 type="date"
                 className="lotDetail__dateInput"
@@ -161,7 +161,7 @@ export default function LotDetail({ drawer = false }: { drawer?: boolean }) {
                 value={lot.startDate ?? ''}
                 onChange={(e) => setLotStartDate(lot.id, e.target.value || null)}
               />
-              <span className="lotDetail__dueShortcutsLabel">au</span>
+              <span className="lotDetail__periodLabel">au</span>
               <input
                 type="date"
                 className="lotDetail__dateInput"
@@ -169,7 +169,7 @@ export default function LotDetail({ drawer = false }: { drawer?: boolean }) {
                 value={lot.due ?? ''}
                 onChange={(e) => setLotDueDate(lot.id, e.target.value || null)}
               />
-              <span className="lotDetail__dueShortcutsLabel">répétition</span>
+              <span className="lotDetail__periodLabel">répétition</span>
               <select
                 className="lotDetail__repeatSelect"
                 value={lot.repeat}

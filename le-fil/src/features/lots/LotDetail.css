@@ -184,6 +184,28 @@
   border-width: 1px;
   border-style: solid;
 }
+
+/* Échéance du lot : grille à deux colonnes (label · contrôle) pour que les trois
+   champs (du / au / répétition) s'alignent verticalement, quelle que soit la
+   largeur du volet — plutôt qu'un flex qui les fait retomber en désordre. */
+.lotDetail__period {
+  display: grid;
+  grid-template-columns: auto 140px;
+  align-items: center;
+  gap: 7px 10px;
+  padding-top: 2px;
+}
+.lotDetail__periodLabel {
+  font: 600 8.5px var(--font-ui);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--on-ink-secondary);
+}
+.lotDetail__period .lotDetail__dateInput,
+.lotDetail__repeatSelect {
+  width: 100%;
+  box-sizing: border-box;
+}
 .lotDetail__repeatSelect {
   font: 600 9px var(--font-ui);
   letter-spacing: 0.06em;
