@@ -1,8 +1,8 @@
 # Le Fil — état d'avancement
 
-Dernière session : 2026-09-27 — **l'appli est en ligne et fonctionnelle** :
+Dernière session : 2026-09-27 — **l'appli est en ligne, installée et fonctionnelle** :
 https://martin-diraison.github.io/le-fil/ (déployée via GitHub Actions, connexion testée avec
-succès par l'utilisateur).
+succès, PWA installée sur smartphone Samsung — icône dédiée, ouverture en plein écran).
 
 Dépôt public : https://github.com/martin-diraison/le-fil (branche `main`). Les commits
 utilisent l'adresse anonyme GitHub (config locale du dépôt) — ne jamais publier de données
@@ -116,12 +116,29 @@ URL : **https://martin-diraison.github.io/le-fil/**, installable en PWA (mobile/
   de Supabase s'affiche) ; le lien « mot de passe oublié » suit désormais
   `import.meta.env.BASE_URL` (il sortait du site Pages, `/reinitialiser` au lieu de `/le-fil/`).
 - Connexion testée avec succès par l'utilisateur sur l'URL en ligne.
+- Inscriptions publiques désactivées côté Supabase (Authentication › Sign In / Providers) : les
+  nouveaux comptes se créent désormais via Authentication › Users (« Invite user » ou
+  « Add user »), la connexion/synchro du compte existant n'est pas affectée.
 
-## Prochaine étape suggérée
-Désactiver les inscriptions publiques sur Supabase (Authentication › Sign In / Providers) —
-les comptes sont partagés avec les autres applis du projet, à faire maintenant que le compte
-personnel fonctionne. Ensuite (plus tard, sans urgence) : Realtime multi-appareils, hors-ligne
-(IndexedDB + file d'attente).
+## Icônes PWA — ✅ refaites (2026-09-27)
+Jeu complet fourni par l'utilisateur (« encre sur jaune », voir
+`le-fil/public/icons/README-icones.md`) : `icon-192/512.png`, `icon-maskable-192/512.png`,
+`apple-touch-icon.png`, `favicon.ico`/`favicon.svg`/`favicon-16/32/48.png`,
+`icon-1024-macos.png` et `icon-256-windows.png` en réserve pour un futur usage desktop natif.
+`index.html` et `vite.config.ts` mis à jour en conséquence (`theme-color` → `#f2c015`). Le
+`manifest.webmanifest` statique fourni dans ce dossier n'est pas utilisé (vite-plugin-pwa génère
+et injecte le sien, avec le bon chemin `/le-fil/`) — laissé en place pour référence seulement.
+PWA installée et testée avec succès par l'utilisateur (Samsung Internet, Android) : icône
+correcte, ouverture en plein écran.
+
+## Installation PWA — ✅ testée
+- Android/Samsung Internet : menu ⋮ → « Installer en tant qu'application web » → fonctionne.
+- Pistes non testées à ce jour : Chrome Android, Safari iOS (bouton Partager › Sur l'écran
+  d'accueil), Chrome/Edge desktop (icône d'installation dans la barre d'adresse). Firefox
+  desktop ne propose pas l'installation de PWA (fonctionnalité retirée du navigateur).
+
+## Prochaines étapes (sans urgence)
+Realtime multi-appareils ; hors-ligne (IndexedDB + file d'attente de synchro).
 
 ## Pas encore fait
 - Préférences (vue, mode calendrier, bascules tâches, sélection) non persistées : elles
