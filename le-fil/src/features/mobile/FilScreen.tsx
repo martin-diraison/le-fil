@@ -9,7 +9,7 @@ import type { MobileNav } from './MobileShell';
 const GROUPS: { key: Urgency; label: string; tone?: 'late' | 'muted' }[] = [
   { key: 'late', label: 'en retard', tone: 'late' },
   { key: 'today', label: "aujourd'hui" },
-  { key: 'week', label: 'cette semaine' },
+  { key: 'week', label: 'dans les 7 prochains jours' },
   { key: 'soon', label: 'plus tard' },
   { key: 'none', label: 'sans date', tone: 'muted' },
   { key: 'done', label: 'terminés', tone: 'muted' },
@@ -17,7 +17,7 @@ const GROUPS: { key: Urgency; label: string; tone?: 'late' | 'muted' }[] = [
 
 // Groupes ouverts par défaut : on ne veut voir tout de suite que ce qui presse ;
 // le reste se déplie au tap (état local, pas persisté — repart replié à chaque ouverture).
-const DEFAULT_OPEN: Urgency[] = ['late', 'today'];
+const DEFAULT_OPEN: Urgency[] = ['late', 'today', 'week'];
 
 export default function FilScreen({ nav }: { nav: MobileNav }) {
   const lots = useStore((s) => s.lots);
