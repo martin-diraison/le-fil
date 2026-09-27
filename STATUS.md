@@ -1,8 +1,25 @@
 # Le Fil — état d'avancement
 
-Dernière session : 2026-09-27 — appli en ligne, installée, et premiers ajustements d'usage
-posés : https://martin-diraison.github.io/le-fil/ (déployée via GitHub Actions, connexion
-testée, PWA installée sur smartphone Samsung).
+Dernière session : 2026-09-27 — reprise des chantiers d'ajustement d'usage (voir section du
+jour plus bas). Appli en ligne, installée : https://martin-diraison.github.io/le-fil/
+(déployée via GitHub Actions, connexion testée, PWA installée sur smartphone Samsung).
+
+## Reprise des chantiers d'usage (2026-09-27, suite)
+- **Échéance / début / répétition du lot (desktop + mobile)** : c'était une rangée surchargée
+  et « début (optionnel) » n'était pas compris. Désormais trois blocs bien séparés :
+  échéance (raccourcis + date précise), début (avec une phrase d'explication visible : sert
+  seulement à étirer la barre du lot dans le Gantt, entre cette date et l'échéance — à
+  laisser vide sinon), répétition (affichée seulement si une échéance est définie).
+  `LotDetail.tsx`/`.css` (desktop), `LotScreen.tsx` + `Mobile.css` (mobile).
+- **Onglet Projets mobile : grille 3 colonnes** au lieu de la liste à une colonne, pavés
+  compacts (nom + nombre de lots centrés). Nombre de colonnes réglable dans `Mobile.css`
+  (`.m__tiles`, `grid-template-columns`) si 4 s'avère préférable à l'usage.
+- **Gantt : bouton « période · 3 mois / tout »** — en mode « tout », la fenêtre s'étend du
+  plus ancien au plus récent jour utile parmi les lots (et tâches si affichées) actuellement
+  visibles, au lieu de rester figée sur 3 mois autour d'aujourd'hui. État non persisté
+  (`ganttFullRange` dans `state/store.ts`, simple choix d'affichage).
+- Vérifié visuellement (desktop + mobile, `npm run dev`), `tsc --noEmit` et `npm run build`
+  passent. Commité (`b3836ff`), pas encore redéployé sur GitHub Pages.
 
 ## Premiers ajustements d'usage (2026-09-27)
 - Mobile : ouverture par défaut sur « projets » (le « fil » reste à repenser, voir plus bas).
