@@ -38,3 +38,12 @@ export const MOBILE_DATE_CHOICES = [
 export function dueFromOffset(offset: number | null, today: Date = new Date()): string | null {
   return offset === null ? null : addDays(today, offset);
 }
+
+/** Choix de récurrence pour un lot (échéance requise, voir lib/recurrence.ts). */
+export const REPEAT_CHOICES = [
+  { key: 'none', label: 'aucune' },
+  { key: 'daily', label: 'jour' },
+  { key: 'weekly', label: 'semaine' },
+  { key: 'monthly', label: 'mois' },
+  { key: 'yearly', label: 'année' },
+] as const;

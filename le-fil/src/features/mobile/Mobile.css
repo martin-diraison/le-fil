@@ -738,11 +738,18 @@
 }
 .m__taskPicker {
   display: flex;
+  align-items: center;
   gap: 5px;
   flex-wrap: wrap;
   padding: 9px 14px;
   background: var(--hover);
   border-top: 1px solid var(--rule);
+}
+.m__pickerLabel {
+  font: 600 8px var(--font-ui);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
 }
 .m__taskAdd {
   display: flex;

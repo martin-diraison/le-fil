@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { CalMode, Lot, Project, SortMode, Task, ViewMode } from '../types/models';
+import type { CalMode, Lot, Project, Repeat, SortMode, Task, ViewMode } from '../types/models';
 import { computeUrgency, compareUrgency } from '../types/models';
 import { nextProjectColor } from '../lib/palette';
 import { dueFromChoice, type DateChoiceKey } from './dateShortcuts';
@@ -86,6 +86,8 @@ interface State {
   /** Calendrier / Gantt : ouvre le lot, ou le referme s'il est déjà ouvert (§3.1). */
   toggleOpenLot: (id: string) => void;
   setLotDueDate: (id: string, due: string | null) => void;
+  setLotStartDate: (id: string, startDate: string | null) => void;
+  setLotRepeat: (id: string, repeat: Repeat) => void;
   updateLotTitle: (id: string, title: string) => void;
   updateLotBody: (id: string, body: string) => void;
   setLotDue: (id: string, key: DateChoiceKey) => void;
@@ -102,6 +104,7 @@ interface State {
   toggleTask: (id: string) => void;
   setTaskDue: (id: string, key: DateChoiceKey) => void;
   setTaskDueDate: (id: string, due: string | null) => void;
+  setTaskStartDate: (id: string, startDate: string | null) => void;
   deleteTask: (id: string) => void;
   openTaskDatePicker: (id: string | null) => void;
 
@@ -270,7 +273,9 @@ export const useStore = create<State>((set, get) => ({
           projectId: target ?? null,
           title,
           body: '',
+          startDate: null,
           due: null,
+          repeat: 'none',
           done: false,
           position: null,
           createdAt: now,
@@ -293,6 +298,14 @@ export const useStore = create<State>((set, get) => ({
 
   setLotDueDate: (id, due) => {
     set((s) => ({ lots: s.lots.map((l) => (l.id === id ? { ...l, due, updatedAt: nowIso() } : l)) }));
+  },
+
+  setLotStartDate: (id, startDate) => {
+    set((s) => ({ lots: s.lots.map((l) => (l.id === id ? { ...l, startDate, updatedAt: nowIso() } : l)) }));
+  },
+
+  setLotRepeat: (id, repeat) => {
+    set((s) => ({ lots: s.lots.map((l) => (l.id === id ? { ...l, repeat, updatedAt: nowIso() } : l)) }));
   },
 
   updateLotTitle: (id, title) => {
@@ -360,7 +373,9 @@ export const useStore = create<State>((set, get) => ({
     set((s) => {
       const count = s.tasks.filter((t) => t.lotId === lotId).length;
       return {
-        tasks: s.tasks.concat([{ id: uid('task'), lotId, label, due: null, done: false, position: count }]),
+        tasks: s.tasks.concat([
+          { id: uid('task'), lotId, label, startDate: null, due: null, done: false, position: count },
+        ]),
         taskDraft: '',
       };
     });
@@ -377,6 +392,10 @@ export const useStore = create<State>((set, get) => ({
 
   setTaskDueDate: (id, due) => {
     set((s) => ({ tasks: s.tasks.map((t) => (t.id === id ? { ...t, due } : t)) }));
+  },
+
+  setTaskStartDate: (id, startDate) => {
+    set((s) => ({ tasks: s.tasks.map((t) => (t.id === id ? { ...t, startDate } : t)) }));
   },
 
   deleteTask: (id) => {

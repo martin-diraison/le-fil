@@ -299,6 +299,14 @@
   background: #151513;
   border-top: 1px solid var(--rule-on-ink);
 }
+.taskRow__pickerLabel {
+  display: flex;
+  align-items: center;
+  font: 600 8px var(--font-ui);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--on-ink-secondary);
+}
 .taskRow__pickerChoice {
   font: 600 8.5px var(--font-ui);
   letter-spacing: 0.1em;

@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { useStore } from '../../state/store';
 import { contrastText } from '../../lib/palette';
 import { computeUrgency } from '../../types/models';
-import { DATE_CHOICES, type DateChoiceKey } from '../../state/dateShortcuts';
+import { DATE_CHOICES, REPEAT_CHOICES, type DateChoiceKey } from '../../state/dateShortcuts';
+import type { Repeat } from '../../types/models';
 import { formatShortDate } from '../../lib/format';
 import { copyToClipboard, formatLotTasksAsText } from '../../lib/exportTasks';
 import './LotDetail.css';
@@ -34,6 +35,9 @@ export default function LotDetail({ drawer = false }: { drawer?: boolean }) {
   const openTaskDatePicker = useStore((s) => s.openTaskDatePicker);
   const setTaskDueDate = useStore((s) => s.setTaskDueDate);
   const setLotDueDate = useStore((s) => s.setLotDueDate);
+  const setLotStartDate = useStore((s) => s.setLotStartDate);
+  const setLotRepeat = useStore((s) => s.setLotRepeat);
+  const setTaskStartDate = useStore((s) => s.setTaskStartDate);
   const flash = useStore((s) => s.flash);
 
   const [taskDraftLocal, setTaskDraftLocal] = useState(taskDraft);
@@ -178,6 +182,37 @@ export default function LotDetail({ drawer = false }: { drawer?: boolean }) {
                 onChange={(e) => setLotDueDate(lot.id, e.target.value || null)}
               />
             </div>
+
+            <div className="lotDetail__dueShortcuts">
+              <span className="lotDetail__dueShortcutsLabel">début (optionnel)</span>
+              <input
+                type="date"
+                className="lotDetail__dateInput"
+                title="début de la fourchette"
+                aria-label="début de la fourchette du lot"
+                value={lot.startDate ?? ''}
+                onChange={(e) => setLotStartDate(lot.id, e.target.value || null)}
+              />
+              {lot.due && (
+                <>
+                  <span className="lotDetail__dueShortcutsLabel">répétition</span>
+                  {REPEAT_CHOICES.map((c) => (
+                    <button
+                      key={c.key}
+                      className="lotDetail__shortcutBtn"
+                      style={{
+                        background: lot.repeat === c.key ? 'var(--yellow)' : 'transparent',
+                        color: lot.repeat === c.key ? 'var(--ink)' : '#d4d4d0',
+                        borderColor: lot.repeat === c.key ? 'var(--yellow)' : '#5a5a57',
+                      }}
+                      onClick={() => setLotRepeat(lot.id, c.key as Repeat)}
+                    >
+                      {c.label}
+                    </button>
+                  ))}
+                </>
+              )}
+            </div>
           </div>
 
           <div className="lotDetail__tasks" style={{ borderLeft: `4px solid ${color}` }}>
@@ -255,6 +290,16 @@ export default function LotDetail({ drawer = false }: { drawer?: boolean }) {
                           </button>
                         );
                       })}
+                      <span className="taskRow__pickerLabel">début</span>
+                      <input
+                        type="date"
+                        className="taskRow__pickerDate"
+                        title="début de la fourchette (optionnel)"
+                        aria-label="début de la fourchette de la tâche"
+                        value={t.startDate ?? ''}
+                        onChange={(e) => setTaskStartDate(t.id, e.target.value || null)}
+                      />
+                      <span className="taskRow__pickerLabel">fin</span>
                       <input
                         type="date"
                         className="taskRow__pickerDate"

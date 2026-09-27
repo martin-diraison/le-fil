@@ -21,7 +21,10 @@ create table if not exists le_fil.lots (
   project_id uuid references le_fil.projects(id) on delete set null, -- null = « sans projet »
   title      text not null default '',
   body       text not null default '',
+  start_date date, -- début de la fourchette (optionnel, ≤ due)
   due        date,
+  repeat     text not null default 'none'
+               check (repeat in ('none', 'daily', 'weekly', 'monthly', 'yearly')),
   done       boolean not null default false,
   position   integer,
   created_at timestamptz not null default now(),
@@ -33,6 +36,7 @@ create table if not exists le_fil.tasks (
   user_id    uuid not null default auth.uid() references auth.users(id) on delete cascade,
   lot_id     uuid not null references le_fil.lots(id) on delete cascade,
   label      text not null default '',
+  start_date date, -- début de la fourchette (optionnel, ≤ due)
   due        date,
   done       boolean not null default false,
   position   integer not null default 0

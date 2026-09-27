@@ -1,5 +1,6 @@
 import { supabase } from '../lib/supabase';
 import type { CalMode, Lot, Project, SortMode, Task, ViewMode } from '../types/models';
+import { advanceRecurringLots } from '../lib/recurrence';
 import { NO_PROJECT, useStore } from './store';
 
 // Synchro Supabase. Le store reste la source de vérité de l'interface (mises à jour
@@ -29,7 +30,9 @@ const fromLot = (r: Row): Lot => ({
   projectId: (r.project_id as string | null) ?? null,
   title: r.title as string,
   body: r.body as string,
+  startDate: (r.start_date as string | null) ?? null,
   due: (r.due as string | null) ?? null,
+  repeat: (r.repeat as Lot['repeat']) ?? 'none',
   done: r.done as boolean,
   position: (r.position as number | null) ?? null,
   createdAt: r.created_at as string,
@@ -40,7 +43,9 @@ const toLot = (l: Lot): Row => ({
   project_id: l.projectId,
   title: l.title,
   body: l.body,
+  start_date: l.startDate,
   due: l.due,
+  repeat: l.repeat,
   done: l.done,
   position: l.position,
   created_at: l.createdAt,
@@ -50,6 +55,7 @@ const fromTask = (r: Row): Task => ({
   id: r.id as string,
   lotId: r.lot_id as string,
   label: r.label as string,
+  startDate: (r.start_date as string | null) ?? null,
   due: (r.due as string | null) ?? null,
   done: r.done as boolean,
   position: r.position as number,
@@ -58,6 +64,7 @@ const toTask = (t: Task): Row => ({
   id: t.id,
   lot_id: t.lotId,
   label: t.label,
+  start_date: t.startDate,
   due: t.due,
   done: t.done,
   position: t.position,
@@ -277,6 +284,11 @@ export async function startSync(userId: string): Promise<() => void> {
       schedule();
     }
   });
+
+  // Anniversaires & Cie : lots récurrents en retard → prochaine occurrence. Après l'abonnement
+  // ci-dessus, pour que le changement soit détecté comme un diff et renvoyé à Supabase.
+  const rolled = advanceRecurringLots(useStore.getState().lots);
+  if (rolled !== useStore.getState().lots) useStore.setState({ lots: rolled });
 
   // Dernière chance quand l'onglet passe en arrière-plan / se ferme.
   const onHide = () => {

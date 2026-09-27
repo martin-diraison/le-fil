@@ -85,14 +85,22 @@ export default function GanttView() {
           label: lot.title,
           muted: lot.done,
           open,
-          // La fin de la barre tombe sur l'échéance.
+          // La fin de la barre tombe sur l'échéance ; avec un début renseigné, la barre
+          // s'étend réellement sur la fourchette plutôt que d'utiliser la largeur par défaut.
           bar: lot.due
-            ? {
-                left: Math.max(0, pct(lot.due) - barW),
-                width: barW,
-                bg: lot.done ? 'var(--border-quiet)' : color,
-                title: 'échéance ' + formatShortDate(lot.due),
-              }
+            ? lot.startDate
+              ? {
+                  left: pct(lot.startDate),
+                  width: Math.max(pct(lot.due) - pct(lot.startDate), barW / 4),
+                  bg: lot.done ? 'var(--border-quiet)' : color,
+                  title: `${formatShortDate(lot.startDate)} → ${formatShortDate(lot.due)}`,
+                }
+              : {
+                  left: Math.max(0, pct(lot.due) - barW),
+                  width: barW,
+                  bg: lot.done ? 'var(--border-quiet)' : color,
+                  title: 'échéance ' + formatShortDate(lot.due),
+                }
             : null,
         });
         if (!showTasks) continue;
@@ -101,6 +109,7 @@ export default function GanttView() {
           .sort((a, b) => a.due!.localeCompare(b.due!));
         for (const t of lotTasks) {
           const late = !t.done && t.due! < todayKey;
+          const taskBarW = barW / 1.8;
           out.push({
             kind: 'task',
             key: t.id,
@@ -108,12 +117,19 @@ export default function GanttView() {
             label: '↳ ' + t.label,
             muted: t.done,
             open,
-            bar: {
-              left: pct(t.due!),
-              width: barW / 1.8,
-              bg: t.done ? 'var(--rule)' : late ? 'var(--red)' : color,
-              title: `${t.label} — ${formatShortDate(t.due)}`,
-            },
+            bar: t.startDate
+              ? {
+                  left: pct(t.startDate),
+                  width: Math.max(pct(t.due!) - pct(t.startDate), taskBarW / 4),
+                  bg: t.done ? 'var(--rule)' : late ? 'var(--red)' : color,
+                  title: `${t.label} — ${formatShortDate(t.startDate)} → ${formatShortDate(t.due)}`,
+                }
+              : {
+                  left: pct(t.due!),
+                  width: taskBarW,
+                  bg: t.done ? 'var(--rule)' : late ? 'var(--red)' : color,
+                  title: `${t.label} — ${formatShortDate(t.due)}`,
+                },
           });
         }
       }

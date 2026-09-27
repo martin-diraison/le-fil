@@ -15,6 +15,9 @@ export type Project = {
   position: number; // ordre manuel (glisser-déposer)
 };
 
+/** Récurrence d'une échéance de lot (anniversaires, tâches périodiques…). */
+export type Repeat = 'none' | 'daily' | 'weekly' | 'monthly' | 'yearly';
+
 /** Anciennement « note » dans le code des prototypes. */
 export type Lot = {
   id: string;
@@ -22,7 +25,9 @@ export type Lot = {
   projectId: string | null; // null = « sans projet »
   title: string;
   body: string; // texte libre
-  due: string | null; // échéance (jour, sans heure) — YYYY-MM-DD
+  startDate: string | null; // début de la fourchette (optionnel) — YYYY-MM-DD
+  due: string | null; // échéance / fin de fourchette (jour, sans heure) — YYYY-MM-DD
+  repeat: Repeat; // 'none' sauf échéance récurrente (voir lib/recurrence.ts)
   done: boolean;
   position: number | null; // ordre manuel dans le volet 2 (tri « manuel »)
   createdAt: string; // ISO
@@ -33,6 +38,7 @@ export type Task = {
   id: string;
   lotId: string;
   label: string;
+  startDate: string | null; // début de la fourchette (optionnel) — YYYY-MM-DD
   due: string | null; // YYYY-MM-DD
   done: boolean;
   position: number;

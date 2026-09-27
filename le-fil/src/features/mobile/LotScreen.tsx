@@ -4,9 +4,10 @@ import { computeUrgency } from '../../types/models';
 import { contrastText, NO_PROJECT_COLOR } from '../../lib/palette';
 import { daysUntil, dueButtonLabel, formatShortDate } from '../../lib/format';
 import { parseDay, shiftDays, startOfDay, toDay } from '../../lib/dates';
-import { MOBILE_DATE_CHOICES, dueFromOffset } from '../../state/dateShortcuts';
+import { MOBILE_DATE_CHOICES, REPEAT_CHOICES, dueFromOffset } from '../../state/dateShortcuts';
 import { copyToClipboard, formatLotTasksAsText } from '../../lib/exportTasks';
 import { projectColor, projectName } from './labels';
+import type { Repeat } from '../../types/models';
 import type { LotOrigin, MobileNav } from './MobileShell';
 
 // Lot ouvert (README §4 « Lot ouvert »).
@@ -29,6 +30,9 @@ export default function LotScreen({
   const updateLotTitle = useStore((s) => s.updateLotTitle);
   const updateLotBody = useStore((s) => s.updateLotBody);
   const setLotDueDate = useStore((s) => s.setLotDueDate);
+  const setLotStartDate = useStore((s) => s.setLotStartDate);
+  const setLotRepeat = useStore((s) => s.setLotRepeat);
+  const setTaskStartDate = useStore((s) => s.setTaskStartDate);
   const toggleLotDone = useStore((s) => s.toggleLotDone);
   const moveLotToProject = useStore((s) => s.moveLotToProject);
   const requestDeleteLot = useStore((s) => s.requestDeleteLot);
@@ -160,6 +164,31 @@ export default function LotScreen({
           />
         </div>
 
+        <div className="m__choices">
+          <span className="m__choicesLabel">début (optionnel)</span>
+          <input
+            type="date"
+            className="m__dateInput"
+            aria-label="début de la fourchette du lot"
+            value={lot.startDate ?? ''}
+            onChange={(e) => setLotStartDate(lot.id, e.target.value || null)}
+          />
+          {lot.due && (
+            <>
+              <span className="m__choicesLabel">répétition</span>
+              {REPEAT_CHOICES.map((c) => (
+                <button
+                  key={c.key}
+                  className={`m__chip ${lot.repeat === c.key ? 'm__chip--on' : ''}`}
+                  onClick={() => setLotRepeat(lot.id, c.key as Repeat)}
+                >
+                  {c.label}
+                </button>
+              ))}
+            </>
+          )}
+        </div>
+
         <div className="m__tasksHead" style={{ borderLeftColor: color }}>
           <span className="m__tasksDot" style={{ background: color }} />
           <span className="m__tasksTitle">tâches</span>
@@ -213,6 +242,15 @@ export default function LotScreen({
                       {c.label}
                     </button>
                   ))}
+                  <span className="m__pickerLabel">début</span>
+                  <input
+                    type="date"
+                    className="m__dateInput m__dateInput--small"
+                    aria-label="début de la fourchette de la tâche"
+                    value={t.startDate ?? ''}
+                    onChange={(e) => setTaskStartDate(t.id, e.target.value || null)}
+                  />
+                  <span className="m__pickerLabel">fin</span>
                   <input
                     type="date"
                     className="m__dateInput m__dateInput--small"
