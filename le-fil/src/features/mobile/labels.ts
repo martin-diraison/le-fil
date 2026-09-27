@@ -14,8 +14,11 @@ export function projectName(projects: Project[], projectId: string | null): stri
   return projects.find((p) => p.id === projectId)?.name ?? 'sans projet';
 }
 
-/** « 3 j de retard · Maison · 1/2 tâches » */
-export function lotMeta(lot: Lot, projects: Project[], lotTasks: Task[]): string {
+/**
+ * « 3 j de retard · Maison · 1/2 tâches » — `showProject: false` omet le projet
+ * (utile quand il est déjà affiché ailleurs sur la ligne, ex. badge dans Le Fil).
+ */
+export function lotMeta(lot: Lot, projects: Project[], lotTasks: Task[], showProject = true): string {
   const u = computeUrgency(lot);
   const date =
     u === 'late'
@@ -26,7 +29,8 @@ export function lotMeta(lot: Lot, projects: Project[], lotTasks: Task[]): string
           ? formatShortDate(lot.due)
           : 'sans date';
   const tasks = lotTasks.length ? ` · ${lotTasks.filter((t) => t.done).length}/${lotTasks.length} tâches` : '';
-  return `${date} · ${projectName(projects, lot.projectId)}${tasks}`;
+  const project = showProject ? ` · ${projectName(projects, lot.projectId)}` : '';
+  return `${date}${project}${tasks}`;
 }
 
 const STOP_WORDS = new Set([

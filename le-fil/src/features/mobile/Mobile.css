@@ -229,18 +229,50 @@
 
 /* ---------- lignes de lot ---------- */
 .m__groupHead {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  border: none;
+  cursor: pointer;
   padding: 8px 14px;
   border-bottom: 1px solid var(--rule);
   background: var(--hover);
   font: 800 8.5px var(--font-ui);
   letter-spacing: 0.18em;
   text-transform: uppercase;
+  text-align: left;
+}
+.m__groupHead:hover {
+  background: var(--yellow);
 }
 .m__groupHead--late {
   color: var(--red);
 }
 .m__groupHead--muted {
   color: var(--text-secondary);
+}
+.m__groupMark {
+  margin-left: auto;
+  font: 800 9px var(--font-ui);
+  color: inherit;
+}
+
+/* Badge projet des lignes de lot (Le Fil) : le repère de couleur .m__edge suffit
+   rarement à identifier le projet d'un coup d'œil — on ajoute le nom. */
+.m__rowProject {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font: 700 8px var(--font-ui);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+.m__rowProjectDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
 }
 .m__row {
   display: flex;
