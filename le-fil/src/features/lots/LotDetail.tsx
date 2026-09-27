@@ -41,16 +41,9 @@ export default function LotDetail({ drawer = false }: { drawer?: boolean }) {
   const flash = useStore((s) => s.flash);
 
   const [taskDraftLocal, setTaskDraftLocal] = useState(taskDraft);
-  const [datesExpanded, setDatesExpanded] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const lot = lots.find((l) => l.id === openLotId) ?? null;
-
-  // Repliée par défaut : ne s'ouvre d'elle-même que si le lot a déjà un début ou une
-  // récurrence renseignés (sinon on masquerait une donnée existante à l'ouverture).
-  useEffect(() => {
-    setDatesExpanded(!!(lot?.startDate || (lot?.repeat && lot.repeat !== 'none')));
-  }, [lot?.id]);
   const project = lot?.projectId ? projects.find((p) => p.id === lot.projectId) : null;
   const color = project?.color ?? 'var(--text-tertiary)';
   const lotTasks = lot ? tasks.filter((t) => t.lotId === lot.id) : [];
@@ -161,7 +154,16 @@ export default function LotDetail({ drawer = false }: { drawer?: boolean }) {
               placeholder="…"
             />
             <div className="lotDetail__dueShortcuts">
-              <span className="lotDetail__dueShortcutsLabel">échéance</span>
+              <span className="lotDetail__dueShortcutsLabel">du</span>
+              <input
+                type="date"
+                className="lotDetail__dateInput"
+                title="début (pour un lot qui dure plusieurs jours ; laisser vide sinon)"
+                aria-label="début du lot"
+                value={lot.startDate ?? ''}
+                onChange={(e) => setLotStartDate(lot.id, e.target.value || null)}
+              />
+              <span className="lotDetail__dueShortcutsLabel">au</span>
               {DATE_CHOICES.map((c) => {
                 const current =
                   c.key === 'none' ? !lot.due : lot.due && daysFromToday(lot.due) === c.offset;
@@ -188,54 +190,22 @@ export default function LotDetail({ drawer = false }: { drawer?: boolean }) {
                 value={lot.due ?? ''}
                 onChange={(e) => setLotDueDate(lot.id, e.target.value || null)}
               />
-              {!datesExpanded && (
-                <button className="lotDetail__moreBtn2" onClick={() => setDatesExpanded(true)}>
-                  + début / récurrence
-                </button>
-              )}
             </div>
 
-            {datesExpanded && (
+            {lot.due && (
               <div className="lotDetail__dueShortcuts">
-                <span className="lotDetail__dueShortcutsLabel" title="Étire la barre du lot dans le Gantt entre cette date et l'échéance.">
-                  début (Gantt)
-                </span>
-                <input
-                  type="date"
-                  className="lotDetail__dateInput"
-                  title="début de la période affichée dans le Gantt"
-                  aria-label="début de la fourchette du lot"
-                  value={lot.startDate ?? ''}
-                  onChange={(e) => setLotStartDate(lot.id, e.target.value || null)}
-                />
-                {lot.due && (
-                  <>
-                    <span className="lotDetail__dueShortcutsLabel">répétition</span>
-                    {REPEAT_CHOICES.map((c) => (
-                      <button
-                        key={c.key}
-                        className="lotDetail__shortcutBtn"
-                        style={{
-                          background: lot.repeat === c.key ? 'var(--yellow)' : 'transparent',
-                          color: lot.repeat === c.key ? 'var(--ink)' : '#d4d4d0',
-                          borderColor: lot.repeat === c.key ? 'var(--yellow)' : '#5a5a57',
-                        }}
-                        onClick={() => setLotRepeat(lot.id, c.key as Repeat)}
-                      >
-                        {c.label}
-                      </button>
-                    ))}
-                  </>
-                )}
-                {!lot.startDate && (!lot.repeat || lot.repeat === 'none') && (
-                  <button
-                    className="lotDetail__moreBtn2"
-                    title="masquer (rien n'est renseigné ici)"
-                    onClick={() => setDatesExpanded(false)}
-                  >
-                    masquer
-                  </button>
-                )}
+                <span className="lotDetail__dueShortcutsLabel">se répète</span>
+                <select
+                  className="lotDetail__repeatSelect"
+                  value={lot.repeat}
+                  onChange={(e) => setLotRepeat(lot.id, e.target.value as Repeat)}
+                >
+                  {REPEAT_CHOICES.map((c) => (
+                    <option key={c.key} value={c.key}>
+                      {c.label}
+                    </option>
+                  ))}
+                </select>
               </div>
             )}
           </div>
