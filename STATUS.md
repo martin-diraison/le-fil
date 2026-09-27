@@ -20,13 +20,24 @@ jour plus bas). Appli en ligne, installée : https://martin-diraison.github.io/l
   plus ancien au plus récent jour utile parmi les lots (et tâches si affichées) actuellement
   visibles, au lieu de rester figée sur 3 mois autour d'aujourd'hui. État non persisté
   (`ganttFullRange` dans `state/store.ts`, simple choix d'affichage).
-- Vérifié visuellement (desktop + mobile, `npm run dev`), `tsc --noEmit` et `npm run build`
-  passent. Commité (`4e52a94`, historique intermédiaire `b3836ff`..`daa44ea`), pas encore
+- **Alignement** : `du`/`au`/`répétition` en grille CSS deux colonnes (label · contrôle,
+  largeur uniforme) plutôt qu'un flex qui retombait en désordre selon la largeur du volet.
+- Vérifié visuellement (desktop confirmé ; mobile probable mais pas re-confirmé après le tout
+  dernier correctif d'alignement, l'outil de capture mobile a eu un souci en fin de session —
+  **à vérifier en priorité à la reprise**). `tsc --noEmit` et `npm run build` passent partout.
+  Commité (`25390e7`, historique intermédiaire `b3836ff`..`daa44ea`), pas encore
   poussé/redéployé.
 - Lot « Liste d'amélioration » (projet Bugs d'appli, dans l'appli elle-même) : backlog de
   retours utilisateur à consulter en priorité à la reprise, avant de reproposer une liste —
   évite de resignaler des points déjà traités (ex. retour à la ligne des intitulés de tâche
   mobile, déjà fait, voir plus bas).
+
+## Prochaine session : refonte de l'onglet mobile « Fil »
+Chantier explicitement demandé pour la reprise. Actuellement une simple liste de lots groupés
+par urgence (`src/features/mobile/FilScreen.tsx`) — jugée peu utile par l'utilisateur (« liste
+de lots en vrac »), d'où l'ouverture par défaut sur « projets » en attendant (voir plus bas).
+Nécessite une vraie réflexion de mise en page (maquettes/options à proposer), pas juste du
+code — commencer par discuter des options avant d'implémenter.
 
 ## Premiers ajustements d'usage (2026-09-27)
 - Mobile : ouverture par défaut sur « projets » (le « fil » reste à repenser, voir plus bas).
@@ -35,8 +46,8 @@ jour plus bas). Appli en ligne, installée : https://martin-diraison.github.io/l
 - Intitulés de tâche longs : retour à la ligne au lieu d'être tronqués.
 - Volet 3 desktop : partie tâches élargie (rappel du lot capé à 300px, tâches absorbent le
   reste).
-- Listes de projets compactées : lignes fines desktop, liste à une colonne sur mobile (au lieu
-  des gros pavés) — pensé pour beaucoup de projets.
+- Listes de projets compactées : lignes fines desktop ; mobile, voir plus haut (grille 3
+  colonnes, remplace la liste à une colonne de cette session-ci).
 - **Fourchettes de dates** : champ « début (optionnel) » à côté de l'échéance, sur lots et
   tâches (desktop + mobile). Le Gantt étire la barre entre les deux dates quand disponibles.
 - **Récurrence des lots** (anniversaires, etc.) : sélecteur aucune/jour/semaine/mois/année ;
