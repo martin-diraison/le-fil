@@ -120,12 +120,13 @@ export default function GanttView() {
     for (const key of keys) {
       const project = key === NO_PROJECT ? null : projects.find((p) => p.id === key);
       if (key !== NO_PROJECT && !project) continue;
-      const ls = vis.filter((l) => (l.projectId ?? NO_PROJECT) === key);
+      // Un lot sans échéance n'a pas de barre à tracer (voir plus bas) : inutile de le lister —
+      // décision explicite de l'utilisateur pour ne pas encombrer la colonne de gauche.
+      const ls = vis.filter((l) => (l.projectId ?? NO_PROJECT) === key && l.due);
       if (!ls.length) continue;
       const color = project?.color ?? NO_PROJECT_COLOR;
       out.push({ kind: 'project', key, label: project?.name ?? 'Sans projet', color });
-      // Tri par échéance, lots sans date en tête (comme le prototype).
-      ls.sort((a, b) => (a.due ?? '').localeCompare(b.due ?? ''));
+      ls.sort((a, b) => a.due!.localeCompare(b.due!));
       for (const lot of ls) {
         const open = openLotId === lot.id;
         out.push({

@@ -6,6 +6,15 @@ https://martin-diraison.github.io/le-fil/ (déployée via GitHub Actions, connex
 installée sur smartphone Samsung). **Tout est commité et poussé** — déploiement GitHub Pages à
 confirmer par l'utilisateur après coup (pas re-testé en ligne cette session, seulement en local).
 
+## Gantt : ne lister que les lots avec échéance (2026-09-29, suite)
+Demande de l'utilisateur après la session précédente : un lot sans échéance n'a de toute façon
+pas de barre à tracer (voir `bar: lot.due ? ... : null`), donc inutile de le lister dans la
+colonne de gauche — pareil pour un projet dont aucun lot n'a de date (la rangée d'en-tête
+disparaît aussi). `GanttView.tsx` : `ls` filtre désormais sur `l.due` avant de construire les
+rangées. Les tâches étaient déjà filtrées sur leur propre échéance (inchangé). Vérifié en local
+(mode démo) : « Trier les photos de vacances » (sans date) n'apparaît plus, seul « Anniversaire
+de Julie » reste sous « Sans projet ».
+
 ## Backlog de retours utilisateur traité (2026-09-29)
 Repris depuis le lot « Liste d'amélioration » (projet Bugs d'appli, dans l'appli elle-même) : 9
 points triés avec l'utilisateur (plusieurs rounds d'`AskUserQuestion` pour clarifier chaque point
