@@ -120,13 +120,16 @@ export default function GanttView() {
     for (const key of keys) {
       const project = key === NO_PROJECT ? null : projects.find((p) => p.id === key);
       if (key !== NO_PROJECT && !project) continue;
-      // Un lot sans échéance n'a pas de barre à tracer (voir plus bas) : inutile de le lister —
-      // décision explicite de l'utilisateur pour ne pas encombrer la colonne de gauche.
-      const ls = vis.filter((l) => (l.projectId ?? NO_PROJECT) === key && l.due);
+      // Un lot sans échéance ET sans tâche datée n'a rien à tracer (voir plus bas) : inutile de
+      // le lister — décision explicite de l'utilisateur pour ne pas encombrer la colonne de
+      // gauche. Un lot sans échéance propre mais avec une tâche datée reste listé (bug du
+      // 2026-09-29 : il disparaissait entièrement, tâche datée comprise).
+      const hasDatedTask = (lotId: string) => showTasks && tasks.some((t) => t.lotId === lotId && t.due);
+      const ls = vis.filter((l) => (l.projectId ?? NO_PROJECT) === key && (l.due || hasDatedTask(l.id)));
       if (!ls.length) continue;
       const color = project?.color ?? NO_PROJECT_COLOR;
       out.push({ kind: 'project', key, label: project?.name ?? 'Sans projet', color });
-      ls.sort((a, b) => a.due!.localeCompare(b.due!));
+      ls.sort((a, b) => (a.due ?? '').localeCompare(b.due ?? ''));
       for (const lot of ls) {
         const open = openLotId === lot.id;
         out.push({

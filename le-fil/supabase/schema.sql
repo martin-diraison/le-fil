@@ -25,6 +25,9 @@ create table if not exists le_fil.lots (
   due        date,
   repeat     text not null default 'none'
                check (repeat in ('none', 'daily', 'weekly', 'monthly', 'yearly')),
+  start_time time, -- heure de début (optionnelle), rattachée au jour « due »
+  end_time   time, -- heure de fin (optionnelle)
+  location   text not null default '', -- lieu du rdv (texte libre, optionnel)
   done       boolean not null default false,
   position   integer,
   created_at timestamptz not null default now(),
@@ -38,6 +41,9 @@ create table if not exists le_fil.tasks (
   label      text not null default '',
   start_date date, -- début de la fourchette (optionnel, ≤ due)
   due        date,
+  start_time time, -- heure de début (optionnelle), rattachée au jour « due »
+  end_time   time, -- heure de fin (optionnelle)
+  location   text not null default '', -- lieu du rdv (texte libre, optionnel)
   done       boolean not null default false,
   position   integer not null default 0
 );

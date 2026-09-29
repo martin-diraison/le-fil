@@ -36,3 +36,24 @@ export function mondayOf(d: Date): Date {
 export function daysBetween(a: Date, b: Date): number {
   return Math.round((b.getTime() - a.getTime()) / 86_400_000);
 }
+
+/** Jours (YYYY-MM-DD) d'une fourchette lot/tâche, du début à l'échéance inclus — pour qu'un
+ * élément sur plusieurs jours s'affiche dans chaque case du calendrier, pas seulement à
+ * l'échéance. Sans début (ou fourchette invalide), un seul jour : l'échéance. */
+export function daysInRange(startDate: string | null, due: string): string[] {
+  if (!startDate || startDate >= due) return [due];
+  const days: string[] = [];
+  let d = parseDay(startDate);
+  const end = parseDay(due);
+  while (d <= end) {
+    days.push(toDay(d));
+    d = shiftDays(d, 1);
+  }
+  return days;
+}
+
+/** `day` fait-il partie de la fourchette [startDate, due] (bornes incluses) ? Sans début,
+ * seule l'échéance compte. Comparaison en chaînes YYYY-MM-DD, sûre car triable lexicalement. */
+export function isDayInRange(startDate: string | null, due: string, day: string): boolean {
+  return startDate && startDate < due ? day >= startDate && day <= due : day === due;
+}

@@ -14,6 +14,13 @@ const RETRY_DELAY = 5000;
 
 type Row = Record<string, unknown>;
 
+/** Postgres renvoie une colonne `time` en "HH:MM:SS" ; le state local (et <input type=time>)
+ * veut "HH:MM". */
+function fromPgTime(v: unknown): string | null {
+  const s = v as string | null;
+  return s ? s.slice(0, 5) : null;
+}
+
 // ---------------------------------------------------------------- mapping
 const fromProject = (r: Row): Project => ({
   id: r.id as string,
@@ -33,6 +40,9 @@ const fromLot = (r: Row): Lot => ({
   startDate: (r.start_date as string | null) ?? null,
   due: (r.due as string | null) ?? null,
   repeat: (r.repeat as Lot['repeat']) ?? 'none',
+  startTime: fromPgTime(r.start_time),
+  endTime: fromPgTime(r.end_time),
+  location: (r.location as string | null) ?? '',
   done: r.done as boolean,
   position: (r.position as number | null) ?? null,
   createdAt: r.created_at as string,
@@ -46,6 +56,9 @@ const toLot = (l: Lot): Row => ({
   start_date: l.startDate,
   due: l.due,
   repeat: l.repeat,
+  start_time: l.startTime,
+  end_time: l.endTime,
+  location: l.location,
   done: l.done,
   position: l.position,
   created_at: l.createdAt,
@@ -57,6 +70,9 @@ const fromTask = (r: Row): Task => ({
   label: r.label as string,
   startDate: (r.start_date as string | null) ?? null,
   due: (r.due as string | null) ?? null,
+  startTime: fromPgTime(r.start_time),
+  endTime: fromPgTime(r.end_time),
+  location: (r.location as string | null) ?? '',
   done: r.done as boolean,
   position: r.position as number,
 });
@@ -66,6 +82,9 @@ const toTask = (t: Task): Row => ({
   label: t.label,
   start_date: t.startDate,
   due: t.due,
+  start_time: t.startTime,
+  end_time: t.endTime,
+  location: t.location,
   done: t.done,
   position: t.position,
 });

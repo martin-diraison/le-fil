@@ -28,6 +28,9 @@ export type Lot = {
   startDate: string | null; // début de la fourchette (optionnel) — YYYY-MM-DD
   due: string | null; // échéance / fin de fourchette (jour, sans heure) — YYYY-MM-DD
   repeat: Repeat; // 'none' sauf échéance récurrente (voir lib/recurrence.ts)
+  startTime: string | null; // heure de début (optionnelle) — HH:MM, rattachée au jour « due »
+  endTime: string | null; // heure de fin (optionnelle) — HH:MM
+  location: string; // lieu du rdv (texte libre, optionnel)
   done: boolean;
   position: number | null; // ordre manuel dans le volet 2 (tri « manuel »)
   createdAt: string; // ISO
@@ -40,6 +43,9 @@ export type Task = {
   label: string;
   startDate: string | null; // début de la fourchette (optionnel) — YYYY-MM-DD
   due: string | null; // YYYY-MM-DD
+  startTime: string | null; // heure de début (optionnelle) — HH:MM, rattachée au jour « due »
+  endTime: string | null; // heure de fin (optionnelle) — HH:MM
+  location: string; // lieu du rdv (texte libre, optionnel)
   done: boolean;
   position: number;
 };

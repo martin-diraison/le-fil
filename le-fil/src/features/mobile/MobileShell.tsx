@@ -10,19 +10,22 @@ import ProjectsScreen from './ProjectsScreen';
 import ProjectScreen from './ProjectScreen';
 import LotScreen from './LotScreen';
 import CalendarScreen from './CalendarScreen';
+import DayScreen from './DayScreen';
 import './Mobile.css';
 
 // Coquille mobile — README §4, prototype « Le Fil - Mobile.dc.html ».
-// Navigation : trois onglets (fil · projets · calendrier) et deux écrans empilés
-// (projet ouvert, lot ouvert). Le lot ouvert se souvient de l'écran d'origine pour « ← retour ».
+// Navigation : trois onglets (fil · projets · calendrier) et écrans empilés (projet ouvert, lot
+// ouvert, vue journalière). Le lot ouvert se souvient de l'écran d'origine pour « ← retour ».
 
-export type Screen = 'fil' | 'projets' | 'projet' | 'lot' | 'cal';
-export type LotOrigin = 'fil' | 'projet' | 'cal';
+export type Screen = 'fil' | 'projets' | 'projet' | 'lot' | 'cal' | 'day';
+export type LotOrigin = 'fil' | 'projet' | 'cal' | 'day';
 
 export type MobileNav = {
   openLot: (id: string, from: LotOrigin) => void;
   openProject: (key: ProjectKey) => void;
   go: (screen: Screen) => void;
+  /** Ouvre la vue journalière (grille horaire) sur ce jour — tap sur une case du mois. */
+  openDay: (day: string) => void;
 };
 
 const TABS: { key: 'fil' | 'projets' | 'cal'; label: string }[] = [
@@ -74,12 +77,17 @@ export default function MobileShell({ session }: { session: Session }) {
       if (s !== 'lot') openLotInStore(null);
       setScreen(s);
     },
+    openDay: (day) => {
+      setCalDay(day);
+      setScreen('day');
+    },
   };
 
   const tabOn = (key: string) =>
     screen === key ||
     (key === 'projets' && screen === 'projet') ||
-    (screen === 'lot' && ((key === 'fil' && from === 'fil') || (key === 'cal' && from === 'cal')));
+    (key === 'cal' && screen === 'day') ||
+    (screen === 'lot' && ((key === 'fil' && from === 'fil') || (key === 'cal' && (from === 'cal' || from === 'day'))));
 
   return (
     <div className="m">
@@ -133,13 +141,14 @@ export default function MobileShell({ session }: { session: Session }) {
           <ProjectScreen nav={nav} projectKey={openProj} />
         ) : screen === 'lot' ? (
           <LotScreen nav={nav} from={from} projectKey={openProj} />
+        ) : screen === 'day' ? (
+          <DayScreen nav={nav} day={calDay} setDay={setCalDay} onBack={() => setScreen('cal')} />
         ) : (
           <CalendarScreen
             nav={nav}
             month={calMonth}
             setMonth={setCalMonth}
             day={calDay}
-            setDay={setCalDay}
             tall={calTall}
             toggleTall={() => setCalTall((v) => !v)}
           />

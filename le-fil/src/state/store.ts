@@ -49,6 +49,7 @@ interface State {
   calMode: CalMode;
   calMonth: { year: number; month: number }; // mois affiché (vue mois)
   calWeek: number; // décalage en semaines depuis la semaine courante (vue semaine)
+  calOpenDay: string | null; // YYYY-MM-DD : vue journalière ouverte (desktop), sinon fermée
   showTasksInCalendar: boolean;
   showTasksInGantt: boolean;
   /** Fenêtre Gantt : 3 mois autour d'aujourd'hui (défaut) ou étendue à tout ce qui est affiché.
@@ -99,6 +100,9 @@ interface State {
   setLotDueDate: (id: string, due: string | null) => void;
   setLotStartDate: (id: string, startDate: string | null) => void;
   setLotRepeat: (id: string, repeat: Repeat) => void;
+  setLotStartTime: (id: string, startTime: string | null) => void;
+  setLotEndTime: (id: string, endTime: string | null) => void;
+  setLotLocation: (id: string, location: string) => void;
   updateLotTitle: (id: string, title: string) => void;
   updateLotBody: (id: string, body: string) => void;
   setLotDue: (id: string, key: DateChoiceKey) => void;
@@ -117,6 +121,9 @@ interface State {
   setTaskDue: (id: string, key: DateChoiceKey) => void;
   setTaskDueDate: (id: string, due: string | null) => void;
   setTaskStartDate: (id: string, startDate: string | null) => void;
+  setTaskStartTime: (id: string, startTime: string | null) => void;
+  setTaskEndTime: (id: string, endTime: string | null) => void;
+  setTaskLocation: (id: string, location: string) => void;
   deleteTask: (id: string) => void;
   openTaskDatePicker: (id: string | null) => void;
 
@@ -130,6 +137,9 @@ interface State {
   // Actions — calendrier / gantt
   setCalMode: (m: CalMode) => void;
   calStep: (delta: 1 | -1) => void;
+  /** Vue journalière desktop : ouvre/change de jour, ou referme si `day` est déjà ouvert. */
+  openCalDay: (day: string) => void;
+  closeCalDay: () => void;
   toggleTasksInCalendar: () => void;
   toggleTasksInGantt: () => void;
   toggleGanttFullRange: () => void;
@@ -170,6 +180,7 @@ export const useStore = create<State>((set, get) => ({
   calMode: 'mois',
   calMonth: { year: new Date().getFullYear(), month: new Date().getMonth() },
   calWeek: 0,
+  calOpenDay: null,
   showTasksInCalendar: true,
   showTasksInGantt: true,
   ganttFullRange: false,
@@ -290,6 +301,9 @@ export const useStore = create<State>((set, get) => ({
           startDate: null,
           due: null,
           repeat: 'none',
+          startTime: null,
+          endTime: null,
+          location: '',
           done: false,
           position: null,
           createdAt: now,
@@ -328,6 +342,18 @@ export const useStore = create<State>((set, get) => ({
 
   setLotRepeat: (id, repeat) => {
     set((s) => ({ lots: s.lots.map((l) => (l.id === id ? { ...l, repeat, updatedAt: nowIso() } : l)) }));
+  },
+
+  setLotStartTime: (id, startTime) => {
+    set((s) => ({ lots: s.lots.map((l) => (l.id === id ? { ...l, startTime, updatedAt: nowIso() } : l)) }));
+  },
+
+  setLotEndTime: (id, endTime) => {
+    set((s) => ({ lots: s.lots.map((l) => (l.id === id ? { ...l, endTime, updatedAt: nowIso() } : l)) }));
+  },
+
+  setLotLocation: (id, location) => {
+    set((s) => ({ lots: s.lots.map((l) => (l.id === id ? { ...l, location, updatedAt: nowIso() } : l)) }));
   },
 
   updateLotTitle: (id, title) => {
@@ -396,7 +422,18 @@ export const useStore = create<State>((set, get) => ({
       const count = s.tasks.filter((t) => t.lotId === lotId).length;
       return {
         tasks: s.tasks.concat([
-          { id: uid('task'), lotId, label, startDate: null, due: null, done: false, position: count },
+          {
+            id: uid('task'),
+            lotId,
+            label,
+            startDate: null,
+            due: null,
+            startTime: null,
+            endTime: null,
+            location: '',
+            done: false,
+            position: count,
+          },
         ]),
         taskDraft: '',
       };
@@ -429,6 +466,18 @@ export const useStore = create<State>((set, get) => ({
           : t,
       ),
     }));
+  },
+
+  setTaskStartTime: (id, startTime) => {
+    set((s) => ({ tasks: s.tasks.map((t) => (t.id === id ? { ...t, startTime } : t)) }));
+  },
+
+  setTaskEndTime: (id, endTime) => {
+    set((s) => ({ tasks: s.tasks.map((t) => (t.id === id ? { ...t, endTime } : t)) }));
+  },
+
+  setTaskLocation: (id, location) => {
+    set((s) => ({ tasks: s.tasks.map((t) => (t.id === id ? { ...t, location } : t)) }));
   },
 
   deleteTask: (id) => {
@@ -472,6 +521,9 @@ export const useStore = create<State>((set, get) => ({
       return { calMonth: { year: d.getFullYear(), month: d.getMonth() } };
     });
   },
+
+  openCalDay: (day) => set({ calOpenDay: day }),
+  closeCalDay: () => set({ calOpenDay: null }),
 
   toggleTasksInCalendar: () => set((s) => ({ showTasksInCalendar: !s.showTasksInCalendar })),
   toggleTasksInGantt: () => set((s) => ({ showTasksInGantt: !s.showTasksInGantt })),

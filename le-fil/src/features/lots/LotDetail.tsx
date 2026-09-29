@@ -37,7 +37,13 @@ export default function LotDetail({ drawer = false }: { drawer?: boolean }) {
   const setLotDueDate = useStore((s) => s.setLotDueDate);
   const setLotStartDate = useStore((s) => s.setLotStartDate);
   const setLotRepeat = useStore((s) => s.setLotRepeat);
+  const setLotStartTime = useStore((s) => s.setLotStartTime);
+  const setLotEndTime = useStore((s) => s.setLotEndTime);
+  const setLotLocation = useStore((s) => s.setLotLocation);
   const setTaskStartDate = useStore((s) => s.setTaskStartDate);
+  const setTaskStartTime = useStore((s) => s.setTaskStartTime);
+  const setTaskEndTime = useStore((s) => s.setTaskEndTime);
+  const setTaskLocation = useStore((s) => s.setTaskLocation);
   const flash = useStore((s) => s.flash);
 
   const [taskDraftLocal, setTaskDraftLocal] = useState(taskDraft);
@@ -182,6 +188,31 @@ export default function LotDetail({ drawer = false }: { drawer?: boolean }) {
                   </option>
                 ))}
               </select>
+              <span className="lotDetail__periodLabel">de</span>
+              <input
+                type="time"
+                className="lotDetail__dateInput"
+                aria-label="heure de début du lot"
+                value={lot.startTime ?? ''}
+                onChange={(e) => setLotStartTime(lot.id, e.target.value || null)}
+              />
+              <span className="lotDetail__periodLabel">à</span>
+              <input
+                type="time"
+                className="lotDetail__dateInput"
+                aria-label="heure de fin du lot"
+                value={lot.endTime ?? ''}
+                onChange={(e) => setLotEndTime(lot.id, e.target.value || null)}
+              />
+              <span className="lotDetail__periodLabel">lieu</span>
+              <input
+                type="text"
+                className="lotDetail__dateInput"
+                aria-label="lieu du lot"
+                placeholder="optionnel"
+                value={lot.location}
+                onChange={(e) => setLotLocation(lot.id, e.target.value)}
+              />
             </div>
           </div>
 
@@ -281,6 +312,30 @@ export default function LotDetail({ drawer = false }: { drawer?: boolean }) {
                           </button>
                         );
                       })}
+                      <span className="taskRow__pickerLabel">de</span>
+                      <input
+                        type="time"
+                        className="taskRow__pickerDate"
+                        aria-label="heure de début de la tâche"
+                        value={t.startTime ?? ''}
+                        onChange={(e) => setTaskStartTime(t.id, e.target.value || null)}
+                      />
+                      <span className="taskRow__pickerLabel">à</span>
+                      <input
+                        type="time"
+                        className="taskRow__pickerDate"
+                        aria-label="heure de fin de la tâche"
+                        value={t.endTime ?? ''}
+                        onChange={(e) => setTaskEndTime(t.id, e.target.value || null)}
+                      />
+                      <input
+                        type="text"
+                        className="taskRow__pickerDate taskRow__pickerLocation"
+                        aria-label="lieu de la tâche"
+                        placeholder="lieu (optionnel)"
+                        value={t.location}
+                        onChange={(e) => setTaskLocation(t.id, e.target.value)}
+                      />
                     </div>
                   )}
                 </div>

@@ -139,6 +139,13 @@
   font: 800 10px var(--font-ui);
   color: var(--ink);
   white-space: nowrap;
+  border: none;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+}
+.cal__num:hover {
+  text-decoration: underline;
 }
 .cal__cell--out .cal__num {
   color: #c4c4bd;

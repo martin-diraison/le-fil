@@ -2,8 +2,9 @@ import { useMemo, useState } from 'react';
 import { filterLots, taskMatchesSearch, useStore } from '../../state/store';
 import { computeUrgency } from '../../types/models';
 import { contrastText, NO_PROJECT_COLOR } from '../../lib/palette';
-import { formatShortDate, MONTHS_SHORT } from '../../lib/format';
-import { MONTHS_LONG, WEEK_HEAD, mondayOf, shiftDays, startOfDay, toDay } from '../../lib/dates';
+import { formatShortDate, formatTimeRange, MONTHS_SHORT } from '../../lib/format';
+import { MONTHS_LONG, WEEK_HEAD, daysInRange, mondayOf, shiftDays, startOfDay, toDay } from '../../lib/dates';
+import DayView from './DayView';
 import './CalendarView.css';
 
 // Vue Calendrier desktop — README §3.5, prototype `buildCell()` / `dropOn()`.
@@ -20,6 +21,7 @@ type Item = {
   bg: string;
   fg: string;
   edge: string;
+  time: string | null; // pour trier les cases par horaire, horodatés d'abord
 };
 
 export default function CalendarView() {
@@ -35,12 +37,16 @@ export default function CalendarView() {
   const calWeek = useStore((s) => s.calWeek);
   const showTasks = useStore((s) => s.showTasksInCalendar);
 
+  const calOpenDay = useStore((s) => s.calOpenDay);
+
   const setCalMode = useStore((s) => s.setCalMode);
   const calStep = useStore((s) => s.calStep);
   const toggleTasks = useStore((s) => s.toggleTasksInCalendar);
   const toggleOpenLot = useStore((s) => s.toggleOpenLot);
   const setLotDueDate = useStore((s) => s.setLotDueDate);
   const setTaskDueDate = useStore((s) => s.setTaskDueDate);
+  const openCalDay = useStore((s) => s.openCalDay);
+  const closeCalDay = useStore((s) => s.closeCalDay);
   const flash = useStore((s) => s.flash);
 
   const [drag, setDrag] = useState<Drag | null>(null);
@@ -80,17 +86,21 @@ export default function CalendarView() {
       if (!lot.due) continue;
       const col = colorOf(lot.projectId);
       const open = openLotId === lot.id;
-      push(lot.due, {
+      const item: Item = {
         key: lot.id,
         drag: { kind: 'lot', id: lot.id },
         lotId: lot.id,
-        label: lot.title,
+        label: lot.startTime ? `${formatTimeRange(lot.startTime, lot.endTime)} ${lot.title}` : lot.title,
         isTask: false,
         done: lot.done,
         bg: open ? 'var(--yellow)' : col,
         fg: open ? 'var(--ink)' : contrastText(col),
         edge: computeUrgency(lot) === 'late' ? 'var(--red)' : open ? 'var(--ink)' : col,
-      });
+        time: lot.startTime,
+      };
+      // Sur plusieurs jours : affiché dans chaque case de la fourchette, pas seulement à
+      // l'échéance (décision utilisateur, retour du 2026-09-29).
+      for (const day of daysInRange(lot.startDate, lot.due)) push(day, item);
     }
     if (showTasks) {
       for (const lot of vis) {
@@ -98,20 +108,24 @@ export default function CalendarView() {
         for (const t of tasks) {
           if (t.lotId !== lot.id || !t.due || !taskMatchesSearch(lot, t, search)) continue;
           const late = !t.done && t.due < todayKey;
-          push(t.due, {
+          const item: Item = {
             key: t.id,
             drag: { kind: 'task', id: t.id },
             lotId: lot.id,
-            label: '↳ ' + t.label,
+            label: '↳ ' + (t.startTime ? `${formatTimeRange(t.startTime, t.endTime)} ${t.label}` : t.label),
             isTask: true,
             done: t.done,
             bg: openLotId === lot.id ? 'var(--yellow-pale)' : 'var(--paper)',
             fg: t.done ? 'var(--text-secondary)' : 'var(--ink)',
             edge: late ? 'var(--red)' : col,
-          });
+            time: t.startTime,
+          };
+          for (const day of daysInRange(t.startDate, t.due)) push(day, item);
         }
       }
     }
+    // Éléments horodatés d'abord, triés par heure ; les autres (sans heure) restent à la suite.
+    for (const list of map.values()) list.sort((a, b) => (a.time ?? '24:60').localeCompare(b.time ?? '24:60'));
     return map;
   }, [lots, tasks, projects, selected, lateOnly, search, openLotId, showTasks, todayKey]);
 
@@ -155,6 +169,10 @@ export default function CalendarView() {
         </button>
       </div>
 
+      {calOpenDay ? (
+        <DayView day={calOpenDay} onClose={closeCalDay} onNavigate={openCalDay} />
+      ) : (
+        <>
       <div className="cal__head">
         {WEEK_HEAD.map((h) => (
           <div key={h} className="cal__headCell">
@@ -191,9 +209,13 @@ export default function CalendarView() {
                   }}
                 >
                   <div className="cal__cellHead">
-                    <span className="cal__num">
+                    <button
+                      className="cal__num"
+                      title="ouvrir la vue journalière"
+                      onClick={() => openCalDay(key)}
+                    >
                       {isWeek ? `${date.getDate()} ${MONTHS_SHORT[date.getMonth()]}` : date.getDate()}
-                    </span>
+                    </button>
                     {isToday && <span className="cal__flag">●</span>}
                   </div>
                   <div className="cal__items">
@@ -230,6 +252,8 @@ export default function CalendarView() {
           </div>
         ))}
       </div>
+        </>
+      )}
     </div>
   );
 }

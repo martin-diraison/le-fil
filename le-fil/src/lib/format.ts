@@ -41,3 +41,16 @@ export function dueButtonLabel(due: string | null, placeholderWhenEmpty = '+ dat
   if (dd < 0) return `retard ${Math.abs(dd)}J`;
   return formatShortDate(due);
 }
+
+/** "HH:MM" -> "9h" (minutes rondes) ou "9h30". */
+export function formatTime(time: string): string {
+  const [h, m] = time.split(':');
+  const hh = String(Number(h));
+  return m === '00' ? `${hh}h` : `${hh}h${m}`;
+}
+
+/** Horaire d'un lot/tâche pour affichage compact : "9h" / "9h–10h30" / "". */
+export function formatTimeRange(startTime: string | null, endTime: string | null): string {
+  if (!startTime) return '';
+  return endTime ? `${formatTime(startTime)}–${formatTime(endTime)}` : formatTime(startTime);
+}

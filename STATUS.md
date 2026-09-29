@@ -1,10 +1,59 @@
 # Le Fil — état d'avancement
 
-Dernière session : 2026-09-29 — traitement du backlog de retours utilisateur (lot « Liste
-d'amélioration », projet Bugs d'appli, voir section dédiée plus bas). Appli en ligne, installée :
+Dernière session : 2026-09-29 — traitement du backlog de retours utilisateur, puis chantier
+« rdv/agenda » (horaire + lieu, vue journalière) implémenté en une fois. Appli en ligne, installée :
 https://martin-diraison.github.io/le-fil/ (déployée via GitHub Actions, connexion testée, PWA
-installée sur smartphone Samsung). **Tout est commité et poussé** — déploiement GitHub Pages à
-confirmer par l'utilisateur après coup (pas re-testé en ligne cette session, seulement en local).
+installée sur smartphone Samsung). **Code commité et poussé.**
+
+## ⚠️ Action manuelle requise avant de rouvrir le compte réel
+Le chantier horaire/lieu ajoute des colonnes (`start_time`, `end_time`, `location`) sur `lots` et
+`tasks`. **Il faut exécuter `supabase/05_time_location.sql` dans Supabase (SQL Editor) avant de
+rouvrir l'appli sur le compte réel** (localhost:5173 ou en ligne) : tant que ce n'est pas fait,
+toute modification d'un lot ou d'une tâche existant·e échouera en synchro (`toLot`/`toTask`
+envoient désormais ces colonnes dans chaque upsert, qui n'existent pas encore côté base). Sans
+risque pour les données existantes (`add column if not exists`, valeurs par défaut). Le mode démo
+local (sans `.env.local`) n'est pas concerné.
+
+## Chantier RDV/agenda : horaire, lieu, vue journalière (2026-09-29)
+Cadré avec l'utilisateur en fin de session précédente (voir résumé de cadrage plus bas dans
+l'historique de conversation, repris ici), implémenté « tout d'un coup » à sa demande :
+- **Modèle** (`types/models.ts`) : `Lot` et `Task` gagnent `startTime`/`endTime` (HH:MM,
+  optionnels) et `location` (texte, optionnel). Migration `supabase/05_time_location.sql` +
+  `schema.sql` mis à jour (référence pour une install neuve). `state/sync.ts` : mappers
+  `fromLot`/`toLot`/`fromTask`/`toTask` étendus ; `fromPgTime()` normalise le `HH:MM:SS` renvoyé
+  par Postgres en `HH:MM` (format attendu par `<input type=time>`).
+- **Store** : nouvelles actions `setLotStartTime`/`setLotEndTime`/`setLotLocation` et leurs
+  équivalents tâche, même schéma que les setters de date existants.
+- **UI desktop** (`LotDetail.tsx`) et **mobile** (`LotScreen.tsx`) : champs « de/à » (heure) et
+  « lieu » ajoutés à la suite de du/au/répétition (lot) et dans le picker de tâche (après les
+  champs date, avant les raccourcis).
+- **Vue mensuelle** (Calendrier desktop + mobile) : les éléments horodatés affichent l'heure en
+  préfixe (« 9h Réviser la chaudière ») et sont triés en premier dans chaque case (`formatTime`/
+  `formatTimeRange` dans `lib/format.ts`).
+- **Vue journalière** (nouvelle, desktop `features/calendar/DayView.tsx` + mobile
+  `features/mobile/DayScreen.tsx`) : grille horaire 24h, superposition en colonnes si
+  chevauchement (algorithme glouton dans `lib/dayGrid.ts`, réutilisé par les deux plateformes),
+  section « toute la journée » pour les éléments sans heure. Ouverture : clic sur le numéro du
+  jour (desktop, `calOpenDay` dans le store) ou tap sur une case (mobile, nouvel écran `'day'`
+  dans `MobileShell.tsx`, remplace l'ancienne liste du jour repliée sous la grille). Navigation
+  jour par jour via boutons ‹ › (desktop et mobile) + swipe tactile gauche/droite (mobile,
+  `onTouchStart`/`onTouchEnd`, seuil 50px). Un lot ouvert depuis la vue journalière garde
+  l'origine « calendrier » pour le bouton retour (`LotOrigin` étendu avec `'day'`).
+- Vérifié visuellement en local (desktop 1200×800 + mobile 390×800, mode démo temporaire —
+  `.env.local` déplacé puis restauré immédiatement après, aucune donnée réelle touchée) :
+  saisie heure/lieu, tri par heure dans le mois, vue journalière desktop et mobile, navigation
+  ‹ ›, retour « ← calendrier » depuis un lot ouvert en vue journalière.
+- **Bug corrigé au passage** (repéré par l'utilisateur en testant la session précédente) :
+  1. Calendrier : une tâche/un lot sur plusieurs jours ne s'affichait qu'à l'échéance (dernier
+     jour), pas sur toute la fourchette. Corrigé (`daysInRange`/`isDayInRange` dans `lib/
+     dates.ts`), desktop et mobile.
+  2. Gantt : un lot sans échéance propre mais avec une tâche datée disparaissait entièrement de
+     la liste (régression du filtre « masquer les lots sans date » ajouté juste avant) — corrigé,
+     le lot reste listé (sans barre propre) si au moins une de ses tâches a une date.
+- `tsc --noEmit -p tsconfig.app.json` et `npm run build` passent. **Piège méthodologique noté** :
+  `npx tsc --noEmit` sans `-p tsconfig.app.json` à la racine ne vérifie RIEN silencieusement
+  (`tsconfig.json` racine a `files: []` + des `references`, jamais suivies sans `tsc -b`) — utiliser
+  `npm run build` (qui fait `tsc -b`) ou `-p tsconfig.app.json` pour un vrai contrôle de types.
 
 ## Gantt : ne lister que les lots avec échéance (2026-09-29, suite)
 Demande de l'utilisateur après la session précédente : un lot sans échéance n'a de toute façon

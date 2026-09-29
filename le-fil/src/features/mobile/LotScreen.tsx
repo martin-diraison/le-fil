@@ -32,7 +32,13 @@ export default function LotScreen({
   const setLotDueDate = useStore((s) => s.setLotDueDate);
   const setLotStartDate = useStore((s) => s.setLotStartDate);
   const setLotRepeat = useStore((s) => s.setLotRepeat);
+  const setLotStartTime = useStore((s) => s.setLotStartTime);
+  const setLotEndTime = useStore((s) => s.setLotEndTime);
+  const setLotLocation = useStore((s) => s.setLotLocation);
   const setTaskStartDate = useStore((s) => s.setTaskStartDate);
+  const setTaskStartTime = useStore((s) => s.setTaskStartTime);
+  const setTaskEndTime = useStore((s) => s.setTaskEndTime);
+  const setTaskLocation = useStore((s) => s.setTaskLocation);
   const toggleLotDone = useStore((s) => s.toggleLotDone);
   const moveLotToProject = useStore((s) => s.moveLotToProject);
   const requestDeleteLot = useStore((s) => s.requestDeleteLot);
@@ -79,7 +85,7 @@ export default function LotScreen({
   const backLabel =
     from === 'projet'
       ? '← ' + (backProject ? backProject.name.toLowerCase() : projectKey ? 'sans projet' : 'projet')
-      : from === 'cal'
+      : from === 'cal' || from === 'day'
         ? '← calendrier'
         : '← le fil';
 
@@ -180,6 +186,31 @@ export default function LotScreen({
                 </option>
               ))}
             </select>
+            <span className="m__periodLabel">de</span>
+            <input
+              type="time"
+              className="m__dateInput"
+              aria-label="heure de début du lot"
+              value={lot.startTime ?? ''}
+              onChange={(e) => setLotStartTime(lot.id, e.target.value || null)}
+            />
+            <span className="m__periodLabel">à</span>
+            <input
+              type="time"
+              className="m__dateInput"
+              aria-label="heure de fin du lot"
+              value={lot.endTime ?? ''}
+              onChange={(e) => setLotEndTime(lot.id, e.target.value || null)}
+            />
+            <span className="m__periodLabel">lieu</span>
+            <input
+              type="text"
+              className="m__dateInput"
+              aria-label="lieu du lot"
+              placeholder="optionnel"
+              value={lot.location}
+              onChange={(e) => setLotLocation(lot.id, e.target.value)}
+            />
           </div>
         )}
 
@@ -261,6 +292,30 @@ export default function LotScreen({
                       {c.label}
                     </button>
                   ))}
+                  <span className="m__pickerLabel">de</span>
+                  <input
+                    type="time"
+                    className="m__dateInput m__dateInput--small"
+                    aria-label="heure de début de la tâche"
+                    value={t.startTime ?? ''}
+                    onChange={(e) => setTaskStartTime(t.id, e.target.value || null)}
+                  />
+                  <span className="m__pickerLabel">à</span>
+                  <input
+                    type="time"
+                    className="m__dateInput m__dateInput--small"
+                    aria-label="heure de fin de la tâche"
+                    value={t.endTime ?? ''}
+                    onChange={(e) => setTaskEndTime(t.id, e.target.value || null)}
+                  />
+                  <input
+                    type="text"
+                    className="m__dateInput m__dateInput--small m__pickerLocation"
+                    aria-label="lieu de la tâche"
+                    placeholder="lieu (optionnel)"
+                    value={t.location}
+                    onChange={(e) => setTaskLocation(t.id, e.target.value)}
+                  />
                 </div>
               )}
             </div>

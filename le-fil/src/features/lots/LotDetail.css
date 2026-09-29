@@ -384,6 +384,11 @@
   color-scheme: dark;
   cursor: pointer;
 }
+.taskRow__pickerLocation {
+  flex: 1 1 120px;
+  min-width: 90px;
+  cursor: text;
+}
 .lotDetail__dateInput:focus-visible,
 .taskRow__pickerDate:focus-visible {
   outline: 1px solid var(--yellow);
