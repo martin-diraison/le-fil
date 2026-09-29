@@ -29,6 +29,7 @@ export default function LotDetail({ drawer = false }: { drawer?: boolean }) {
   const toggleMoveMenu = useStore((s) => s.toggleMoveMenu);
   const addTask = useStore((s) => s.addTask);
   const toggleTask = useStore((s) => s.toggleTask);
+  const updateTaskLabel = useStore((s) => s.updateTaskLabel);
   const setTaskDue = useStore((s) => s.setTaskDue);
   const deleteTask = useStore((s) => s.deleteTask);
   const openTaskDatePicker = useStore((s) => s.openTaskDatePicker);
@@ -211,26 +212,26 @@ export default function LotDetail({ drawer = false }: { drawer?: boolean }) {
               return (
                 <div key={t.id} className="taskRow">
                   <div className="taskRow__main">
-                    <button className="taskRow__toggle" onClick={() => toggleTask(t.id)}>
-                      <span
-                        className="taskRow__box"
-                        style={{
-                          borderColor: t.done ? 'var(--yellow)' : late ? 'var(--red)' : '#6f6f6c',
-                          background: t.done ? 'var(--yellow)' : 'transparent',
-                        }}
-                      >
-                        {t.done ? '✓' : ''}
-                      </span>
-                      <span
-                        className="taskRow__label"
-                        style={{
-                          color: t.done ? '#9c9c98' : 'var(--paper)',
-                          textDecoration: t.done ? 'line-through' : 'none',
-                        }}
-                      >
-                        {t.label}
-                      </span>
+                    <button
+                      className="taskRow__box"
+                      title={t.done ? 'rouvrir la tâche' : 'terminer la tâche'}
+                      onClick={() => toggleTask(t.id)}
+                      style={{
+                        borderColor: t.done ? 'var(--yellow)' : late ? 'var(--red)' : '#6f6f6c',
+                        background: t.done ? 'var(--yellow)' : 'transparent',
+                      }}
+                    >
+                      {t.done ? '✓' : ''}
                     </button>
+                    <input
+                      className="taskRow__label"
+                      value={t.label}
+                      onChange={(e) => updateTaskLabel(t.id, e.target.value)}
+                      style={{
+                        color: t.done ? '#9c9c98' : 'var(--paper)',
+                        textDecoration: t.done ? 'line-through' : 'none',
+                      }}
+                    />
                     <button
                       className="taskRow__due"
                       title="échéance de la tâche"
@@ -239,26 +240,12 @@ export default function LotDetail({ drawer = false }: { drawer?: boolean }) {
                     >
                       {t.due ? (late ? `retard ${Math.abs(daysFromToday(t.due))}J` : formatShortDate(t.due)) : '+ date'}
                     </button>
+                    <button className="taskRow__delete" title="supprimer la tâche" onClick={() => deleteTask(t.id)}>
+                      ✕
+                    </button>
                   </div>
                   {picking && (
                     <div className="taskRow__picker">
-                      {DATE_CHOICES.map((c) => {
-                        const current = c.key === 'none' ? !t.due : t.due && daysFromToday(t.due) === c.offset;
-                        return (
-                          <button
-                            key={c.key}
-                            className="taskRow__pickerChoice"
-                            style={{
-                              background: current ? 'var(--yellow)' : 'transparent',
-                              color: current ? 'var(--ink)' : '#e4e4e0',
-                              borderColor: current ? 'var(--yellow)' : '#3a3a38',
-                            }}
-                            onClick={() => setTaskDue(t.id, c.key as DateChoiceKey)}
-                          >
-                            {c.label}
-                          </button>
-                        );
-                      })}
                       <span className="taskRow__pickerLabel">début</span>
                       <input
                         type="date"
@@ -277,9 +264,23 @@ export default function LotDetail({ drawer = false }: { drawer?: boolean }) {
                         value={t.due ?? ''}
                         onChange={(e) => setTaskDueDate(t.id, e.target.value || null)}
                       />
-                      <button className="taskRow__pickerRemove" onClick={() => deleteTask(t.id)}>
-                        supprimer
-                      </button>
+                      {DATE_CHOICES.map((c) => {
+                        const current = t.due && daysFromToday(t.due) === c.offset;
+                        return (
+                          <button
+                            key={c.key}
+                            className="taskRow__pickerChoice"
+                            style={{
+                              background: current ? 'var(--yellow)' : 'transparent',
+                              color: current ? 'var(--ink)' : '#e4e4e0',
+                              borderColor: current ? 'var(--yellow)' : '#3a3a38',
+                            }}
+                            onClick={() => setTaskDue(t.id, c.key as DateChoiceKey)}
+                          >
+                            {c.label}
+                          </button>
+                        );
+                      })}
                     </div>
                   )}
                 </div>

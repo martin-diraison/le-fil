@@ -109,14 +109,13 @@ export default function GanttView() {
   const rows = useMemo(() => {
     const pct = (day: string) => pctIn(win, day);
     const barW = (BAR_DAYS / win.span) * 100;
-    const keys =
-      selected.length > 0
-        ? selected
-        : projects
-            .slice()
-            .sort((a, b) => a.position - b.position)
-            .map((p) => p.id as string)
-            .concat([NO_PROJECT]);
+    // Toujours toutes les rangées projet (+ « sans projet ») : le Gantt ne doit pas être filtré
+    // silencieusement par une sélection laissée par la vue Liste (voir filterLots, même règle).
+    const keys = projects
+      .slice()
+      .sort((a, b) => a.position - b.position)
+      .map((p) => p.id as string)
+      .concat([NO_PROJECT]);
     const out: Row[] = [];
     for (const key of keys) {
       const project = key === NO_PROJECT ? null : projects.find((p) => p.id === key);

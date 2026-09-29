@@ -39,12 +39,16 @@ export default function LotScreen({
   const confirmDeleteLotNow = useStore((s) => s.confirmDeleteLotNow);
   const addTask = useStore((s) => s.addTask);
   const toggleTask = useStore((s) => s.toggleTask);
+  const updateTaskLabel = useStore((s) => s.updateTaskLabel);
   const setTaskDueDate = useStore((s) => s.setTaskDueDate);
   const deleteTask = useStore((s) => s.deleteTask);
   const openTaskDatePicker = useStore((s) => s.openTaskDatePicker);
   const flash = useStore((s) => s.flash);
 
   const [moveOpen, setMoveOpen] = useState(false);
+  // Replié par défaut pour laisser plus de place aux tâches (demande explicite de
+  // l'utilisateur — contrairement au desktop, où la place manque moins).
+  const [periodOpen, setPeriodOpen] = useState(false);
   const [taskDraft, setTaskDraft] = useState('');
   const bodyRef = useRef<HTMLTextAreaElement>(null);
 
@@ -140,37 +144,44 @@ export default function LotScreen({
           onChange={(e) => updateLotBody(lot.id, e.target.value)}
         />
 
-        <div className="m__period">
-          <span className="m__choicesLabel">échéance du lot</span>
-          <span className="m__periodLabel">du</span>
-          <input
-            type="date"
-            className="m__dateInput"
-            aria-label="début du lot"
-            value={lot.startDate ?? ''}
-            onChange={(e) => setLotStartDate(lot.id, e.target.value || null)}
-          />
-          <span className="m__periodLabel">au</span>
-          <input
-            type="date"
-            className="m__dateInput"
-            aria-label="échéance du lot"
-            value={lot.due ?? ''}
-            onChange={(e) => setLotDueDate(lot.id, e.target.value || null)}
-          />
-          <span className="m__periodLabel">répétition</span>
-          <select
-            className="m__repeatSelect"
-            value={lot.repeat}
-            onChange={(e) => setLotRepeat(lot.id, e.target.value as Repeat)}
-          >
-            {REPEAT_CHOICES.map((c) => (
-              <option key={c.key} value={c.key}>
-                {c.label}
-              </option>
-            ))}
-          </select>
-        </div>
+        {/* Échéance : repliée par défaut sur mobile pour laisser plus de place aux tâches. */}
+        <button className="m__periodToggle" onClick={() => setPeriodOpen((v) => !v)}>
+          échéance du lot · {dueLabel}
+          {lot.repeat !== 'none' && ` · ${REPEAT_CHOICES.find((c) => c.key === lot.repeat)?.label}`}
+          <span className="m__periodMark">{periodOpen ? '▴' : '▾'}</span>
+        </button>
+        {periodOpen && (
+          <div className="m__period">
+            <span className="m__periodLabel">du</span>
+            <input
+              type="date"
+              className="m__dateInput"
+              aria-label="début du lot"
+              value={lot.startDate ?? ''}
+              onChange={(e) => setLotStartDate(lot.id, e.target.value || null)}
+            />
+            <span className="m__periodLabel">au</span>
+            <input
+              type="date"
+              className="m__dateInput"
+              aria-label="échéance du lot"
+              value={lot.due ?? ''}
+              onChange={(e) => setLotDueDate(lot.id, e.target.value || null)}
+            />
+            <span className="m__periodLabel">répétition</span>
+            <select
+              className="m__repeatSelect"
+              value={lot.repeat}
+              onChange={(e) => setLotRepeat(lot.id, e.target.value as Repeat)}
+            >
+              {REPEAT_CHOICES.map((c) => (
+                <option key={c.key} value={c.key}>
+                  {c.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
         <div className="m__tasksHead" style={{ borderLeftColor: color }}>
           <span className="m__tasksDot" style={{ background: color }} />
@@ -197,12 +208,18 @@ export default function LotScreen({
           return (
             <div key={t.id} className="m__task">
               <div className="m__taskRow">
-                <button className="m__taskMain" onClick={() => toggleTask(t.id)}>
-                  <span className={`m__tbox ${t.done ? 'm__tbox--done' : ''} ${late ? 'm__tbox--late' : ''}`}>
-                    {t.done ? '✓' : ''}
-                  </span>
-                  <span className={`m__taskLabel ${t.done ? 'm__taskLabel--done' : ''}`}>{t.label}</span>
+                <button
+                  className={`m__tbox ${t.done ? 'm__tbox--done' : ''} ${late ? 'm__tbox--late' : ''}`}
+                  title={t.done ? 'rouvrir la tâche' : 'terminer la tâche'}
+                  onClick={() => toggleTask(t.id)}
+                >
+                  {t.done ? '✓' : ''}
                 </button>
+                <input
+                  className={`m__taskLabel ${t.done ? 'm__taskLabel--done' : ''}`}
+                  value={t.label}
+                  onChange={(e) => updateTaskLabel(t.id, e.target.value)}
+                />
                 <button
                   className={`m__taskDue ${late ? 'm__taskDue--late' : ''}`}
                   title="échéance de la tâche"
@@ -210,21 +227,12 @@ export default function LotScreen({
                 >
                   {dueButtonLabel(t.due)}
                 </button>
+                <button className="m__taskDelete" title="supprimer la tâche" onClick={() => deleteTask(t.id)}>
+                  ✕
+                </button>
               </div>
               {picking && (
                 <div className="m__taskPicker">
-                  {MOBILE_DATE_CHOICES.map((c) => (
-                    <button
-                      key={c.key}
-                      className={`m__chip m__chip--small ${isCurrent(t.due, c.offset) ? 'm__chip--on' : ''}`}
-                      onClick={() => {
-                        setTaskDueDate(t.id, dueFromOffset(c.offset));
-                        openTaskDatePicker(null);
-                      }}
-                    >
-                      {c.label}
-                    </button>
-                  ))}
                   <span className="m__pickerLabel">début</span>
                   <input
                     type="date"
@@ -241,9 +249,18 @@ export default function LotScreen({
                     value={t.due ?? ''}
                     onChange={(e) => setTaskDueDate(t.id, e.target.value || null)}
                   />
-                  <button className="m__chip m__chip--small m__chip--danger" onClick={() => deleteTask(t.id)}>
-                    supprimer
-                  </button>
+                  {MOBILE_DATE_CHOICES.map((c) => (
+                    <button
+                      key={c.key}
+                      className={`m__chip m__chip--small ${isCurrent(t.due, c.offset) ? 'm__chip--on' : ''}`}
+                      onClick={() => {
+                        setTaskDueDate(t.id, dueFromOffset(c.offset));
+                        openTaskDatePicker(null);
+                      }}
+                    >
+                      {c.label}
+                    </button>
+                  ))}
                 </div>
               )}
             </div>

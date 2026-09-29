@@ -643,8 +643,33 @@
   text-transform: uppercase;
   color: var(--text-secondary);
 }
-/* Échéance du lot : grille à deux colonnes (label · contrôle), pour que du / au /
-   répétition s'alignent en colonnes plutôt que de retomber en désordre. */
+/* Échéance du lot : repliée par défaut (bouton .m__periodToggle), pour laisser plus
+   de place aux tâches. Dépliée, grille à deux colonnes (label · contrôle) pour que
+   du / au / répétition s'alignent plutôt que de retomber en désordre. */
+.m__periodToggle {
+  width: 100%;
+  border: none;
+  border-bottom: 1px solid var(--ink);
+  background: var(--hover);
+  cursor: pointer;
+  padding: 12px 14px;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font: 600 8.5px var(--font-ui);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+.m__periodToggle:hover {
+  background: var(--border-quiet);
+}
+.m__periodMark {
+  margin-left: auto;
+  font: 800 9px var(--font-ui);
+  color: var(--ink);
+}
 .m__period {
   display: grid;
   grid-template-columns: auto 1fr;
@@ -653,9 +678,6 @@
   padding: 11px 14px;
   border-bottom: 1px solid var(--ink);
   background: var(--hover);
-}
-.m__period .m__choicesLabel {
-  grid-column: 1 / -1;
 }
 .m__periodLabel {
   font: 600 9px var(--font-ui);
@@ -750,30 +772,20 @@
   display: flex;
   align-items: stretch;
 }
-.m__taskMain {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  gap: 11px;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  padding: 12px 10px 12px 14px;
-  text-align: left;
-}
-.m__taskMain:hover,
 .m__taskDue:hover {
   background: var(--yellow);
 }
 .m__tbox {
+  flex-shrink: 0;
   width: 19px;
   height: 19px;
-  flex-shrink: 0;
+  margin: 12px 0 12px 14px;
   border: 1.5px solid var(--ink);
+  background: transparent;
   color: var(--paper);
   font: 800 11px/17px var(--font-ui);
   text-align: center;
+  cursor: pointer;
 }
 .m__tbox--late {
   border-color: var(--red);
@@ -782,10 +794,13 @@
   background: var(--ink);
 }
 .m__taskLabel {
+  flex: 1;
+  min-width: 0;
   font: 600 14px var(--font-content);
-  white-space: normal;
-  overflow-wrap: break-word;
   line-height: 1.3;
+  background: transparent;
+  border: none;
+  padding: 12px 10px;
 }
 .m__taskLabel--done {
   color: var(--text-secondary);
@@ -808,6 +823,22 @@
 }
 .m__taskDue--late {
   color: var(--red);
+}
+.m__taskDelete {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  border: none;
+  border-left: 1px solid var(--rule);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 12px 13px;
+  font: 600 12px var(--font-ui);
+}
+.m__taskDelete:hover {
+  background: var(--red);
+  color: var(--paper);
 }
 .m__taskPicker {
   display: flex;

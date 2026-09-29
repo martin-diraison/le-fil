@@ -1,10 +1,63 @@
 # Le Fil — état d'avancement
 
-Dernière session : 2026-09-27 — reprise des chantiers d'ajustement d'usage, puis refonte de
-l'onglet mobile « Fil » (voir sections du jour plus bas). Appli en ligne, installée :
+Dernière session : 2026-09-29 — traitement du backlog de retours utilisateur (lot « Liste
+d'amélioration », projet Bugs d'appli, voir section dédiée plus bas). Appli en ligne, installée :
 https://martin-diraison.github.io/le-fil/ (déployée via GitHub Actions, connexion testée, PWA
-installée sur smartphone Samsung). **Tout est commité, poussé et déployé** (dernier commit
-`2390f70`, déploiement GitHub Pages confirmé réussi) — session terminée proprement.
+installée sur smartphone Samsung). **Tout est commité et poussé** — déploiement GitHub Pages à
+confirmer par l'utilisateur après coup (pas re-testé en ligne cette session, seulement en local).
+
+## Backlog de retours utilisateur traité (2026-09-29)
+Repris depuis le lot « Liste d'amélioration » (projet Bugs d'appli, dans l'appli elle-même) : 9
+points triés avec l'utilisateur (plusieurs rounds d'`AskUserQuestion` pour clarifier chaque point
+ambigu) avant tout code. Décisions + implémentation :
+1. **Fourchette de date tâche/lot/projet** : déjà couvert pour lot+tâche (session précédente) —
+   confirmé avec l'utilisateur qu'un **projet** n'a pas besoin de dates (reste une simple
+   catégorie colorée).
+2. **Suppression tâche rapide** : bouton « ✕ » direct sur la ligne de tâche (desktop
+   `.taskRow__delete`, mobile `.m__taskDelete`), sorti du menu date où il était auparavant
+   enterré (`.taskRow__pickerRemove` retiré) — c'était la vraie gêne signalée.
+3. **Raccourcis date tâche simplifiés** : « bientôt »/« sans date » retirés de `DATE_CHOICES`
+   (desktop, 5→3 choix) ; « sans date » retiré de `MOBILE_DATE_CHOICES`. Champs début/fin
+   repositionnés en premier dans le picker (« calendrier en premier »), raccourcis ensuite.
+4. **Édition d'une tâche en place** : nouvelle action store `updateTaskLabel` ; le libellé de
+   tâche est désormais un `<input>` contrôlé (desktop et mobile), plus besoin de
+   supprimer/retaper pour corriger un intitulé.
+5. **Onglet Fil « en vrac »** : écarté par l'utilisateur — retour obsolète, déjà traité par la
+   refonte de la session précédente (groupes par urgence).
+6. **Calendrier/Gantt « tout afficher » par défaut** : bug réel trouvé — `filterLots` filtrait
+   aussi Calendrier et Gantt par la sélection de projets laissée par la vue Liste (`scopeAll` ne
+   valait `true` que si `selected` était vide). Corrigé : `scopeAll = view !== 'liste'`, ces deux
+   vues ignorent maintenant totalement la sélection (qui ne concerne plus que la vue Liste). Même
+   bug trouvé indépendamment dans `GanttView.tsx` (le regroupement des rangées par projet limitait
+   aussi aux `selected`) — corrigé en même temps.
+7. **Échéance du lot (repli)** : desktop compacté sans cacher (padding/gap réduits) — décision de
+   ne pas re-tenter un repli/dépli desktop déjà essayé et rejeté une fois la session précédente ;
+   mobile repliée par défaut (`periodOpen`, fermé à l'ouverture d'un lot) avec un bouton
+   `.m__periodToggle` résumant échéance + récurrence.
+8. **« Au » = « Du » par défaut** : `setLotStartDate`/`setTaskStartDate` remplissent l'échéance
+   avec la date de début si elle est encore vide. Bug trouvé en testant : la saisie clavier d'une
+   date native déclenche `onChange` sur des états intermédiaires (ex. année « 0002 » pendant la
+   frappe de « 2026 » chiffre par chiffre), qui se propageaient tels quels → garde
+   `isPlausibleDate` (année ≥ 1900) ajoutée avant de propager vers l'échéance.
+9. **Chantier « type Google Calendar »** (rdv, horaires, lieu) : cadré avec l'utilisateur,
+   **pas implémenté** — mis en attente comme les notifications (voir périmètre ci-dessous).
+
+### Périmètre retenu pour le futur chantier RDV/agenda (non démarré)
+- Tâches ET lots pourraient porter un horaire (début + fin/durée) et un lieu (texte libre).
+- Vue mensuelle conservée comme entrée principale ; dans une case jour, les éléments avec horaire
+  s'afficheraient à la suite entre eux.
+- Nouvelle vue journalière (tap/clic sur un jour) : grille horaire type agenda, superposition si
+  chevauchement, navigation par swipe gauche/droite pour changer de jour (comme un widget agenda
+  smartphone).
+- Comparable aux notifications en ampleur (modèle de données + nouvelle vue + gestes tactiles) —
+  nécessite une session dédiée, pas un ajout incrémental.
+
+Fichiers touchés : `state/store.ts`, `state/dateShortcuts.ts`, `features/lots/LotDetail.tsx`/
+`.css`, `features/mobile/LotScreen.tsx`, `features/mobile/Mobile.css`, `features/gantt/
+GanttView.tsx`. `tsc --noEmit` et `npm run build` passent. **Vérifié visuellement en local**
+(desktop + mobile 390×800 via Chrome) en mode démo temporaire — `.env.local` déplacé puis
+restauré immédiatement après le test, aucune donnée réelle Supabase touchée. Pas re-testé contre
+le compte réel ni contre le déploiement en ligne : à confirmer par l'utilisateur à l'usage.
 
 ## Refonte de l'onglet mobile « Fil » (2026-09-27)
 Discuté avant tout code (4 directions proposées avec maquettes ASCII via AskUserQuestion) :

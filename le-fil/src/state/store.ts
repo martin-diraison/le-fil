@@ -6,6 +6,14 @@ import { dueFromChoice, type DateChoiceKey } from './dateShortcuts';
 import { SEED_LOTS, SEED_PROJECTS, SEED_TASKS } from './seed';
 import { isSupabaseConfigured } from '../lib/supabase';
 
+/** Une saisie clavier dans un <input type=date> déclenche onChange à chaque segment rempli,
+ * y compris avec une année encore partielle (ex. « 0002 » en tapant « 2026 » chiffre par
+ * chiffre) — on ne propage vers « au » que sur une date déjà plausible, pour ne pas y écrire
+ * une valeur intermédiaire invalide. */
+function isPlausibleDate(v: string): boolean {
+  return /^\d{4}-\d{2}-\d{2}$/.test(v) && Number(v.slice(0, 4)) >= 1900;
+}
+
 /** Sentinel pour la sélection "sans projet" dans le menu gauche (§3.2, §3.6). */
 export const NO_PROJECT = '__no_project__' as const;
 export type ProjectKey = string | typeof NO_PROJECT;
@@ -105,6 +113,7 @@ interface State {
   // Actions — tâches
   addTask: (lotId: string, label: string) => void;
   toggleTask: (id: string) => void;
+  updateTaskLabel: (id: string, label: string) => void;
   setTaskDue: (id: string, key: DateChoiceKey) => void;
   setTaskDueDate: (id: string, due: string | null) => void;
   setTaskStartDate: (id: string, startDate: string | null) => void;
@@ -305,8 +314,16 @@ export const useStore = create<State>((set, get) => ({
     set((s) => ({ lots: s.lots.map((l) => (l.id === id ? { ...l, due, updatedAt: nowIso() } : l)) }));
   },
 
+  // Saisir « du » remplit « au » avec la même date si elle est encore vide (saisie rapide
+  // d'une tâche/rdv sur une seule journée) — sans écraser une échéance déjà choisie.
   setLotStartDate: (id, startDate) => {
-    set((s) => ({ lots: s.lots.map((l) => (l.id === id ? { ...l, startDate, updatedAt: nowIso() } : l)) }));
+    set((s) => ({
+      lots: s.lots.map((l) =>
+        l.id === id
+          ? { ...l, startDate, due: startDate && isPlausibleDate(startDate) && !l.due ? startDate : l.due, updatedAt: nowIso() }
+          : l,
+      ),
+    }));
   },
 
   setLotRepeat: (id, repeat) => {
@@ -390,6 +407,10 @@ export const useStore = create<State>((set, get) => ({
     set((s) => ({ tasks: s.tasks.map((t) => (t.id === id ? { ...t, done: !t.done } : t)) }));
   },
 
+  updateTaskLabel: (id, label) => {
+    set((s) => ({ tasks: s.tasks.map((t) => (t.id === id ? { ...t, label } : t)) }));
+  },
+
   setTaskDue: (id, key) => {
     const due = dueFromChoice(key);
     set((s) => ({ tasks: s.tasks.map((t) => (t.id === id ? { ...t, due } : t)), taskDatePickerId: null }));
@@ -399,8 +420,15 @@ export const useStore = create<State>((set, get) => ({
     set((s) => ({ tasks: s.tasks.map((t) => (t.id === id ? { ...t, due } : t)) }));
   },
 
+  // Même règle que pour le lot : « au » (due) prend la date de « du » si elle est encore vide.
   setTaskStartDate: (id, startDate) => {
-    set((s) => ({ tasks: s.tasks.map((t) => (t.id === id ? { ...t, startDate } : t)) }));
+    set((s) => ({
+      tasks: s.tasks.map((t) =>
+        t.id === id
+          ? { ...t, startDate, due: startDate && isPlausibleDate(startDate) && !t.due ? startDate : t.due }
+          : t,
+      ),
+    }));
   },
 
   deleteTask: (id) => {
@@ -489,7 +517,10 @@ export function filterLots(
   s: Pick<State, 'lots' | 'tasks' | 'selected' | 'lateOnly' | 'search' | 'view'>,
 ): Lot[] {
   const q = s.search.toLowerCase();
-  const scopeAll = s.selected.length === 0 && s.view !== 'liste';
+  // Calendrier et Gantt affichent toujours tous les projets/sans-projet par défaut, quelle que
+  // soit la sélection laissée par la vue Liste (qui, elle, respecte la sélection). Décision
+  // explicite de l'utilisateur : la sélection ne doit pas filtrer silencieusement ces deux vues.
+  const scopeAll = s.view !== 'liste';
   return s.lots.filter((l) => {
     if (!scopeAll && !s.selected.includes(l.projectId ?? NO_PROJECT)) return false;
     if (s.lateOnly && computeUrgency(l) !== 'late') return false;
