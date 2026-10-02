@@ -17,15 +17,11 @@ export default function CalendarScreen({
   month,
   setMonth,
   day,
-  tall,
-  toggleTall,
 }: {
   nav: MobileNav;
   month: Month;
   setMonth: (m: Month) => void;
   day: string;
-  tall: boolean;
-  toggleTall: () => void;
 }) {
   const lots = useStore((s) => s.lots);
   const tasks = useStore((s) => s.tasks);
@@ -59,7 +55,7 @@ export default function CalendarScreen({
     setMonth({ year: d.getFullYear(), month: d.getMonth() });
   };
 
-  const max = tall ? 8 : 3;
+  const max = 8;
 
   // Swipe horizontal = mois suivant/précédent (ignoré si le geste est surtout vertical).
   const touch = useRef<{ x: number; y: number } | null>(null);
@@ -93,13 +89,6 @@ export default function CalendarScreen({
         <button className={`m__calToggle ${showTasks ? 'm__calToggle--on' : ''}`} onClick={toggleTasks}>
           tâches
         </button>
-        <button
-          className={`m__calToggle m__calToggle--tall ${tall ? 'm__calToggle--on' : ''}`}
-          title="agrandir les cases"
-          onClick={toggleTall}
-        >
-          {tall ? '↑' : '↓'}
-        </button>
       </div>
       <div className="m__calHead">
         {WEEK_HEAD.map((h) => (
@@ -110,7 +99,7 @@ export default function CalendarScreen({
       </div>
 
       <div className="m__scroll">
-        <div className={`m__calGrid ${tall ? 'm__calGrid--tall' : ''}`}>
+        <div className="m__calGrid">
           {rows.map((row) => (
             <div key={toDay(row[0])} className="m__calRow">
               {row.map((date) => {

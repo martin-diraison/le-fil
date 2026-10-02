@@ -57,7 +57,6 @@ export default function MobileShell({ session }: { session: Session }) {
   // Calendrier : conservé en changeant d'onglet.
   const [calMonth, setCalMonth] = useState(() => ({ year: new Date().getFullYear(), month: new Date().getMonth() }));
   const [calDay, setCalDay] = useState(() => toDay(new Date()));
-  const [calTall, setCalTall] = useState(false);
 
   // Flèche retour du téléphone : chaque écran empilé (projet, lot, jour, compte) est une entrée
   // d'historique ; popstate restaure l'état de vue au lieu de fermer l'appli.
@@ -178,8 +177,6 @@ export default function MobileShell({ session }: { session: Session }) {
             month={calMonth}
             setMonth={setCalMonth}
             day={calDay}
-            tall={calTall}
-            toggleTall={() => setCalTall((v) => !v)}
           />
         )}
       </div>

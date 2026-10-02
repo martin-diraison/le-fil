@@ -981,10 +981,6 @@
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
-.m__calToggle--tall {
-  margin-left: 0;
-  font: 800 10px var(--font-ui);
-}
 .m__calToggle--on {
   background: var(--ink);
   color: var(--paper);
@@ -1011,15 +1007,19 @@
 }
 .m__calGrid {
   border-bottom: 1px solid var(--ink);
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 .m__calRow {
+  flex: 1 0 auto;
   display: flex;
   border-bottom: 1px solid var(--rule);
 }
 .m__calCell {
   flex: 1;
   min-width: 0;
-  min-height: 74px;
+  min-height: 112px;
   border: none;
   border-right: 1px solid var(--rule);
   background: var(--paper);
@@ -1031,9 +1031,6 @@
   justify-content: flex-start;
   gap: 2px;
   overflow: hidden;
-}
-.m__calGrid--tall .m__calCell {
-  min-height: 112px;
 }
 .m__calCell:hover {
   outline: 2px solid var(--yellow);
@@ -1263,4 +1260,103 @@
   top: 14px;
   left: 12px;
   padding: 0;
+}
+
+/* Feuille de création rapide (vue journalière) */
+.m__sheetBack {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(10, 10, 10, 0.4);
+  display: flex;
+  align-items: flex-end;
+}
+.m__sheet {
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--paper);
+  border-top: 2px solid var(--ink);
+  padding: 12px 14px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.m__sheetKinds {
+  display: flex;
+}
+.m__sheetKind {
+  flex: 1;
+  min-height: 38px;
+  border: 1px solid var(--ink);
+  background: transparent;
+  cursor: pointer;
+  font: 800 10px var(--font-ui);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.m__sheetKind--on {
+  background: var(--ink);
+  color: var(--paper);
+}
+.m__sheetKind:disabled {
+  opacity: 0.4;
+}
+.m__sheetInput {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 40px;
+  border: 1px solid var(--border-quiet);
+  background: var(--paper);
+  padding: 0 8px;
+  font: 500 16px var(--font-content);
+}
+.m__sheetInput:focus {
+  outline: none;
+  background: var(--yellow-pale);
+  border-color: var(--ink);
+}
+.m__sheetRow {
+  display: flex;
+  gap: 8px;
+}
+.m__sheetRow label {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font: 600 10px var(--font-ui);
+  text-transform: uppercase;
+}
+.m__sheetBtn {
+  flex: 1;
+  min-height: 42px;
+  border: 1px solid var(--ink);
+  background: transparent;
+  cursor: pointer;
+  font: 800 10px var(--font-ui);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.m__sheetBtn--ok {
+  background: var(--yellow);
+}
+.m__sheetBtn:disabled {
+  opacity: 0.4;
+}
+
+.m__quietBtn {
+  display: block;
+  margin: 28px auto 24px;
+  padding: 10px 12px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: var(--text-tertiary);
+  font: 600 9px var(--font-ui);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.m__quietBtn--confirm {
+  color: var(--red);
+  border: 1px solid var(--red);
 }

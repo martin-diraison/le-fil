@@ -1,9 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useStore, type ProjectKey } from '../../state/store';
 import { computeUrgency } from '../../types/models';
-import { contrastText, NO_PROJECT_COLOR } from '../../lib/palette';
 import { daysUntil, dueButtonLabel, formatShortDate } from '../../lib/format';
-import { parseDay, shiftDays, startOfDay, toDay } from '../../lib/dates';
 import { MOBILE_DATE_CHOICES, REPEAT_CHOICES, dueFromOffset } from '../../state/dateShortcuts';
 import { copyToClipboard, formatLotTasksAsText } from '../../lib/exportTasks';
 import { projectColor, projectName } from './labels';
@@ -40,7 +38,6 @@ export default function LotScreen({
   const setTaskEndTime = useStore((s) => s.setTaskEndTime);
   const setTaskLocation = useStore((s) => s.setTaskLocation);
   const toggleLotDone = useStore((s) => s.toggleLotDone);
-  const moveLotToProject = useStore((s) => s.moveLotToProject);
   const requestDeleteLot = useStore((s) => s.requestDeleteLot);
   const confirmDeleteLotNow = useStore((s) => s.confirmDeleteLotNow);
   const addTask = useStore((s) => s.addTask);
@@ -51,7 +48,7 @@ export default function LotScreen({
   const openTaskDatePicker = useStore((s) => s.openTaskDatePicker);
   const flash = useStore((s) => s.flash);
 
-  const [moveOpen, setMoveOpen] = useState(false);
+  const [confirmDone, setConfirmDone] = useState(false);
   // Replié par défaut pour laisser plus de place aux tâches (demande explicite de
   // l'utilisateur — contrairement au desktop, où la place manque moins).
   const [periodOpen, setPeriodOpen] = useState(false);
@@ -99,13 +96,6 @@ export default function LotScreen({
     addTask(lot!.id, taskDraft);
     setTaskDraft('');
   }
-
-  const moveTargets = [{ id: null as string | null, name: 'sans projet', color: NO_PROJECT_COLOR }].concat(
-    projects
-      .slice()
-      .sort((a, b) => a.position - b.position)
-      .map((p) => ({ id: p.id as string | null, name: p.name, color: p.color })),
-  );
 
   return (
     <div className="m__col">
@@ -332,56 +322,20 @@ export default function LotScreen({
           />
         </div>
 
-        {/* « Déplacer vers… » : replié par défaut (fonction peu utilisée). */}
-        <button className="m__moveToggle" onClick={() => setMoveOpen((v) => !v)}>
-          déplacer vers…<span className="m__moveMark">{moveOpen ? '▴' : '▾'}</span>
-        </button>
-        {moveOpen && (
-          <div className="m__moveTargets">
-            {moveTargets.map((p) => {
-              const on = lot.projectId === p.id;
-              return (
-                <button
-                  key={p.id ?? 'none'}
-                  className="m__moveTarget"
-                  style={{
-                    background: on ? p.color : 'var(--paper)',
-                    color: on ? contrastText(p.color) : 'var(--ink)',
-                    borderColor: p.color,
-                  }}
-                  onClick={() => {
-                    moveLotToProject(lot.id, p.id);
-                    flash('déplacé vers ' + p.name);
-                  }}
-                >
-                  {p.name}
-                </button>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
-      <div className="m__lotFoot">
+        {/* « Terminer le lot » : discret et en deux temps (action rare, pas à faire par mégarde). */}
         <button
-          className={`m__lotDone ${lot.done ? 'm__lotDone--reopen' : ''}`}
+          className={`m__quietBtn ${confirmDone ? 'm__quietBtn--confirm' : ''}`}
           onClick={() => {
+            if (!lot.done && !confirmDone) {
+              setConfirmDone(true);
+              return;
+            }
             toggleLotDone(lot.id);
+            setConfirmDone(false);
             flash(lot.done ? 'remis dans le fil' : 'terminé');
           }}
         >
-          {lot.done ? 'remettre dans le fil' : 'terminer le lot'}
-        </button>
-        <button
-          className="m__plusDay"
-          onClick={() => {
-            const base = lot.due ? parseDay(lot.due) : startOfDay();
-            const due = toDay(shiftDays(base, 1));
-            setLotDueDate(lot.id, due);
-            flash('repoussé au ' + formatShortDate(due));
-          }}
-        >
-          +1 j
+          {lot.done ? 'remettre dans le fil' : confirmDone ? 'confirmer : terminer le lot' : 'terminer le lot…'}
         </button>
       </div>
     </div>

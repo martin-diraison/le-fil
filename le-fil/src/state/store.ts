@@ -93,7 +93,7 @@ interface State {
    * Crée un lot et l'ouvre. Sans `projectKey`, il va dans le premier projet sélectionné (desktop) ;
    * sinon dans le projet indiqué (mobile : projet ouvert, ou `null` / NO_PROJECT = sans projet).
    */
-  addLot: (title: string, projectKey?: ProjectKey | null) => void;
+  addLot: (title: string, projectKey?: ProjectKey | null) => string | null;
   openLot: (id: string | null) => void;
   /** Calendrier / Gantt : ouvre le lot, ou le referme s'il est déjà ouvert (§3.1). */
   toggleOpenLot: (id: string) => void;
@@ -115,7 +115,7 @@ interface State {
   toggleMoveMenu: () => void;
 
   // Actions — tâches
-  addTask: (lotId: string, label: string) => void;
+  addTask: (lotId: string, label: string) => string | null;
   toggleTask: (id: string) => void;
   updateTaskLabel: (id: string, label: string) => void;
   setTaskDue: (id: string, key: DateChoiceKey) => void;
@@ -281,7 +281,7 @@ export const useStore = create<State>((set, get) => ({
 
   addLot: (rawTitle, projectKey) => {
     const title = rawTitle.trim();
-    if (!title) return;
+    if (!title) return null;
     const target =
       projectKey === undefined
         ? (get().selected.find((k) => k !== NO_PROJECT) as string | undefined)
@@ -315,6 +315,7 @@ export const useStore = create<State>((set, get) => ({
       openLotId: id,
       lateOnly: false,
     }));
+    return id;
   },
 
   openLot: (id) => set({ openLotId: id, moveMenuOpen: false, confirmDeleteLot: false, taskDatePickerId: null }),
@@ -417,13 +418,14 @@ export const useStore = create<State>((set, get) => ({
 
   addTask: (lotId, rawLabel) => {
     const label = rawLabel.trim();
-    if (!label) return;
+    if (!label) return null;
+    const id = uid('task');
     set((s) => {
       const count = s.tasks.filter((t) => t.lotId === lotId).length;
       return {
         tasks: s.tasks.concat([
           {
-            id: uid('task'),
+            id,
             lotId,
             label,
             startDate: null,
@@ -438,6 +440,7 @@ export const useStore = create<State>((set, get) => ({
         taskDraft: '',
       };
     });
+    return id;
   },
 
   toggleTask: (id) => {

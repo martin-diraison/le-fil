@@ -1,5 +1,5 @@
-import { useRef } from 'react';
-import { taskMatchesSearch, useStore } from '../../state/store';
+import { useRef, useState } from 'react';
+import { NO_PROJECT, taskMatchesSearch, useStore } from '../../state/store';
 import { DAYS_SHORT, MONTHS_SHORT, formatTime } from '../../lib/format';
 import { isDayInRange, parseDay, shiftDays, toDay } from '../../lib/dates';
 import { DAY_GRID_HOURS, layoutDayGrid, type DayGridEntry } from '../../lib/dayGrid';
@@ -20,6 +20,118 @@ type Entry = DayGridEntry & {
   lotId: string;
 };
 
+const HOUR_PX = 52; // doit rester égal à la hauteur d'une heure dans Mobile.css (.m__dayLanes)
+
+const pad = (n: number) => String(n).padStart(2, '0');
+
+// Feuille de création rapide : toucher un espace vide de la grille propose un nouveau lot ou une
+// nouvelle tâche, daté du jour affiché et pré-rempli à l'heure touchée (durée 1 h par défaut).
+function AddSheet({ day, hour, onClose }: { day: string; hour: number; onClose: () => void }) {
+  const lots = useStore((s) => s.lots);
+  const projects = useStore((s) => s.projects);
+  const addLot = useStore((s) => s.addLot);
+  const addTask = useStore((s) => s.addTask);
+  const openLot = useStore((s) => s.openLot);
+  const st = useStore.getState;
+
+  const parents = lots.filter((l) => !l.done);
+  const [kind, setKind] = useState<'lot' | 'task'>('lot');
+  const [title, setTitle] = useState('');
+  const [projectKey, setProjectKey] = useState<string>(NO_PROJECT);
+  const [parentId, setParentId] = useState(parents[0]?.id ?? '');
+  const [start, setStart] = useState(`${pad(hour)}:00`);
+  const [end, setEnd] = useState(`${pad(Math.min(hour + 1, 23))}:${hour >= 23 ? '59' : '00'}`);
+  const [location, setLocation] = useState('');
+
+  const canSubmit = title.trim() !== '' && (kind === 'lot' || parentId !== '');
+
+  const submit = () => {
+    if (!canSubmit) return;
+    const s = st();
+    if (kind === 'lot') {
+      const id = addLot(title, projectKey);
+      openLot(null); // addLot ouvre le lot dans le store ; on reste sur la vue journalière
+      if (!id) return;
+      s.setLotStartDate(id, day);
+      s.setLotDueDate(id, day);
+      if (start) s.setLotStartTime(id, start);
+      if (end) s.setLotEndTime(id, end);
+      if (location.trim()) s.setLotLocation(id, location.trim());
+    } else {
+      const id = addTask(parentId, title);
+      if (!id) return;
+      s.setTaskStartDate(id, day);
+      s.setTaskDueDate(id, day);
+      if (start) s.setTaskStartTime(id, start);
+      if (end) s.setTaskEndTime(id, end);
+      if (location.trim()) s.setTaskLocation(id, location.trim());
+    }
+    onClose();
+  };
+
+  return (
+    <div className="m__sheetBack" onClick={onClose}>
+      <div className="m__sheet" onClick={(e) => e.stopPropagation()}>
+        <div className="m__sheetKinds">
+          <button className={`m__sheetKind ${kind === 'lot' ? 'm__sheetKind--on' : ''}`} onClick={() => setKind('lot')}>
+            lot
+          </button>
+          <button
+            className={`m__sheetKind ${kind === 'task' ? 'm__sheetKind--on' : ''}`}
+            disabled={parents.length === 0}
+            onClick={() => setKind('task')}
+          >
+            tâche
+          </button>
+        </div>
+        <input
+          className="m__sheetInput"
+          autoFocus
+          placeholder={kind === 'lot' ? 'titre du lot' : 'intitulé de la tâche'}
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && submit()}
+        />
+        {kind === 'lot' ? (
+          <select className="m__sheetInput" value={projectKey} onChange={(e) => setProjectKey(e.target.value)}>
+            <option value={NO_PROJECT}>sans projet</option>
+            {projects.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <select className="m__sheetInput" value={parentId} onChange={(e) => setParentId(e.target.value)}>
+            {parents.map((l) => (
+              <option key={l.id} value={l.id}>
+                {l.title}
+              </option>
+            ))}
+          </select>
+        )}
+        <div className="m__sheetRow">
+          <label>
+            de <input type="time" className="m__sheetInput" value={start} onChange={(e) => setStart(e.target.value)} />
+          </label>
+          <label>
+            à <input type="time" className="m__sheetInput" value={end} onChange={(e) => setEnd(e.target.value)} />
+          </label>
+        </div>
+        <input className="m__sheetInput" placeholder="lieu" value={location} onChange={(e) => setLocation(e.target.value)} />
+        <div className="m__sheetRow">
+          <button className="m__sheetBtn" onClick={onClose}>
+            annuler
+          </button>
+          <button className="m__sheetBtn m__sheetBtn--ok" disabled={!canSubmit} onClick={submit}>
+            créer
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function DayScreen({
   nav,
   day,
@@ -38,6 +150,7 @@ export default function DayScreen({
   const search = useStore((s) => s.search);
 
   const touchX = useRef<number | null>(null);
+  const [addHour, setAddHour] = useState<number | null>(null);
 
   const dayDate = parseDay(day);
   const title = `${DAYS_SHORT[dayDate.getDay()]} ${dayDate.getDate()} ${MONTHS_SHORT[dayDate.getMonth()]}`;
@@ -129,7 +242,14 @@ export default function DayScreen({
             </div>
           ))}
         </div>
-        <div className="m__dayLanes">
+        <div
+          className="m__dayLanes"
+          onClick={(e) => {
+            if ((e.target as HTMLElement).closest('button')) return; // un bloc existant gère son propre tap
+            const y = e.clientY - e.currentTarget.getBoundingClientRect().top;
+            setAddHour(Math.max(0, Math.min(23, Math.floor(y / HOUR_PX))));
+          }}
+        >
           {DAY_GRID_HOURS.map((h) => (
             <div key={h} className="m__dayHourLine" style={{ top: `${(h / 24) * 100}%` }} />
           ))}
@@ -155,6 +275,7 @@ export default function DayScreen({
           )}
         </div>
       </div>
+      {addHour !== null && <AddSheet day={day} hour={addHour} onClose={() => setAddHour(null)} />}
     </div>
   );
 }
