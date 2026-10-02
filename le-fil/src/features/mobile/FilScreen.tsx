@@ -1,11 +1,12 @@
 import { useMemo, useState } from 'react';
-import { sortLots, useStore } from '../../state/store';
-import { computeUrgency, type Urgency } from '../../types/models';
+import { lotMatches, useStore } from '../../state/store';
+import { compareUrgency, computeUrgency, isArchived, lotFocus, type Lot, type Task, type Urgency } from '../../types/models';
 import { DoneBox, DraftBar } from './parts';
-import { lotMeta, projectColor, projectName } from './labels';
+import { lotMeta, projectColor, projectName, taskFocusLabel } from './labels';
 import type { MobileNav } from './MobileShell';
 
-// Le Fil — tous les lots, groupés par urgence (README §4 « Fil »).
+// Le Fil — tous les lots, groupés par urgence (README §4 « Fil »). L'urgence d'un lot tient
+// compte de ses tâches datées (`lotFocus`) : la plus pressante fait remonter le lot.
 const GROUPS: { key: Urgency; label: string; tone?: 'late' | 'muted' }[] = [
   { key: 'late', label: 'en retard', tone: 'late' },
   { key: 'today', label: "aujourd'hui" },
@@ -20,7 +21,7 @@ const GROUPS: { key: Urgency; label: string; tone?: 'late' | 'muted' }[] = [
 // le reste se déplie au tap (état local, pas persisté — repart replié à chaque ouverture).
 const DEFAULT_OPEN: Urgency[] = ['late', 'today', 'week', 'month'];
 
-export default function FilScreen({ nav }: { nav: MobileNav }) {
+export default function FilScreen({ nav, focusDraft = false }: { nav: MobileNav; focusDraft?: boolean }) {
   const lots = useStore((s) => s.lots);
   const tasks = useStore((s) => s.tasks);
   const projects = useStore((s) => s.projects);
@@ -31,6 +32,10 @@ export default function FilScreen({ nav }: { nav: MobileNav }) {
   const flash = useStore((s) => s.flash);
 
   const [open, setOpen] = useState<Set<Urgency>>(() => new Set(DEFAULT_OPEN));
+  const [searching, setSearching] = useState(false);
+  const [query, setQuery] = useState('');
+  const [showArchived, setShowArchived] = useState(false);
+  const q = searching ? query.trim().toLowerCase() : '';
   const toggleGroup = (key: Urgency) =>
     setOpen((prev) => {
       const next = new Set(prev);
@@ -39,31 +44,77 @@ export default function FilScreen({ nav }: { nav: MobileNav }) {
       return next;
     });
 
+  // Urgence effective + tâche qui fait remonter le lot, calculées une fois par lot.
+  const focus = useMemo(() => {
+    const byLot = new Map<string, Task[]>();
+    for (const t of tasks) byLot.set(t.lotId, [...(byLot.get(t.lotId) ?? []), t]);
+    const m = new Map<string, { urgency: Urgency; due: string | null; task: Task | null; tasks: Task[] }>();
+    for (const l of lots) {
+      const lt = byLot.get(l.id) ?? [];
+      const f = lotFocus(l, lt);
+      m.set(l.id, { ...f, urgency: computeUrgency({ done: l.done, due: f.due }), tasks: lt });
+    }
+    return m;
+  }, [lots, tasks]);
+
+  const archivedCount = useMemo(() => lots.filter((l) => isArchived(l)).length, [lots]);
+
   const groups = useMemo(() => {
-    const list = sortLots(
-      lots.filter((l) => !lateOnly || computeUrgency(l) === 'late'),
-      'urgence',
+    // La recherche couvre aussi les archives ; sinon elles n'apparaissent qu'à la demande.
+    const list = lots
+      .filter((l) => (q ? lotMatches(l, tasks, q) : showArchived || !isArchived(l)))
+      .filter((l) => !lateOnly || focus.get(l.id)!.urgency === 'late')
+      .sort((a, b) => {
+        const fa = focus.get(a.id)!;
+        const fb = focus.get(b.id)!;
+        return compareUrgency(fa.urgency, fb.urgency) || (fa.due ?? '').localeCompare(fb.due ?? '');
+      });
+    // « terminés » reste affiché (même vide) s'il y a des archives, pour garder le lien vers elles.
+    return GROUPS.map((g) => ({ ...g, lots: list.filter((l) => focus.get(l.id)!.urgency === g.key) })).filter(
+      (g) => g.lots.length > 0 || (g.key === 'done' && !q && !lateOnly && archivedCount > 0),
     );
-    return GROUPS.map((g) => ({ ...g, lots: list.filter((l) => computeUrgency(l) === g.key) })).filter(
-      (g) => g.lots.length > 0,
-    );
-  }, [lots, lateOnly]);
+  }, [lots, tasks, lateOnly, focus, q, showArchived, archivedCount]);
 
   const openCount = lots.filter((l) => !l.done).length;
-  const lateCount = lots.filter((l) => computeUrgency(l) === 'late').length;
+  const lateCount = lots.filter((l) => focus.get(l.id)?.urgency === 'late').length;
+  const meta = (lot: Lot) => {
+    const f = focus.get(lot.id)!;
+    return f.task ? taskFocusLabel(f.task, f.tasks) : lotMeta(lot, projects, f.tasks, false);
+  };
 
   return (
     <div className="m__col">
       <div className="m__head">
         <span className="m__headTitle">le fil</span>
         <span className="m__headCount">{openCount} lots ouverts</span>
+        <button
+          className={`m__lateBtn m__searchBtn ${searching ? 'm__searchBtn--on' : ''}`}
+          aria-label="chercher"
+          onClick={() => setSearching((v) => !v)}
+        >
+          chercher
+        </button>
         <button className={`m__lateBtn ${lateOnly ? 'm__lateBtn--on' : ''}`} onClick={toggleLateOnly}>
           retard {lateCount}
         </button>
       </div>
+      {searching && (
+        <div className="m__searchRow">
+          <input
+            className="m__searchInput"
+            autoFocus
+            type="search"
+            enterKeyHint="search"
+            placeholder="titre, texte, tâche… (archives comprises)"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+        </div>
+      )}
       <div className="m__scroll">
         {groups.map((g) => {
-          const isOpen = open.has(g.key);
+          // Pendant une recherche, tous les groupes trouvés sont dépliés.
+          const isOpen = q !== '' || open.has(g.key);
           return (
             <div key={g.key}>
               <button
@@ -75,7 +126,7 @@ export default function FilScreen({ nav }: { nav: MobileNav }) {
               </button>
               {isOpen &&
                 g.lots.map((lot) => {
-                  const late = computeUrgency(lot) === 'late';
+                  const late = focus.get(lot.id)!.urgency === 'late';
                   return (
                     <div key={lot.id} className="m__row">
                       <span className="m__edge" style={{ background: projectColor(projects, lot.projectId) }} />
@@ -84,7 +135,8 @@ export default function FilScreen({ nav }: { nav: MobileNav }) {
                         late={late}
                         onToggle={() => {
                           toggleLotDone(lot.id);
-                          flash(lot.done ? 'remis dans le fil' : 'terminé');
+                          if (lot.done) flash('remis dans le fil');
+                  else flash('terminé', () => toggleLotDone(lot.id));
                         }}
                       />
                       <button className="m__rowMain" onClick={() => nav.openLot(lot.id, 'fil')}>
@@ -97,23 +149,24 @@ export default function FilScreen({ nav }: { nav: MobileNav }) {
                         </span>
                         <span className={`m__rowTitle ${lot.done ? 'm__rowTitle--done' : ''}`}>{lot.title}</span>
                         <span className={`m__rowMeta ${late ? 'm__rowMeta--late' : ''}`}>
-                          {lotMeta(
-                            lot,
-                            projects,
-                            tasks.filter((t) => t.lotId === lot.id),
-                            false,
-                          )}
+                          {meta(lot)}
                         </span>
                       </button>
                     </div>
                   );
                 })}
+              {g.key === 'done' && isOpen && !q && archivedCount > 0 && (
+                <button className="m__archivesBtn" onClick={() => setShowArchived((v) => !v)}>
+                  {showArchived ? 'masquer les archives' : `voir les archives · ${archivedCount}`}
+                </button>
+              )}
             </div>
           );
         })}
-        {groups.length === 0 && <div className="m__empty">rien ici</div>}
+        {groups.length === 0 && <div className="m__empty">{q ? 'rien trouvé' : 'rien ici'}</div>}
       </div>
       <DraftBar
+        autoFocus={focusDraft}
         placeholder="NOUVEAU LOT…"
         onCommit={(title) => {
           addLot(title, null);

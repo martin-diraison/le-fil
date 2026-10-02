@@ -38,6 +38,21 @@ export default defineConfig({
             purpose: 'maskable',
           },
         ],
+        // Appui long sur l'icône → « nouveau lot » ; menu Partager d'Android → crée un lot
+        // (voir src/lib/launchIntent.ts, qui lit ces paramètres au démarrage).
+        shortcuts: [
+          {
+            name: 'Nouveau lot',
+            short_name: 'Nouveau lot',
+            url: `${base}?nouveau=1`,
+            icons: [{ src: `${base}icons/icon-192.png`, sizes: '192x192', type: 'image/png' }],
+          },
+        ],
+        share_target: {
+          action: base,
+          method: 'GET',
+          params: { title: 'share_title', text: 'share_text', url: 'share_url' },
+        },
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2}'],

@@ -22,6 +22,63 @@ Liste d'améliorations de l'utilisateur ; case « Google Calendar » déjà coch
   logique partagée avec la vue jour dans `calendar/dayEntries.ts`.
 - Pas testé à l'écran par l'utilisateur au moment de la rédaction (build OK seulement).
 
+## 📋 Backlog d'améliorations validé le 2026-10-02 (rien de démarré)
+- **Validé** : ouverture mobile sur « fil » ; indicateur de synchro réel ; toast « annuler » à la
+  place des confirmations ; recharger les données au retour au premier plan ; coller plusieurs
+  lignes = plusieurs tâches ; saisie en langage naturel (« dentiste mardi 14h @cabinet ») ;
+  partage Android vers Le Fil + raccourci « nouveau lot » sur l'icône ; tâches datées visibles dans
+  le Fil ; recherche dans le Fil mobile ; pastille sur l'icône (retard/aujourd'hui) ; archivage auto
+  des terminés de plus de 30 j ; cache local + hors ligne ; flux .ics vers Google Calendar ;
+  synchro temps réel.
+- **Refusé** : raccourcis clavier desktop.
+- **Mis de côté, à affiner** : balayage dans le Fil (droite = terminé, gauche = reporter).
+- Ordre suggéré : petits chantiers rapides → langage naturel → hors ligne.
+- **Fait (même jour, reprise)** — les 5 petits chantiers :
+  - mobile ouvre sur « fil » (`MobileShell.tsx`) ;
+  - indicateur de synchro réel `syncStatus` (store) : synchronisé / envoi… / hors ligne / synchro
+    en échec, alimenté par `sync.ts` (`shell/SyncStatus.tsx`, desktop + mobile) ; hors ligne, plus
+    de nouvelle tentative toutes les 5 s ni de toast répété : envoi dès l'événement `online` ;
+  - toast « annuler » (5 s, `shell/Toast.tsx`, `flash(msg, undo)`) : suppression de tâche
+    (remise à sa place), suppression de lot (`deleteLot`, lot + tâches restaurés, mêmes ids) et
+    « terminer » le lot — confirmations en deux temps supprimées (`confirmDeleteLot` retiré) ;
+  - rechargement des données au retour au premier plan (`refresh()` dans `sync.ts`, 30 s mini
+    entre deux, seulement si rien n'attend d'être envoyé avant et après la requête ; drapeau
+    `applyingRemote` pour ne pas renvoyer au serveur ce qui vient d'en arriver) ;
+  - coller plusieurs lignes dans « ajouter une tâche » = une tâche par ligne, puces retirées
+    (`lib/paste.ts`, `addTasks`).
+  - Vérifié en mode démo (desktop + cadre mobile 390 px) : collage, annuler tâche/lot/terminer,
+    ouverture sur le fil. **Non vérifiable en démo** : l'indicateur de synchro et le rechargement
+    au premier plan → à tester sur le vrai compte (couper le wifi, éditer sur PC puis rouvrir le
+    téléphone).
+- **Fait ensuite (parties 2 et 3)** :
+  - **Saisie rapide** (`lib/quickParse.ts`, appliquée dans `addLot`/`addTask` partout sauf la
+    feuille de la vue jour, `{ parse: false }`) : aujourd'hui/demain/après-demain, jours de la
+    semaine (toujours le prochain, jamais aujourd'hui), « dans N jours/semaines/mois », 15/10,
+    « 15 oct », « 1er mai », « le 15 », 14h / 14h30 / 14:30 / plages « 14h-16h », « de 20h à
+    23h30 », lieu après « @ ». Heure sans date = aujourd'hui. Toast « compris : 6 oct · 14h–15h ·
+    cabinet » avec « annuler » (remet la saisie brute, sans date). 19 cas testés.
+  - **Partage Android vers Le Fil** (`share_target` dans `vite.config.ts`, `lib/launchIntent.ts`,
+    `lib/useLaunchIntent.ts`) : crée un lot (titre = titre ou 1re ligne, lien dans le texte) et
+    l'ouvre. **Raccourci « Nouveau lot »** à l'appui long sur l'icône (`?nouveau=1`) : Fil avec
+    le champ actif. Les deux demandent de **réinstaller la PWA** pour que le manifeste soit relu.
+  - **Fil : le lot remonte selon sa tâche la plus pressante** (`lotFocus` dans `models.ts`, choix
+    utilisateur) ; méta « tâche : acheter des vis · demain · 0/1 tâches ». Le Fil seulement (la
+    liste desktop garde l'échéance du lot).
+  - **Recherche dans le Fil mobile** (bouton « chercher », archives comprises, groupes dépliés).
+  - **Pastille sur l'icône** (`lib/badge.ts`, API Badging) : lots en retard + du jour.
+  - **Archivage** (`isArchived` : terminé et `updatedAt` > 30 j, choix utilisateur « cachés,
+    retrouvables ») : cachés de la liste desktop, du calendrier, du Gantt, du Fil, du projet
+    mobile ; la recherche les retrouve ; lien « voir les archives · N » (bas de liste desktop,
+    groupe « terminés » du Fil, page projet mobile).
+  - Vérifié en mode démo (desktop + cadre 390 px) : partage, saisie rapide, remontée par tâche,
+    recherche, archives. **Non testé** : pastille et raccourcis/partage (nécessitent la PWA
+    installée en ligne).
+- **Reste du backlog** : partie 4 (cache local + hors ligne, flux .ics, temps réel) ; balayage
+  toujours en attente d'affinage.
+- **Import des cours mis de côté dans `git stash`** (« import cours (non testé) ») pour ne pas
+  bloquer la synchro : `git stash pop` pour le reprendre (conflits probables, mineurs, sur
+  `sync.ts` et `AccountPanel.tsx`).
+
 ## 🔶 Chantier en suspens : import des cours (NON commité, NON testé)
 Brancher l'app « organisation-cours » (dépôt `Claude_Code/portail_GPN`, autre projet Supabase
 « portail », tables `oc_*`) sur Le Fil : import **lecture seule**, projet « BTS GPN », UE → lot,

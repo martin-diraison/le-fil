@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { NO_PROJECT, taskMatchesSearch, useStore } from '../../state/store';
+import { NO_PROJECT, taskMatchesSearch, useActiveLots, useStore } from '../../state/store';
 import { DAYS_SHORT, MONTHS_SHORT, formatTime } from '../../lib/format';
 import { isDayInRange, parseDay, shiftDays, toDay } from '../../lib/dates';
 import { DAY_GRID_HOURS, layoutDayGrid, type DayGridEntry } from '../../lib/dayGrid';
@@ -50,7 +50,7 @@ function AddSheet({ day, hour, onClose }: { day: string; hour: number; onClose: 
     if (!canSubmit) return;
     const s = st();
     if (kind === 'lot') {
-      const id = addLot(title, projectKey);
+      const id = addLot(title, projectKey, { parse: false });
       openLot(null); // addLot ouvre le lot dans le store ; on reste sur la vue journalière
       if (!id) return;
       s.setLotStartDate(id, day);
@@ -59,7 +59,7 @@ function AddSheet({ day, hour, onClose }: { day: string; hour: number; onClose: 
       if (end) s.setLotEndTime(id, end);
       if (location.trim()) s.setLotLocation(id, location.trim());
     } else {
-      const id = addTask(parentId, title);
+      const id = addTask(parentId, title, { parse: false });
       if (!id) return;
       s.setTaskStartDate(id, day);
       s.setTaskDueDate(id, day);
@@ -144,7 +144,7 @@ export default function DayScreen({
   setDay: (d: string) => void;
   onBack: () => void;
 }) {
-  const lots = useStore((s) => s.lots);
+  const lots = useActiveLots();
   const tasks = useStore((s) => s.tasks);
   const projects = useStore((s) => s.projects);
   const showTasks = useStore((s) => s.showTasksInCalendar);

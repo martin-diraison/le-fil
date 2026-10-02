@@ -11,6 +11,9 @@ import ProjectScreen from './ProjectScreen';
 import LotScreen from './LotScreen';
 import CalendarScreen from './CalendarScreen';
 import DayScreen from './DayScreen';
+import Toast from '../shell/Toast';
+import { useSyncLabel } from '../shell/SyncStatus';
+import { useLaunchIntent } from '../../lib/useLaunchIntent';
 import './Mobile.css';
 
 // Coquille mobile — README §4, prototype « Le Fil - Mobile.dc.html ».
@@ -45,14 +48,16 @@ function useClock(): Date {
 
 export default function MobileShell({ session }: { session: Session }) {
   const openLotInStore = useStore((s) => s.openLot);
-  const toast = useStore((s) => s.toast);
+  const sync = useSyncLabel();
 
-  // Ouverture par défaut sur « projets » tant que l'onglet « fil » n'est pas retravaillé.
-  const [screen, setScreen] = useState<Screen>('projets');
+  // Ouverture sur « fil » : ce qui presse d'abord (l'onglet a été retravaillé pour ça).
+  const [screen, setScreen] = useState<Screen>('fil');
   const [from, setFrom] = useState<LotOrigin>('fil');
   const [openProj, setOpenProj] = useState<ProjectKey | null>(null);
   const [acctOpen, setAcctOpen] = useState(false);
   const [compte, setCompte] = useState(false);
+  // Raccourci « nouveau lot » de l'icône : le Fil s'ouvre avec le champ de création actif.
+  const [focusDraft, setFocusDraft] = useState(false);
 
   // Calendrier : conservé en changeant d'onglet.
   const [calMonth, setCalMonth] = useState(() => ({ year: new Date().getFullYear(), month: new Date().getMonth() }));
@@ -111,6 +116,11 @@ export default function MobileShell({ session }: { session: Session }) {
     },
   };
 
+  useLaunchIntent(
+    (id) => nav.openLot(id, 'fil'),
+    () => setFocusDraft(true),
+  );
+
   const tabOn = (key: string) =>
     screen === key ||
     (key === 'projets' && screen === 'projet') ||
@@ -124,8 +134,8 @@ export default function MobileShell({ session }: { session: Session }) {
           {clock} · {todayShort}
         </span>
         <button className="m__sync" onClick={() => setAcctOpen((v) => !v)}>
-          <span className="m__syncDot" />
-          synchronisé
+          <span className="m__syncDot" style={{ background: sync.color }} />
+          {sync.label}
         </button>
       </div>
       {acctOpen && (
@@ -162,7 +172,7 @@ export default function MobileShell({ session }: { session: Session }) {
             </div>
           </div>
         ) : screen === 'fil' ? (
-          <FilScreen nav={nav} />
+          <FilScreen nav={nav} focusDraft={focusDraft} />
         ) : screen === 'projets' ? (
           <ProjectsScreen nav={nav} />
         ) : screen === 'projet' && openProj ? (
@@ -196,7 +206,7 @@ export default function MobileShell({ session }: { session: Session }) {
         ))}
       </div>
 
-      {toast && <div className="m__toast">{toast}</div>}
+      <Toast className="m__toast" />
     </div>
   );
 }

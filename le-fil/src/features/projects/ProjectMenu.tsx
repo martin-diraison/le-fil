@@ -4,6 +4,7 @@ import { PALETTE } from '../../lib/palette';
 import { contrastText } from '../../lib/palette';
 import { computeUrgency } from '../../types/models';
 import { supabase } from '../../lib/supabase';
+import { useSyncLabel } from '../shell/SyncStatus';
 import './ProjectMenu.css';
 
 const TODAY_LABEL = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'short' })
@@ -18,6 +19,7 @@ type Props = {
 
 export default function ProjectMenu({ userEmail, onOpenAccount }: Props) {
   const projects = useStore((s) => s.projects);
+  const sync = useSyncLabel();
   const lots = useStore((s) => s.lots);
   const selected = useStore((s) => s.selected);
   const lateOnly = useStore((s) => s.lateOnly);
@@ -303,9 +305,9 @@ export default function ProjectMenu({ userEmail, onOpenAccount }: Props) {
           </div>
         )}
         <button className="menu__syncBtn" title="compte et synchronisation" onClick={() => setAcctOpen((v) => !v)}>
-          <span className="menu__syncDot" style={{ background: 'var(--green)' }} />
+          <span className="menu__syncDot" style={{ background: sync.color }} />
           <span className="menu__syncLabel" style={{ color: 'var(--text-secondary)' }}>
-            synchronisé
+            {sync.label}
           </span>
           <span className="menu__syncAccount">compte</span>
         </button>

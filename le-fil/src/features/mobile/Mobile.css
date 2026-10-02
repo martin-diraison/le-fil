@@ -171,6 +171,40 @@
   background: var(--red);
   color: var(--paper);
 }
+/* Recherche du Fil : bouton à gauche de « retard », champ déplié sous l'en-tête. */
+.m__searchBtn + .m__lateBtn {
+  margin-left: 6px;
+}
+.m__searchBtn--on {
+  background: var(--ink);
+  color: var(--paper);
+}
+.m__searchRow {
+  border-bottom: 1px solid var(--ink);
+  flex-shrink: 0;
+}
+.m__searchInput {
+  width: 100%;
+  box-sizing: border-box;
+  border: none;
+  padding: 12px 14px;
+  background: var(--paper);
+  font: 500 15px var(--font-ui);
+  outline: none;
+}
+.m__archivesBtn {
+  display: block;
+  width: 100%;
+  padding: 12px 14px;
+  border: none;
+  background: transparent;
+  text-align: left;
+  font: 600 9px var(--font-ui);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  cursor: pointer;
+}
 
 .m__topbar {
   display: flex;
@@ -221,7 +255,6 @@
 .m__topDanger {
   color: var(--red);
 }
-.m__topDanger--confirm,
 .m__topDanger:hover {
   background: var(--red);
   color: var(--paper);
@@ -1355,10 +1388,6 @@
   font: 600 9px var(--font-ui);
   letter-spacing: 0.14em;
   text-transform: uppercase;
-}
-.m__quietBtn--confirm {
-  color: var(--red);
-  border: 1px solid var(--red);
 }
 
 /* Vue jour : lot = bloc plein ; tâche = bloc clair à liseré épais */

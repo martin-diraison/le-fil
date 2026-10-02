@@ -1,10 +1,13 @@
+import { useMemo } from 'react';
 import { create } from 'zustand';
 import type { CalMode, Lot, Project, Repeat, SortMode, Task, ViewMode } from '../types/models';
-import { computeUrgency, compareUrgency } from '../types/models';
+import { computeUrgency, compareUrgency, isArchived } from '../types/models';
 import { nextProjectColor } from '../lib/palette';
 import { dueFromChoice, type DateChoiceKey } from './dateShortcuts';
 import { SEED_LOTS, SEED_PROJECTS, SEED_TASKS } from './seed';
 import { isSupabaseConfigured } from '../lib/supabase';
+import { describeParse, quickParse, type QuickParse } from '../lib/quickParse';
+import { formatShortDate } from '../lib/format';
 
 /** Une saisie clavier dans un <input type=date> déclenche onChange à chaque segment rempli,
  * y compris avec une année encore partielle (ex. « 0002 » en tapant « 2026 » chiffre par
@@ -32,6 +35,12 @@ function nowIso() {
   return new Date().toISOString();
 }
 
+/** Champs datés issus de la saisie rapide (voir lib/quickParse.ts). */
+function parsedFields(p: QuickParse) {
+  return { due: p.due, startTime: p.startTime, endTime: p.endTime, location: p.location };
+}
+const UNPARSED = { due: null, startTime: null, endTime: null, location: '' };
+
 interface State {
   // Données
   projects: Project[];
@@ -55,7 +64,13 @@ interface State {
   /** Fenêtre Gantt : 3 mois autour d'aujourd'hui (défaut) ou étendue à tout ce qui est affiché.
    *  Éphémère (non persisté) : simple choix d'affichage, pas une donnée utilisateur. */
   ganttFullRange: boolean;
+  /** Afficher les lots archivés (terminés depuis plus de 30 j) dans la vue Liste. Éphémère. */
+  showArchived: boolean;
   toast: string | null;
+  /** Action « annuler » proposée dans le toast courant (suppression, lot terminé…), sinon null. */
+  toastUndo: (() => void) | null;
+  /** État réel de la synchro Supabase (alimenté par sync.ts) — 'ok' en mode démo. */
+  syncStatus: SyncStatus;
 
   // Édition / interactions
   colorPickerProjectId: string | null;
@@ -64,7 +79,6 @@ interface State {
   lotDraft: string;
   taskDraft: string;
   confirmDeleteProjectId: string | null;
-  confirmDeleteLot: boolean;
   moveMenuOpen: boolean;
   taskDatePickerId: string | null;
   dragProjectId: string | null;
@@ -93,7 +107,7 @@ interface State {
    * Crée un lot et l'ouvre. Sans `projectKey`, il va dans le premier projet sélectionné (desktop) ;
    * sinon dans le projet indiqué (mobile : projet ouvert, ou `null` / NO_PROJECT = sans projet).
    */
-  addLot: (title: string, projectKey?: ProjectKey | null) => string | null;
+  addLot: (title: string, projectKey?: ProjectKey | null, opts?: CreateOpts) => string | null;
   openLot: (id: string | null) => void;
   /** Calendrier / Gantt : ouvre le lot, ou le referme s'il est déjà ouvert (§3.1). */
   toggleOpenLot: (id: string) => void;
@@ -108,14 +122,15 @@ interface State {
   setLotDue: (id: string, key: DateChoiceKey) => void;
   toggleLotDone: (id: string) => void;
   moveLotToProject: (id: string, projectId: string | null) => void;
-  requestDeleteLot: () => void;
-  cancelDeleteLot: () => void;
-  confirmDeleteLotNow: () => void;
+  /** Supprime le lot et ses tâches, avec « annuler » dans le toast. */
+  deleteLot: (id: string) => void;
   reorderLots: (fromId: string, toId: string) => void;
   toggleMoveMenu: () => void;
 
   // Actions — tâches
-  addTask: (lotId: string, label: string) => string | null;
+  addTask: (lotId: string, label: string, opts?: CreateOpts) => string | null;
+  /** Ajout groupé (collage de plusieurs lignes) — renvoie le nombre de tâches créées. */
+  addTasks: (lotId: string, labels: string[]) => number;
   toggleTask: (id: string) => void;
   updateTaskLabel: (id: string, label: string) => void;
   setTaskDue: (id: string, key: DateChoiceKey) => void;
@@ -143,7 +158,10 @@ interface State {
   toggleTasksInCalendar: () => void;
   toggleTasksInGantt: () => void;
   toggleGanttFullRange: () => void;
-  flash: (msg: string) => void;
+  toggleShowArchived: () => void;
+  /** Toast ~2 s ; avec `undo`, il reste 5 s et propose « annuler ». */
+  flash: (msg: string, undo?: () => void) => void;
+  undoToast: () => void;
 
   // Drag state setters (menu projets)
   setDragProject: (id: string | null) => void;
@@ -159,6 +177,11 @@ function openLotIfStillVisible(s: State, selected: ProjectKey[]): string | null 
   const lot = s.lots.find((l) => l.id === s.openLotId);
   return lot && selected.includes(lot.projectId ?? NO_PROJECT) ? s.openLotId : null;
 }
+
+/** `parse: false` : pas de saisie rapide (date/heure/lieu fixés par l'appelant, ex. vue jour). */
+type CreateOpts = { parse?: boolean };
+
+export type SyncStatus = 'ok' | 'pending' | 'offline' | 'error';
 
 let toastTimer: ReturnType<typeof setTimeout> | undefined;
 
@@ -184,7 +207,10 @@ export const useStore = create<State>((set, get) => ({
   showTasksInCalendar: true,
   showTasksInGantt: true,
   ganttFullRange: false,
+  showArchived: false,
   toast: null,
+  toastUndo: null,
+  syncStatus: 'ok',
 
   colorPickerProjectId: null,
   projectRenameDraft: '',
@@ -192,7 +218,6 @@ export const useStore = create<State>((set, get) => ({
   lotDraft: '',
   taskDraft: '',
   confirmDeleteProjectId: null,
-  confirmDeleteLot: false,
   moveMenuOpen: false,
   taskDatePickerId: null,
   dragProjectId: null,
@@ -279,9 +304,11 @@ export const useStore = create<State>((set, get) => ({
 
   clearSelected: () => set({ selected: [] }),
 
-  addLot: (rawTitle, projectKey) => {
-    const title = rawTitle.trim();
-    if (!title) return null;
+  addLot: (rawTitle, projectKey, opts) => {
+    const raw = rawTitle.trim();
+    if (!raw) return null;
+    const parsed = opts?.parse === false ? { title: raw, ...UNPARSED } : quickParse(raw);
+    const title = parsed.title;
     const target =
       projectKey === undefined
         ? (get().selected.find((k) => k !== NO_PROJECT) as string | undefined)
@@ -299,11 +326,8 @@ export const useStore = create<State>((set, get) => ({
           title,
           body: '',
           startDate: null,
-          due: null,
           repeat: 'none',
-          startTime: null,
-          endTime: null,
-          location: '',
+          ...parsedFields(parsed),
           done: false,
           position: null,
           createdAt: now,
@@ -315,10 +339,17 @@ export const useStore = create<State>((set, get) => ({
       openLotId: id,
       lateOnly: false,
     }));
+    const understood = describeParse(parsed, formatShortDate);
+    if (understood)
+      get().flash(`compris : ${understood}`, () =>
+        set((s) => ({
+          lots: s.lots.map((l) => (l.id === id ? { ...l, title: raw, ...UNPARSED, updatedAt: nowIso() } : l)),
+        })),
+      );
     return id;
   },
 
-  openLot: (id) => set({ openLotId: id, moveMenuOpen: false, confirmDeleteLot: false, taskDatePickerId: null }),
+  openLot: (id) => set({ openLotId: id, moveMenuOpen: false, taskDatePickerId: null }),
 
   toggleOpenLot: (id) => {
     const { openLotId, openLot } = get();
@@ -381,20 +412,24 @@ export const useStore = create<State>((set, get) => ({
     }));
   },
 
-  requestDeleteLot: () => set({ confirmDeleteLot: true }),
-  cancelDeleteLot: () => set({ confirmDeleteLot: false }),
   toggleMoveMenu: () => set((s) => ({ moveMenuOpen: !s.moveMenuOpen })),
 
-  confirmDeleteLotNow: () => {
-    const { openLotId } = get();
-    if (!openLotId) return;
+  // Plus de confirmation en deux temps : suppression immédiate, « annuler » dans le toast
+  // remet le lot et ses tâches tels quels (mêmes ids, donc la synchro les recrée à l'identique).
+  deleteLot: (id) => {
+    const s0 = get();
+    const lot = s0.lots.find((l) => l.id === id);
+    if (!lot) return;
+    const tasks = s0.tasks.filter((t) => t.lotId === id);
     set((s) => ({
-      lots: s.lots.filter((l) => l.id !== openLotId),
-      tasks: s.tasks.filter((t) => t.lotId !== openLotId),
-      openLotId: null,
-      confirmDeleteLot: false,
+      lots: s.lots.filter((l) => l.id !== id),
+      tasks: s.tasks.filter((t) => t.lotId !== id),
+      openLotId: s.openLotId === id ? null : s.openLotId,
       moveMenuOpen: false,
     }));
+    get().flash('lot supprimé', () =>
+      set((s) => ({ lots: [lot, ...s.lots], tasks: s.tasks.concat(tasks) })),
+    );
   },
 
   reorderLots: (fromId, toId) => {
@@ -416,9 +451,11 @@ export const useStore = create<State>((set, get) => ({
     });
   },
 
-  addTask: (lotId, rawLabel) => {
-    const label = rawLabel.trim();
-    if (!label) return null;
+  addTask: (lotId, rawLabel, opts) => {
+    const raw = rawLabel.trim();
+    if (!raw) return null;
+    const parsed = opts?.parse === false ? { title: raw, ...UNPARSED } : quickParse(raw);
+    const label = parsed.title;
     const id = uid('task');
     set((s) => {
       const count = s.tasks.filter((t) => t.lotId === lotId).length;
@@ -429,10 +466,7 @@ export const useStore = create<State>((set, get) => ({
             lotId,
             label,
             startDate: null,
-            due: null,
-            startTime: null,
-            endTime: null,
-            location: '',
+            ...parsedFields(parsed),
             done: false,
             position: count,
           },
@@ -440,7 +474,18 @@ export const useStore = create<State>((set, get) => ({
         taskDraft: '',
       };
     });
+    const understood = describeParse(parsed, formatShortDate);
+    if (understood)
+      get().flash(`compris : ${understood}`, () =>
+        set((s) => ({ tasks: s.tasks.map((t) => (t.id === id ? { ...t, label: raw, ...UNPARSED } : t)) })),
+      );
     return id;
+  },
+
+  addTasks: (lotId, labels) => {
+    let n = 0;
+    for (const label of labels) if (get().addTask(lotId, label)) n++;
+    return n;
   },
 
   toggleTask: (id) => {
@@ -484,7 +529,18 @@ export const useStore = create<State>((set, get) => ({
   },
 
   deleteTask: (id) => {
+    const index = get().tasks.findIndex((t) => t.id === id);
+    if (index < 0) return;
+    const task = get().tasks[index];
     set((s) => ({ tasks: s.tasks.filter((t) => t.id !== id), taskDatePickerId: null }));
+    // Remise à sa place d'origine ; le lot a pu être supprimé entre-temps : pas de tâche orpheline.
+    get().flash('tâche supprimée', () =>
+      set((s) =>
+        s.lots.some((l) => l.id === task.lotId)
+          ? { tasks: [...s.tasks.slice(0, index), task, ...s.tasks.slice(index)] }
+          : {},
+      ),
+    );
   },
 
   openTaskDatePicker: (id) => set((s) => ({ taskDatePickerId: s.taskDatePickerId === id ? null : id })),
@@ -531,12 +587,20 @@ export const useStore = create<State>((set, get) => ({
   toggleTasksInCalendar: () => set((s) => ({ showTasksInCalendar: !s.showTasksInCalendar })),
   toggleTasksInGantt: () => set((s) => ({ showTasksInGantt: !s.showTasksInGantt })),
   toggleGanttFullRange: () => set((s) => ({ ganttFullRange: !s.ganttFullRange })),
+  toggleShowArchived: () => set((s) => ({ showArchived: !s.showArchived })),
 
-  // Toast : disparaît après ~2 s (§5 « Confirmations et retours »).
-  flash: (msg) => {
+  // Toast : disparaît après ~2 s (§5 « Confirmations et retours ») ; 5 s s'il propose « annuler ».
+  flash: (msg, undo) => {
     clearTimeout(toastTimer);
-    set({ toast: msg });
-    toastTimer = setTimeout(() => set({ toast: null }), 2200);
+    set({ toast: msg, toastUndo: undo ?? null });
+    toastTimer = setTimeout(() => set({ toast: null, toastUndo: null }), undo ? 5000 : 2200);
+  },
+
+  undoToast: () => {
+    const undo = get().toastUndo;
+    clearTimeout(toastTimer);
+    set({ toast: null, toastUndo: null });
+    undo?.();
   },
 
   setDragProject: (id) => set({ dragProjectId: id }),
@@ -563,13 +627,27 @@ export function sortLots(lots: Lot[], mode: SortMode): Lot[] {
   });
 }
 
+/** Recherche (§1) : titre, corps et libellés de tâches du lot. `q` déjà en minuscules. */
+export function lotMatches(lot: Lot, tasks: Task[], q: string): boolean {
+  if (!q) return true;
+  const labels = tasks.filter((t) => t.lotId === lot.id).map((t) => t.label);
+  return [lot.title, lot.body, ...labels].join(' ').toLowerCase().includes(q);
+}
+
+/** Lots hors archives (mobile : calendrier, vue jour…). */
+export function useActiveLots(): Lot[] {
+  const lots = useStore((s) => s.lots);
+  return useMemo(() => lots.filter((l) => !isArchived(l)), [lots]);
+}
+
 /**
  * Lots visibles selon la sélection, le filtre « retard » et la recherche (prototype `visible()`).
  * Sans sélection, Calendrier et Gantt montrent tous les projets ; la Liste n'en montre aucun (§3.2).
  * La recherche porte sur le titre, le corps et les libellés de tâches (§1).
+ * Les lots archivés n'apparaissent qu'avec une recherche ou `showArchived`.
  */
 export function filterLots(
-  s: Pick<State, 'lots' | 'tasks' | 'selected' | 'lateOnly' | 'search' | 'view'>,
+  s: Pick<State, 'lots' | 'tasks' | 'selected' | 'lateOnly' | 'search' | 'view'> & { showArchived?: boolean },
 ): Lot[] {
   const q = s.search.toLowerCase();
   // Calendrier et Gantt affichent toujours tous les projets/sans-projet par défaut, quelle que
@@ -579,11 +657,8 @@ export function filterLots(
   return s.lots.filter((l) => {
     if (!scopeAll && !s.selected.includes(l.projectId ?? NO_PROJECT)) return false;
     if (s.lateOnly && computeUrgency(l) !== 'late') return false;
-    if (q) {
-      const labels = s.tasks.filter((t) => t.lotId === l.id).map((t) => t.label);
-      if (![l.title, l.body, ...labels].join(' ').toLowerCase().includes(q)) return false;
-    }
-    return true;
+    if (!q && !s.showArchived && isArchived(l)) return false;
+    return lotMatches(l, s.tasks, q);
   });
 }
 

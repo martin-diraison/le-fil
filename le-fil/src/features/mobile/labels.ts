@@ -33,6 +33,15 @@ export function lotMeta(lot: Lot, projects: Project[], lotTasks: Task[], showPro
   return `${date}${project}${tasks}`;
 }
 
+/** Ligne de méta quand une tâche fait remonter le lot dans le Fil :
+ * « tâche : Appeler le plombier · demain · 1/3 tâches ». */
+export function taskFocusLabel(task: Task, lotTasks: Task[]): string {
+  const d = daysUntil(task.due)!;
+  const when = d < 0 ? `${-d} j de retard` : d === 0 ? "aujourd'hui" : d === 1 ? 'demain' : formatShortDate(task.due);
+  const count = `${lotTasks.filter((t) => t.done).length}/${lotTasks.length} tâches`;
+  return `tâche : ${task.label} · ${when} · ${count}`;
+}
+
 const STOP_WORDS = new Set([
   'le', 'la', 'les', 'de', 'des', 'du', 'un', 'une', "l'", "d'", 'à', 'au', 'aux', 'et', 'en', 'pour', 'sur', 'avec',
 ]);

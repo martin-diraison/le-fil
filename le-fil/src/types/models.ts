@@ -104,3 +104,25 @@ const URGENCY_ORDER: Record<Urgency, number> = {
 export function compareUrgency(a: Urgency, b: Urgency): number {
   return URGENCY_ORDER[a] - URGENCY_ORDER[b];
 }
+
+/**
+ * Échéance « effective » d'un lot pour le Fil : la plus pressante entre la sienne et celle de ses
+ * tâches ouvertes. `task` = la tâche qui fait remonter le lot (null si c'est l'échéance du lot).
+ * Un lot sans date dont une tâche est due demain apparaît ainsi dans « 7 prochains jours ».
+ */
+export function lotFocus(lot: Lot, lotTasks: Task[]): { due: string | null; task: Task | null } {
+  if (lot.done) return { due: lot.due, task: null };
+  let task: Task | null = null;
+  for (const t of lotTasks) {
+    if (!t.done && t.due && (!task || t.due < task.due!)) task = t;
+  }
+  if (task && (!lot.due || task.due! < lot.due)) return { due: task.due, task };
+  return { due: lot.due, task: null };
+}
+
+/** Lots terminés depuis plus de 30 jours : cachés des listes et du calendrier (rien n'est supprimé).
+ * `updatedAt` sert de date de fin — « terminer » le met à jour. */
+export const ARCHIVE_AFTER_DAYS = 30;
+export function isArchived(lot: Pick<Lot, 'done' | 'updatedAt'>, now: Date = new Date()): boolean {
+  return lot.done && now.getTime() - new Date(lot.updatedAt).getTime() > ARCHIVE_AFTER_DAYS * 86_400_000;
+}

@@ -7,6 +7,8 @@ import LotDetail from '../lots/LotDetail';
 import AccountDrawer from '../account/AccountDrawer';
 import CalendarView from '../calendar/CalendarView';
 import GanttView from '../gantt/GanttView';
+import Toast from './Toast';
+import { useLaunchIntent } from '../../lib/useLaunchIntent';
 import './DesktopShell.css';
 
 const VIEW_TABS: { key: 'liste' | 'cal' | 'gantt'; label: string }[] = [
@@ -19,11 +21,15 @@ export default function DesktopShell({ session }: { session: Session }) {
   const view = useStore((s) => s.view);
   const selected = useStore((s) => s.selected);
   const openLotId = useStore((s) => s.openLotId);
-  const toast = useStore((s) => s.toast);
 
   const setView = useStore((s) => s.setView);
 
   const [accountOpen, setAccountOpen] = useState(false);
+  // Partage reçu : le lot est déjà ouvert par addLot (volet 3). « Nouveau lot » : rien de plus à faire.
+  useLaunchIntent(
+    () => {},
+    () => {},
+  );
 
   const showV3 = !!openLotId;
 
@@ -71,7 +77,7 @@ export default function DesktopShell({ session }: { session: Session }) {
         </div>
       </div>
 
-      {toast && <div className="shell__toast">{toast}</div>}
+      <Toast className="shell__toast" />
 
       {accountOpen && <AccountDrawer session={session} onClose={() => setAccountOpen(false)} />}
     </div>

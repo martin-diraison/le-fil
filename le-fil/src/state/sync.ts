@@ -1,16 +1,21 @@
 import { supabase } from '../lib/supabase';
 import type { CalMode, Lot, Project, SortMode, Task, ViewMode } from '../types/models';
 import { advanceRecurringLots } from '../lib/recurrence';
-import { NO_PROJECT, useStore } from './store';
+import { NO_PROJECT, useStore, type SyncStatus } from './store';
 
 // Synchro Supabase. Le store reste la source de vérité de l'interface (mises à jour
 // optimistes) ; ce module (1) charge les données au démarrage, puis (2) compare chaque
 // changement du store à l'état précédent et envoie seulement les lignes modifiées, après un
 // court délai pour regrouper la frappe. Les actions du store n'ont donc rien à savoir de
 // Supabase. En cas d'échec, les changements restent en file et sont retentés.
+// L'état réel (synchronisé / envoi / hors ligne / échec) est publié dans `syncStatus` du store.
+// Au retour au premier plan, les données sont rechargées (pas de Realtime pour l'instant) :
+// sinon un appareil resté ouvert renverrait des lignes périmées par-dessus celles d'un autre.
 
 const FLUSH_DELAY = 600;
 const RETRY_DELAY = 5000;
+/** Délai minimal entre deux rechargements au retour au premier plan. */
+const REFRESH_MIN_GAP = 30_000;
 
 type Row = Record<string, unknown>;
 
@@ -145,6 +150,8 @@ const pickPrefs = (s: StoreState): PrefsSlice => ({
   showTasksInGantt: s.showTasksInGantt,
   showTasksInCalendar: s.showTasksInCalendar,
 });
+const dataChanged = (a: StoreState, b: StoreState) =>
+  a.projects !== b.projects || a.lots !== b.lots || a.tasks !== b.tasks;
 const prefsChanged = (a: StoreState, b: StoreState) =>
   a.selected !== b.selected ||
   a.view !== b.view ||
@@ -173,7 +180,21 @@ export function resetStore() {
     calMode: 'mois',
     showTasksInCalendar: true,
     showTasksInGantt: true,
+    syncStatus: 'ok',
   });
+}
+
+/** Lit projets, lots et tâches du compte (RLS : seulement les siens). */
+async function fetchData() {
+  const [pr, lo, ta] = await Promise.all([
+    supabase.from('projects').select('*').order('position'),
+    supabase.from('lots').select('*'),
+    supabase.from('tasks').select('*').order('position'),
+  ]);
+  if (pr.error) fail('Chargement des projets', pr.error);
+  if (lo.error) fail('Chargement des lots', lo.error);
+  if (ta.error) fail('Chargement des tâches', ta.error);
+  return { projects: pr.data.map(fromProject), lots: lo.data.map(fromLot), tasks: ta.data.map(fromTask) };
 }
 
 /**
@@ -181,25 +202,16 @@ export function resetStore() {
  * Rejette si le chargement échoue (rien n'est alors synchronisé). Renvoie la fonction d'arrêt.
  */
 export async function startSync(userId: string): Promise<() => void> {
-  const [pr, lo, ta, pf] = await Promise.all([
-    supabase.from('projects').select('*').order('position'),
-    supabase.from('lots').select('*'),
-    supabase.from('tasks').select('*').order('position'),
-    supabase.from('user_prefs').select('*').maybeSingle(),
-  ]);
-  if (pr.error) fail('Chargement des projets', pr.error);
-  if (lo.error) fail('Chargement des lots', lo.error);
-  if (ta.error) fail('Chargement des tâches', ta.error);
+  const [data, pf] = await Promise.all([fetchData(), supabase.from('user_prefs').select('*').maybeSingle()]);
   if (pf.error) fail('Chargement des préférences', pf.error);
 
-  const projects = pr.data.map(fromProject);
-  const known = new Set<string>([NO_PROJECT, ...projects.map((p) => p.id)]);
+  const known = new Set<string>([NO_PROJECT, ...data.projects.map((p) => p.id)]);
   const p = pf.data as Row | null;
+  let lastLoad = Date.now();
   useStore.setState({
-    projects,
-    lots: lo.data.map(fromLot),
-    tasks: ta.data.map(fromTask),
+    ...data,
     openLotId: null,
+    syncStatus: 'ok',
     ...(p && {
       selected: ((p.selected_projects as string[]) ?? []).filter((k) => known.has(k)),
       view: p.view as ViewMode,
@@ -218,6 +230,15 @@ export async function startSync(userId: string): Promise<() => void> {
   let flushing = false;
   let again = false;
   let stopped = false;
+  let failing = false; // évite de répéter le toast d'échec à chaque nouvelle tentative
+  let applyingRemote = false; // rechargement en cours d'application : pas à renvoyer au serveur
+
+  const queued = () =>
+    qProjects.upserts.size + qProjects.deletes.size + qLots.upserts.size + qLots.deletes.size +
+      qTasks.upserts.size + qTasks.deletes.size > 0 || prefsDirty;
+  const setStatus = (syncStatus: SyncStatus) => {
+    if (useStore.getState().syncStatus !== syncStatus) useStore.setState({ syncStatus });
+  };
 
   const schedule = (delay = FLUSH_DELAY) => {
     clearTimeout(timer);
@@ -277,10 +298,16 @@ export async function startSync(userId: string): Promise<() => void> {
           fail('Préférences', error);
         }
       }
+      failing = false;
+      if (!queued()) setStatus('ok');
     } catch (e) {
       console.error('Synchro Le Fil :', e);
-      useStore.getState().flash('Synchronisation impossible — nouvelle tentative…');
-      schedule(RETRY_DELAY);
+      const offline = !navigator.onLine;
+      setStatus(offline ? 'offline' : 'error');
+      if (!failing && !offline) useStore.getState().flash('Synchronisation impossible — nouvelle tentative…');
+      failing = true;
+      // Hors ligne : on attend l'événement « online » plutôt que de marteler le réseau.
+      if (!offline) schedule(RETRY_DELAY);
     } finally {
       flushing = false;
       if (again) {
@@ -291,34 +318,79 @@ export async function startSync(userId: string): Promise<() => void> {
   }
 
   const unsubscribe = useStore.subscribe((s, prev) => {
+    if (applyingRemote) return;
+    // Seuls les changements de données / préférences comptent (pas le toast, ni syncStatus lui-même).
+    if (!dataChanged(s, prev) && !prefsChanged(s, prev)) return;
     enqueue(qProjects, prev.projects, s.projects);
     enqueue(qLots, prev.lots, s.lots);
     enqueue(qTasks, prev.tasks, s.tasks);
     if (prefsChanged(s, prev)) prefsDirty = true;
-    if (
-      qProjects.upserts.size + qProjects.deletes.size + qLots.upserts.size + qLots.deletes.size +
-        qTasks.upserts.size + qTasks.deletes.size > 0 ||
-      prefsDirty
-    ) {
+    if (queued()) {
+      if (useStore.getState().syncStatus !== 'offline') setStatus('pending');
       schedule();
     }
   });
 
+  /** Recharge les données du serveur — seulement si rien n'attend d'être envoyé, avant comme
+   * après la requête (une édition faite pendant le chargement ne doit pas être écrasée). */
+  async function refresh() {
+    if (stopped || flushing || queued() || Date.now() - lastLoad < REFRESH_MIN_GAP) return;
+    lastLoad = Date.now();
+    let data;
+    try {
+      data = await fetchData();
+    } catch (e) {
+      console.error('Rechargement Le Fil :', e);
+      return;
+    }
+    if (stopped || flushing || queued()) return;
+    const s = useStore.getState();
+    applyingRemote = true;
+    try {
+      useStore.setState({
+        ...data,
+        openLotId: s.openLotId && data.lots.some((l) => l.id === s.openLotId) ? s.openLotId : null,
+        selected: s.selected.filter((k) => k === NO_PROJECT || data.projects.some((p) => p.id === k)),
+      });
+    } finally {
+      applyingRemote = false;
+    }
+    advanceRecurring(); // l'appli a pu rester ouverte d'un jour sur l'autre
+  }
+
+
   // Anniversaires & Cie : lots récurrents en retard → prochaine occurrence. Après l'abonnement
   // ci-dessus, pour que le changement soit détecté comme un diff et renvoyé à Supabase.
-  const rolled = advanceRecurringLots(useStore.getState().lots);
-  if (rolled !== useStore.getState().lots) useStore.setState({ lots: rolled });
-
-  // Dernière chance quand l'onglet passe en arrière-plan / se ferme.
-  const onHide = () => {
-    if (document.visibilityState === 'hidden') void flush();
+  const advanceRecurring = () => {
+    const rolled = advanceRecurringLots(useStore.getState().lots);
+    if (rolled !== useStore.getState().lots) useStore.setState({ lots: rolled });
   };
-  document.addEventListener('visibilitychange', onHide);
+  advanceRecurring();
+
+  // Arrière-plan / fermeture : dernière chance d'envoyer. Retour au premier plan : recharger.
+  const onVisibility = () => {
+    if (document.visibilityState === 'hidden') void flush();
+    else void refresh();
+  };
+  document.addEventListener('visibilitychange', onVisibility);
+  // Retour du réseau : on renvoie tout de suite ce qui attendait.
+  const onOnline = () => {
+    if (queued()) {
+      setStatus('pending');
+      schedule(0);
+    }
+  };
+  const onOffline = () => setStatus('offline');
+  window.addEventListener('online', onOnline);
+  window.addEventListener('offline', onOffline);
+  if (!navigator.onLine) setStatus('offline');
 
   return () => {
     stopped = true;
     clearTimeout(timer);
     unsubscribe();
-    document.removeEventListener('visibilitychange', onHide);
+    document.removeEventListener('visibilitychange', onVisibility);
+    window.removeEventListener('online', onOnline);
+    window.removeEventListener('offline', onOffline);
   };
 }

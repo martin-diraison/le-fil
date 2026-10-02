@@ -4,6 +4,7 @@ import { computeUrgency } from '../../types/models';
 import { daysUntil, dueButtonLabel, formatShortDate } from '../../lib/format';
 import { MOBILE_DATE_CHOICES, REPEAT_CHOICES, dueFromOffset } from '../../state/dateShortcuts';
 import { copyToClipboard, formatLotTasksAsText } from '../../lib/exportTasks';
+import { handleTaskPaste } from '../../lib/paste';
 import { projectColor, projectName } from './labels';
 import type { Repeat } from '../../types/models';
 import type { LotOrigin, MobileNav } from './MobileShell';
@@ -22,7 +23,6 @@ export default function LotScreen({
   const lots = useStore((s) => s.lots);
   const allTasks = useStore((s) => s.tasks);
   const projects = useStore((s) => s.projects);
-  const confirmDelete = useStore((s) => s.confirmDeleteLot);
   const pickerTaskId = useStore((s) => s.taskDatePickerId);
 
   const updateLotTitle = useStore((s) => s.updateLotTitle);
@@ -38,9 +38,9 @@ export default function LotScreen({
   const setTaskEndTime = useStore((s) => s.setTaskEndTime);
   const setTaskLocation = useStore((s) => s.setTaskLocation);
   const toggleLotDone = useStore((s) => s.toggleLotDone);
-  const requestDeleteLot = useStore((s) => s.requestDeleteLot);
-  const confirmDeleteLotNow = useStore((s) => s.confirmDeleteLotNow);
+  const deleteLot = useStore((s) => s.deleteLot);
   const addTask = useStore((s) => s.addTask);
+  const addTasks = useStore((s) => s.addTasks);
   const toggleTask = useStore((s) => s.toggleTask);
   const updateTaskLabel = useStore((s) => s.updateTaskLabel);
   const setTaskDueDate = useStore((s) => s.setTaskDueDate);
@@ -48,7 +48,6 @@ export default function LotScreen({
   const openTaskDatePicker = useStore((s) => s.openTaskDatePicker);
   const flash = useStore((s) => s.flash);
 
-  const [confirmDone, setConfirmDone] = useState(false);
   // Replié par défaut pour laisser plus de place aux tâches (demande explicite de
   // l'utilisateur — contrairement au desktop, où la place manque moins).
   const [periodOpen, setPeriodOpen] = useState(false);
@@ -103,18 +102,8 @@ export default function LotScreen({
         <button className="m__back" onClick={back}>
           {backLabel}
         </button>
-        <button
-          className={`m__topDanger ${confirmDelete ? 'm__topDanger--confirm' : ''}`}
-          onClick={() => {
-            if (!confirmDelete) {
-              requestDeleteLot();
-              return;
-            }
-            confirmDeleteLotNow();
-            flash('lot supprimé');
-          }}
-        >
-          {confirmDelete ? 'confirmer ✕' : 'supprimer'}
+        <button className="m__topDanger" onClick={() => deleteLot(lot.id)}>
+          supprimer
         </button>
       </div>
       <div className="m__band" style={{ background: color }} />
@@ -318,24 +307,23 @@ export default function LotScreen({
             placeholder="+ AJOUTER UNE TÂCHE"
             enterKeyHint="done"
             onChange={(e) => setTaskDraft(e.target.value)}
+            onPaste={(e) =>
+              handleTaskPaste(e, (labels) => flash(`${addTasks(lot.id, labels)} tâches ajoutées`))
+            }
             onKeyDown={(e) => e.key === 'Enter' && commitTask()}
           />
         </div>
 
-        {/* « Terminer le lot » : discret et en deux temps (action rare, pas à faire par mégarde). */}
+        {/* « Terminer le lot » : discret, en un geste — « annuler » dans le toast en cas de mégarde. */}
         <button
-          className={`m__quietBtn ${confirmDone ? 'm__quietBtn--confirm' : ''}`}
+          className="m__quietBtn"
           onClick={() => {
-            if (!lot.done && !confirmDone) {
-              setConfirmDone(true);
-              return;
-            }
             toggleLotDone(lot.id);
-            setConfirmDone(false);
-            flash(lot.done ? 'remis dans le fil' : 'terminé');
+            if (lot.done) flash('remis dans le fil');
+            else flash('lot terminé', () => toggleLotDone(lot.id));
           }}
         >
-          {lot.done ? 'remettre dans le fil' : confirmDone ? 'confirmer : terminer le lot' : 'terminer le lot…'}
+          {lot.done ? 'remettre dans le fil' : 'terminer le lot'}
         </button>
       </div>
     </div>

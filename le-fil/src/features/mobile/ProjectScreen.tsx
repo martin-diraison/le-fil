@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { NO_PROJECT, sortLots, useStore, type ProjectKey } from '../../state/store';
-import { computeUrgency } from '../../types/models';
+import { computeUrgency, isArchived } from '../../types/models';
 import { contrastText, NO_PROJECT_COLOR, PALETTE } from '../../lib/palette';
 import { dateSubLabel, formatShortDate } from '../../lib/format';
 import { DoneBox, DraftBar } from './parts';
@@ -22,6 +22,7 @@ export default function ProjectScreen({ nav, projectKey }: { nav: MobileNav; pro
   const flash = useStore((s) => s.flash);
 
   const [picker, setPicker] = useState(false);
+  const [showArchived, setShowArchived] = useState(false);
 
   const isNone = projectKey === NO_PROJECT;
   const project = isNone ? null : projects.find((p) => p.id === projectKey) ?? null;
@@ -35,9 +36,11 @@ export default function ProjectScreen({ nav, projectKey }: { nav: MobileNav; pro
     if (missing) nav.go('projets');
   }, [missing, nav]);
 
+  const allProjLots = useMemo(() => lots.filter((l) => (l.projectId ?? NO_PROJECT) === projectKey), [lots, projectKey]);
+  const archivedCount = allProjLots.filter((l) => isArchived(l)).length;
   const projLots = useMemo(
-    () => sortLots(lots.filter((l) => (l.projectId ?? NO_PROJECT) === projectKey), 'urgence'),
-    [lots, projectKey],
+    () => sortLots(showArchived ? allProjLots : allProjLots.filter((l) => !isArchived(l)), 'urgence'),
+    [allProjLots, showArchived],
   );
   if (missing) return null;
 
@@ -128,7 +131,8 @@ export default function ProjectScreen({ nav, projectKey }: { nav: MobileNav; pro
                 late={u === 'late'}
                 onToggle={() => {
                   toggleLotDone(lot.id);
-                  flash(lot.done ? 'remis dans le fil' : 'terminé');
+                  if (lot.done) flash('remis dans le fil');
+                  else flash('terminé', () => toggleLotDone(lot.id));
                 }}
               />
               <button className="m__rowMain m__rowMain--dated" onClick={() => nav.openLot(lot.id, 'projet')}>
@@ -147,6 +151,11 @@ export default function ProjectScreen({ nav, projectKey }: { nav: MobileNav; pro
           );
         })}
         {projLots.length === 0 && <div className="m__empty">aucun lot — écris en bas</div>}
+        {archivedCount > 0 && (
+          <button className="m__archivesBtn" onClick={() => setShowArchived((v) => !v)}>
+            {showArchived ? 'masquer les archives' : `voir les archives · ${archivedCount}`}
+          </button>
+        )}
       </div>
 
       <DraftBar

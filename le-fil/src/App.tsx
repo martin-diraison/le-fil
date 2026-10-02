@@ -5,6 +5,7 @@ import AuthScreen from './features/auth/AuthScreen';
 import DesktopShell from './features/shell/DesktopShell';
 import MobileShell from './features/mobile/MobileShell';
 import { resetStore, startSync } from './state/sync';
+import { useAppBadge } from './lib/badge';
 
 // Session factice utilisée uniquement quand Supabase n'est pas encore configuré (voir
 // .env.example), pour pouvoir développer/prévisualiser l'appli sans compte au préalable.
@@ -28,6 +29,7 @@ function useIsMobile(): boolean {
 
 export default function App() {
   const isMobile = useIsMobile();
+  useAppBadge();
   const Shell = isMobile ? MobileShell : DesktopShell;
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(isSupabaseConfigured);

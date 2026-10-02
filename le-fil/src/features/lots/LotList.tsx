@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { NO_PROJECT, filterLots, sortLots, useStore } from '../../state/store';
-import { computeUrgency } from '../../types/models';
+import { computeUrgency, isArchived } from '../../types/models';
 import { dateSubLabel, formatShortDate } from '../../lib/format';
 import { NO_PROJECT_COLOR } from '../../lib/palette';
 import './LotList.css';
@@ -17,6 +17,8 @@ export default function LotList() {
   const lotDraft = useStore((s) => s.lotDraft);
   const dragLotId = useStore((s) => s.dragLotId);
   const overLotId = useStore((s) => s.overLotId);
+  const showArchived = useStore((s) => s.showArchived);
+  const toggleShowArchived = useStore((s) => s.toggleShowArchived);
 
   const addLot = useStore((s) => s.addLot);
   const cycleSort = useStore((s) => s.cycleSort);
@@ -30,7 +32,17 @@ export default function LotList() {
   const projectById = useMemo(() => new Map(projects.map((p) => [p.id, p])), [projects]);
 
   const filtered = useMemo(
-    () => filterLots({ lots, tasks, selected, lateOnly, search, view: 'liste' }),
+    () => filterLots({ lots, tasks, selected, lateOnly, search, view: 'liste', showArchived }),
+    [lots, tasks, selected, lateOnly, search, showArchived],
+  );
+  // Archives de la sélection (terminés depuis plus de 30 j) — lien en bas de liste.
+  const archivedCount = useMemo(
+    () =>
+      search
+        ? 0
+        : filterLots({ lots, tasks, selected, lateOnly, search, view: 'liste', showArchived: true }).filter((l) =>
+            isArchived(l),
+          ).length,
     [lots, tasks, selected, lateOnly, search],
   );
 
@@ -187,6 +199,11 @@ export default function LotList() {
           );
         })}
         {sorted.length === 0 && <div className="lotPane__empty">rien ici — {emptyHint}</div>}
+        {archivedCount > 0 && (
+          <button className="lotPane__archives" onClick={toggleShowArchived}>
+            {showArchived ? 'masquer les archives' : `voir les archives · ${archivedCount}`}
+          </button>
+        )}
       </div>
     </div>
   );

@@ -14,10 +14,12 @@ export function DraftBar({
   placeholder,
   onCommit,
   buttonStyle,
+  autoFocus = false,
 }: {
   placeholder: string;
   onCommit: (value: string) => void;
   buttonStyle?: CSSProperties;
+  autoFocus?: boolean;
 }) {
   const [value, setValue] = useState('');
   const commit = () => {
@@ -31,6 +33,7 @@ export function DraftBar({
         className="m__draftInput"
         value={value}
         placeholder={placeholder}
+        autoFocus={autoFocus}
         enterKeyHint="done"
         onChange={(e) => setValue(e.target.value)}
         onKeyDown={(e) => e.key === 'Enter' && commit()}

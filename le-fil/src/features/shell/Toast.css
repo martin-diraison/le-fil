@@ -1,0 +1,12 @@
+/* « annuler » dans le toast. */
+.toastUndo {
+  margin-left: 14px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--yellow);
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  cursor: pointer;
+}

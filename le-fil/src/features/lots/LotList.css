@@ -114,6 +114,22 @@
   text-transform: uppercase;
   color: var(--text-secondary);
 }
+.lotPane__archives {
+  display: block;
+  width: 100%;
+  padding: 12px;
+  border: none;
+  background: transparent;
+  text-align: left;
+  font: 600 9px var(--font-ui);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  cursor: pointer;
+}
+.lotPane__archives:hover {
+  color: var(--ink);
+}
 
 .lotRow {
   width: 100%;

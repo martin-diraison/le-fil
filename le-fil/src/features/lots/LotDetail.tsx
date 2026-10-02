@@ -6,6 +6,7 @@ import { DATE_CHOICES, REPEAT_CHOICES, type DateChoiceKey } from '../../state/da
 import type { Repeat } from '../../types/models';
 import { formatShortDate } from '../../lib/format';
 import { copyToClipboard, formatLotTasksAsText } from '../../lib/exportTasks';
+import { handleTaskPaste } from '../../lib/paste';
 import './LotDetail.css';
 
 /** `drawer` : en Calendrier et Gantt, le volet 3 est un tiroir fixe de 336 px (§3.1). */
@@ -15,7 +16,6 @@ export default function LotDetail({ drawer = false }: { drawer?: boolean }) {
   const projects = useStore((s) => s.projects);
   const tasks = useStore((s) => s.tasks);
   const moveMenuOpen = useStore((s) => s.moveMenuOpen);
-  const confirmDeleteLot = useStore((s) => s.confirmDeleteLot);
   const taskDraft = useStore((s) => s.taskDraft);
   const taskDatePickerId = useStore((s) => s.taskDatePickerId);
 
@@ -24,10 +24,10 @@ export default function LotDetail({ drawer = false }: { drawer?: boolean }) {
   const updateLotBody = useStore((s) => s.updateLotBody);
   const toggleLotDone = useStore((s) => s.toggleLotDone);
   const moveLotToProject = useStore((s) => s.moveLotToProject);
-  const requestDeleteLot = useStore((s) => s.requestDeleteLot);
-  const confirmDeleteLotNow = useStore((s) => s.confirmDeleteLotNow);
+  const deleteLot = useStore((s) => s.deleteLot);
   const toggleMoveMenu = useStore((s) => s.toggleMoveMenu);
   const addTask = useStore((s) => s.addTask);
+  const addTasks = useStore((s) => s.addTasks);
   const toggleTask = useStore((s) => s.toggleTask);
   const updateTaskLabel = useStore((s) => s.updateTaskLabel);
   const setTaskDue = useStore((s) => s.setTaskDue);
@@ -98,7 +98,10 @@ export default function LotDetail({ drawer = false }: { drawer?: boolean }) {
           <button
             className="lotDetail__headerBtn lotDetail__doneBtn"
             style={{ color: lot.done ? 'var(--yellow)' : '#d4d4d0' }}
-            onClick={() => toggleLotDone(lot.id)}
+            onClick={() => {
+              toggleLotDone(lot.id);
+              if (!lot.done) flash('lot terminé', () => toggleLotDone(lot.id));
+            }}
           >
             {lot.done ? 'rouvrir' : 'terminer'}
           </button>
@@ -113,13 +116,10 @@ export default function LotDetail({ drawer = false }: { drawer?: boolean }) {
               déplacer vers
               <button
                 className="lotDetail__deleteBtn"
-                style={{
-                  background: confirmDeleteLot ? 'var(--red)' : 'transparent',
-                  color: confirmDeleteLot ? 'var(--paper)' : 'var(--red)',
-                }}
-                onClick={() => (confirmDeleteLot ? confirmDeleteLotNow() : requestDeleteLot())}
+                style={{ background: 'transparent', color: 'var(--red)' }}
+                onClick={() => deleteLot(lot.id)}
               >
-                {confirmDeleteLot ? 'confirmer ✕' : 'supprimer'}
+                supprimer
               </button>
             </span>
             {moveTargets.map((m) => {
@@ -346,6 +346,9 @@ export default function LotDetail({ drawer = false }: { drawer?: boolean }) {
               className="lotDetail__addTask"
               value={taskDraftLocal}
               onChange={(e) => setTaskDraftLocal(e.target.value)}
+              onPaste={(e) =>
+                handleTaskPaste(e, (labels) => flash(`${addTasks(lot.id, labels)} tâches ajoutées`))
+              }
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
                   addTask(lot.id, taskDraftLocal);
