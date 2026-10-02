@@ -5,6 +5,7 @@ import { contrastText, NO_PROJECT_COLOR } from '../../lib/palette';
 import { formatShortDate, formatTimeRange, MONTHS_SHORT } from '../../lib/format';
 import { MONTHS_LONG, WEEK_HEAD, daysInRange, mondayOf, shiftDays, startOfDay, toDay } from '../../lib/dates';
 import DayView from './DayView';
+import WeekView from './WeekView';
 import './CalendarView.css';
 
 // Vue Calendrier desktop — README §3.5, prototype `buildCell()` / `dropOn()`.
@@ -152,7 +153,7 @@ export default function CalendarView() {
         <button className="cal__nav" onClick={() => calStep(1)} aria-label="période suivante">
           ›
         </button>
-        <span className="cal__hint">clic = ouvrir · glisser = changer la date</span>
+        <span className="cal__hint">{isWeek ? 'clic = ouvrir · glisser = changer le jour · clic sur un jour = vue journalière' : 'clic = ouvrir · glisser = changer la date'}</span>
         <div className="cal__modes">
           {(['mois', 'semaine'] as const).map((m) => (
             <button
@@ -171,6 +172,8 @@ export default function CalendarView() {
 
       {calOpenDay ? (
         <DayView day={calOpenDay} onClose={closeCalDay} onNavigate={openCalDay} />
+      ) : isWeek ? (
+        <WeekView weekStart={weekStart} todayKey={todayKey} />
       ) : (
         <>
       <div className="cal__head">

@@ -111,3 +111,18 @@
   text-transform: uppercase;
   color: var(--text-secondary);
 }
+
+/* Tâche : bloc clair à liseré épais (le lot est un bloc plein à la couleur du projet). */
+.dayView__block--task {
+  border-width: 1px;
+  border-style: solid;
+}
+.dayView__allDayItem--lot {
+  border-left-width: 5px;
+  font-weight: 800;
+}
+.dayView__allDayItem--task {
+  border-left-style: dashed;
+  background: var(--paper);
+  outline: 1px solid var(--rule);
+}

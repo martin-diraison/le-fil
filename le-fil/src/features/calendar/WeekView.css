@@ -1,0 +1,143 @@
+/* Vue semaine desktop — grille horaire type agenda. */
+.weekView {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.weekView__head,
+.weekView__allDay {
+  display: flex;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--ink);
+}
+.weekView__gutter {
+  flex-shrink: 0;
+  width: 44px;
+}
+.weekView__dayHead {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  border-left: 1px solid var(--rule);
+  background: transparent;
+  cursor: pointer;
+  padding: 6px 0;
+  text-align: center;
+  font: 600 9px var(--font-ui);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+.weekView__dayHead:hover {
+  background: var(--yellow);
+  color: var(--ink);
+}
+.weekView__dayHead--today {
+  background: var(--yellow-pale);
+  color: var(--red);
+  font-weight: 800;
+}
+.weekView__allDayCell {
+  flex: 1;
+  min-width: 0;
+  border-left: 1px solid var(--rule);
+  padding: 3px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.weekView__chip {
+  border: none;
+  border-left: 3px solid;
+  background: var(--hover);
+  cursor: pointer;
+  padding: 2px 5px;
+  text-align: left;
+  font: 600 10px var(--font-ui);
+  color: var(--ink);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.weekView__chip--lot {
+  border-left-width: 5px;
+  font-weight: 800;
+}
+.weekView__chip--task {
+  border-left-style: dashed;
+  background: var(--paper);
+  outline: 1px solid var(--rule);
+}
+.weekView__chip--done {
+  opacity: 0.55;
+  text-decoration: line-through;
+}
+.weekView__scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+.weekView__grid {
+  display: flex;
+  height: calc(48px * 24);
+}
+.weekView__hours {
+  flex-shrink: 0;
+  width: 44px;
+}
+.weekView__hour {
+  height: 48px;
+  box-sizing: border-box;
+  padding: 2px 6px 0 0;
+  text-align: right;
+  font: 600 8.5px var(--font-ui);
+  color: var(--text-secondary);
+}
+.weekView__lane {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  border-left: 1px solid var(--rule);
+}
+.weekView__lane--today {
+  background: var(--yellow-pale);
+}
+.weekView__hourLine {
+  position: absolute;
+  left: 0;
+  right: 0;
+  border-top: 1px solid var(--rule);
+}
+.weekView__block {
+  position: absolute;
+  box-sizing: border-box;
+  border: 1px solid var(--paper);
+  border-radius: 2px;
+  padding: 2px 4px;
+  cursor: pointer;
+  text-align: left;
+  overflow: hidden;
+  font: 600 10px var(--font-ui);
+  line-height: 1.25;
+}
+.weekView__block--task {
+  border-style: solid;
+}
+.weekView__block--open {
+  outline: 2px solid var(--yellow);
+  outline-offset: -2px;
+}
+.weekView__block--done {
+  opacity: 0.55;
+  text-decoration: line-through;
+}
+.weekView__blockTime {
+  font-weight: 800;
+}
+
+.weekView__over {
+  background: var(--yellow-pale);
+  outline: 2px dashed var(--yellow);
+  outline-offset: -2px;
+}

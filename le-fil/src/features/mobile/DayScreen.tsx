@@ -18,6 +18,7 @@ type Entry = DayGridEntry & {
   color: string;
   done: boolean;
   lotId: string;
+  kind: 'lot' | 'task';
 };
 
 const HOUR_PX = 52; // doit rester égal à la hauteur d'une heure dans Mobile.css (.m__dayLanes)
@@ -169,6 +170,7 @@ export default function DayScreen({
       color: projectColor(projects, lot.projectId),
       done: lot.done,
       lotId: lot.id,
+      kind: 'lot',
     };
     (lot.startTime ? timed : allDay).push(entry);
   }
@@ -181,10 +183,11 @@ export default function DayScreen({
           id: t.id,
           startTime: t.startTime ?? '',
           endTime: t.endTime,
-          label: '↳ ' + t.label,
+          label: t.label,
           color: projectColor(projects, lot.projectId),
           done: t.done,
           lotId: lot.id,
+          kind: 'task',
         };
         (t.startTime ? timed : allDay).push(entry);
       }
@@ -224,10 +227,11 @@ export default function DayScreen({
           {allDay.map((e) => (
             <button
               key={e.id}
-              className={`m__dayAllDayItem ${e.done ? 'm__dayAllDayItem--done' : ''}`}
+              className={`m__dayAllDayItem m__dayAllDayItem--${e.kind} ${e.done ? 'm__dayAllDayItem--done' : ''}`}
               style={{ borderLeftColor: e.color }}
               onClick={() => nav.openLot(e.lotId, 'day')}
             >
+              {e.kind === 'task' ? '↳ ' : ''}
               {e.label}
             </button>
           ))}
@@ -256,14 +260,15 @@ export default function DayScreen({
           {positioned.map((e) => (
             <button
               key={e.id}
-              className={`m__dayBlock ${e.done ? 'm__dayBlock--done' : ''}`}
+              className={`m__dayBlock m__dayBlock--${e.kind} ${e.done ? 'm__dayBlock--done' : ''}`}
               style={{
                 top: `${e.topPct}%`,
                 height: `${e.heightPct}%`,
                 left: `${(e.col / e.cols) * 100}%`,
                 width: `${100 / e.cols}%`,
-                background: e.color,
-                color: contrastText(e.color),
+                ...(e.kind === 'lot'
+                  ? { background: e.color, color: contrastText(e.color) }
+                  : { background: 'var(--paper)', color: 'var(--ink)', borderColor: e.color, borderLeft: `5px solid ${e.color}` }),
               }}
               onClick={() => nav.openLot(e.lotId, 'day')}
             >

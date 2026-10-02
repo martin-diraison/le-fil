@@ -1,20 +1,14 @@
-import { filterLots, taskMatchesSearch, useStore } from '../../state/store';
-import { contrastText, NO_PROJECT_COLOR } from '../../lib/palette';
+import { filterLots, useStore } from '../../state/store';
+import { NO_PROJECT_COLOR } from '../../lib/palette';
 import { DAYS_SHORT, MONTHS_SHORT, formatTime } from '../../lib/format';
-import { isDayInRange, parseDay, shiftDays, toDay } from '../../lib/dates';
-import { DAY_GRID_HOURS, layoutDayGrid, type DayGridEntry } from '../../lib/dayGrid';
+import { parseDay, shiftDays, toDay } from '../../lib/dates';
+import { DAY_GRID_HOURS, layoutDayGrid } from '../../lib/dayGrid';
+import { blockColors, buildDayEntries } from './dayEntries';
 import './DayView.css';
 
 // Vue journalière desktop (grille horaire type agenda) — ouverte en cliquant sur un jour dans
 // la vue Calendrier. Cadrage utilisateur du 2026-09-29 : vue mensuelle conservée comme entrée
 // principale, superposition si chevauchement, navigation jour par jour.
-
-type Entry = DayGridEntry & {
-  label: string;
-  color: string;
-  done: boolean;
-  lotId: string;
-};
 
 export default function DayView({
   day,
@@ -38,40 +32,7 @@ export default function DayView({
     projectId ? (projects.find((p) => p.id === projectId)?.color ?? NO_PROJECT_COLOR) : NO_PROJECT_COLOR;
 
   const vis = filterLots({ lots, tasks, selected, lateOnly, search, view: 'cal' });
-  const timed: Entry[] = [];
-  const allDay: Entry[] = [];
-
-  for (const lot of vis) {
-    if (!lot.due || !isDayInRange(lot.startDate, lot.due, day)) continue;
-    const entry: Entry = {
-      id: lot.id,
-      startTime: lot.startTime ?? '',
-      endTime: lot.endTime,
-      label: lot.title,
-      color: colorOf(lot.projectId),
-      done: lot.done,
-      lotId: lot.id,
-    };
-    (lot.startTime ? timed : allDay).push(entry);
-  }
-  if (showTasks) {
-    for (const lot of vis) {
-      for (const t of tasks) {
-        if (t.lotId !== lot.id || !t.due || !isDayInRange(t.startDate, t.due, day)) continue;
-        if (!taskMatchesSearch(lot, t, search)) continue;
-        const entry: Entry = {
-          id: t.id,
-          startTime: t.startTime ?? '',
-          endTime: t.endTime,
-          label: '↳ ' + t.label,
-          color: colorOf(lot.projectId),
-          done: t.done,
-          lotId: lot.id,
-        };
-        (t.startTime ? timed : allDay).push(entry);
-      }
-    }
-  }
+  const { timed, allDay } = buildDayEntries({ day, lots: vis, tasks, showTasks, search, colorOf });
 
   const positioned = layoutDayGrid(timed);
   const dayDate = parseDay(day);
@@ -97,10 +58,11 @@ export default function DayView({
           {allDay.map((e) => (
             <button
               key={e.id}
-              className={`dayView__allDayItem ${e.done ? 'dayView__allDayItem--done' : ''}`}
+              className={`dayView__allDayItem dayView__allDayItem--${e.kind} ${e.done ? 'dayView__allDayItem--done' : ''}`}
               style={{ borderLeftColor: e.color }}
               onClick={() => toggleOpenLot(e.lotId)}
             >
+              {e.kind === 'task' ? '↳ ' : ''}
               {e.label}
             </button>
           ))}
@@ -122,14 +84,13 @@ export default function DayView({
           {positioned.map((e) => (
             <button
               key={e.id}
-              className={`dayView__block ${e.done ? 'dayView__block--done' : ''}`}
+              className={`dayView__block dayView__block--${e.kind} ${e.done ? 'dayView__block--done' : ''}`}
               style={{
                 top: `${e.topPct}%`,
                 height: `${e.heightPct}%`,
                 left: `${(e.col / e.cols) * 100}%`,
                 width: `${100 / e.cols}%`,
-                background: e.color,
-                color: contrastText(e.color),
+                ...blockColors(e),
               }}
               title={`${e.label} — ${formatTime(e.startTime)}${e.endTime ? '–' + formatTime(e.endTime) : ''}`}
               onClick={() => toggleOpenLot(e.lotId)}
