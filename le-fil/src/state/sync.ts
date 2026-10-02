@@ -2,6 +2,15 @@ import { supabase } from '../lib/supabase';
 import type { CalMode, Lot, Project, SortMode, Task, ViewMode } from '../types/models';
 import { advanceRecurringLots } from '../lib/recurrence';
 import { NO_PROJECT, useStore, type SyncStatus } from './store';
+import {
+  forgetUser,
+  loadCache,
+  loadQueue,
+  saveCache,
+  saveQueue,
+  type CachedData,
+  type SavedQueue,
+} from '../lib/localCache';
 
 // Synchro Supabase. Le store reste la source de vérité de l'interface (mises à jour
 // optimistes) ; ce module (1) charge les données au démarrage, puis (2) compare chaque
@@ -11,11 +20,15 @@ import { NO_PROJECT, useStore, type SyncStatus } from './store';
 // L'état réel (synchronisé / envoi / hors ligne / échec) est publié dans `syncStatus` du store.
 // Au retour au premier plan, les données sont rechargées (pas de Realtime pour l'instant) :
 // sinon un appareil resté ouvert renverrait des lignes périmées par-dessus celles d'un autre.
+// Hors ligne : les données et la file d'envoi sont copiées en local (lib/localCache.ts) ; au
+// démarrage, la copie locale s'affiche aussitôt et le serveur est consulté en arrière-plan.
 
 const FLUSH_DELAY = 600;
 const RETRY_DELAY = 5000;
 /** Délai minimal entre deux rechargements au retour au premier plan. */
 const REFRESH_MIN_GAP = 30_000;
+/** Délai de regroupement avant de réécrire la copie locale des données. */
+const SAVE_DELAY = 300;
 
 type Row = Record<string, unknown>;
 
@@ -132,14 +145,7 @@ function enqueue<T extends { id: string }>(q: Queue<T>, prev: T[], next: T[]) {
 }
 
 // ------------------------------------------------------------ préférences
-type PrefsSlice = {
-  selected: string[];
-  view: ViewMode;
-  sort: SortMode;
-  calMode: CalMode;
-  showTasksInGantt: boolean;
-  showTasksInCalendar: boolean;
-};
+type PrefsSlice = CachedData['prefs'];
 type StoreState = ReturnType<typeof useStore.getState>;
 
 const pickPrefs = (s: StoreState): PrefsSlice => ({
@@ -197,47 +203,89 @@ async function fetchData() {
   return { projects: pr.data.map(fromProject), lots: lo.data.map(fromLot), tasks: ta.data.map(fromTask) };
 }
 
+/** Préférences telles que renvoyées par Supabase → état du store. */
+function prefsFromRow(p: Row, known: Set<string>): PrefsSlice {
+  return {
+    selected: ((p.selected_projects as string[]) ?? []).filter((k) => known.has(k)),
+    view: p.view as ViewMode,
+    sort: p.sort as SortMode,
+    calMode: p.cal_mode as CalMode,
+    showTasksInGantt: p.show_tasks_in_gantt as boolean,
+    showTasksInCalendar: p.show_tasks_in_calendar as boolean,
+  };
+}
+
+function queueFromSaved<T extends { id: string }>(part: SavedQueue['lots'] | undefined): Queue<T> {
+  const q = newQueue<T>();
+  for (const x of (part?.upserts ?? []) as unknown as T[]) q.upserts.set(x.id, x);
+  for (const id of part?.deletes ?? []) q.deletes.add(id);
+  return q;
+}
+const queueToSaved = <T>(q: Queue<T>) => ({ upserts: [...q.upserts.values()], deletes: [...q.deletes] });
+
 /**
  * Charge les données de `userId` dans le store puis démarre la synchro.
- * Rejette si le chargement échoue (rien n'est alors synchronisé). Renvoie la fonction d'arrêt.
+ * Avec une copie locale, résout aussitôt (serveur consulté ensuite, en arrière-plan) ; sinon
+ * attend le serveur et rejette si le chargement échoue. Renvoie la fonction d'arrêt.
  */
-export async function startSync(userId: string): Promise<() => void> {
-  const [data, pf] = await Promise.all([fetchData(), supabase.from('user_prefs').select('*').maybeSingle()]);
-  if (pf.error) fail('Chargement des préférences', pf.error);
+export async function startSync(userId: string): Promise<(forget?: boolean) => void> {
+  const cached = loadCache(userId);
+  const saved = loadQueue(userId);
 
-  const known = new Set<string>([NO_PROJECT, ...data.projects.map((p) => p.id)]);
-  const p = pf.data as Row | null;
-  let lastLoad = Date.now();
-  useStore.setState({
-    ...data,
-    openLotId: null,
-    syncStatus: 'ok',
-    ...(p && {
-      selected: ((p.selected_projects as string[]) ?? []).filter((k) => known.has(k)),
-      view: p.view as ViewMode,
-      sort: p.sort as SortMode,
-      calMode: p.cal_mode as CalMode,
-      showTasksInGantt: p.show_tasks_in_gantt as boolean,
-      showTasksInCalendar: p.show_tasks_in_calendar as boolean,
-    }),
-  });
+  if (cached) {
+    useStore.setState({
+      projects: cached.projects,
+      lots: cached.lots,
+      tasks: cached.tasks,
+      openLotId: null,
+      syncStatus: 'ok',
+      ...cached.prefs,
+    });
+  } else {
+    const [data, pf] = await Promise.all([fetchData(), supabase.from('user_prefs').select('*').maybeSingle()]);
+    if (pf.error) fail('Chargement des préférences', pf.error);
+    const known = new Set<string>([NO_PROJECT, ...data.projects.map((p) => p.id)]);
+    const p = pf.data as Row | null;
+    useStore.setState({ ...data, openLotId: null, syncStatus: 'ok', ...(p && prefsFromRow(p, known)) });
+    saveCache(userId, { ...data, prefs: pickPrefs(useStore.getState()) });
+  }
 
-  const qProjects = newQueue<Project>();
-  const qLots = newQueue<Lot>();
-  const qTasks = newQueue<Task>();
-  let prefsDirty = false;
+  // Modifications faites hors ligne lors d'une session précédente : elles repartent d'ici.
+  const qProjects = queueFromSaved<Project>(saved?.projects as SavedQueue['lots'] | undefined);
+  const qLots = queueFromSaved<Lot>(saved?.lots);
+  const qTasks = queueFromSaved<Task>(saved?.tasks as SavedQueue['lots'] | undefined);
+  let prefsDirty = saved?.prefsDirty ?? false;
+  let lastLoad = cached ? 0 : Date.now();
   let timer: ReturnType<typeof setTimeout> | undefined;
+  let saveTimer: ReturnType<typeof setTimeout> | undefined;
   let flushing = false;
   let again = false;
   let stopped = false;
   let failing = false; // évite de répéter le toast d'échec à chaque nouvelle tentative
   let applyingRemote = false; // rechargement en cours d'application : pas à renvoyer au serveur
+  let refreshAfterFlush = !!cached; // copie locale affichée : vérifier le serveur dès que possible
 
   const queued = () =>
     qProjects.upserts.size + qProjects.deletes.size + qLots.upserts.size + qLots.deletes.size +
       qTasks.upserts.size + qTasks.deletes.size > 0 || prefsDirty;
   const setStatus = (syncStatus: SyncStatus) => {
     if (useStore.getState().syncStatus !== syncStatus) useStore.setState({ syncStatus });
+  };
+  const persistQueue = () =>
+    saveQueue(userId, {
+      projects: queueToSaved(qProjects),
+      lots: queueToSaved(qLots),
+      tasks: queueToSaved(qTasks),
+      prefsDirty,
+    });
+  const persistData = () => {
+    clearTimeout(saveTimer);
+    const s = useStore.getState();
+    saveCache(userId, { projects: s.projects, lots: s.lots, tasks: s.tasks, prefs: pickPrefs(s) });
+  };
+  const scheduleSave = () => {
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(persistData, SAVE_DELAY);
   };
 
   const schedule = (delay = FLUSH_DELAY) => {
@@ -253,7 +301,12 @@ export async function startSync(userId: string): Promise<() => void> {
     if (!q.upserts.size) return;
     const sent = [...q.upserts.values()];
     const { error } = await supabase.from(table).upsert(sent.map(toRow));
-    if (error) fail(table, error);
+    // Clé étrangère manquante (23503) : le parent a été supprimé depuis un autre appareil pendant
+    // qu'on était hors ligne. Réessayer ne servirait à rien et bloquerait toute la file : on abandonne.
+    if (error?.code === '23503') {
+      console.warn(`Synchro Le Fil : ${table} rattachés à un élément supprimé ailleurs, abandonnés`, sent);
+      useStore.getState().flash('modifs perdues : élément supprimé sur un autre appareil');
+    } else if (error) fail(table, error);
     // Ne retire de la file que ce qui a été envoyé tel quel (une édition plus récente reste en attente).
     for (const x of sent) if (q.upserts.get(x.id) === x) q.upserts.delete(x.id);
   }
@@ -273,6 +326,7 @@ export async function startSync(userId: string): Promise<() => void> {
       return;
     }
     flushing = true;
+    let ok = false;
     try {
       // Ordre imposé par les clés étrangères : parents avant enfants, enfants avant parents à la suppression.
       await upsertGroup('projects', qProjects, toProject);
@@ -299,6 +353,7 @@ export async function startSync(userId: string): Promise<() => void> {
         }
       }
       failing = false;
+      ok = true;
       if (!queued()) setStatus('ok');
     } catch (e) {
       console.error('Synchro Le Fil :', e);
@@ -310,22 +365,28 @@ export async function startSync(userId: string): Promise<() => void> {
       if (!offline) schedule(RETRY_DELAY);
     } finally {
       flushing = false;
+      persistQueue(); // ce qui a été envoyé sort de la copie locale de la file
       if (again) {
         again = false;
         schedule(0);
+      } else if (ok && refreshAfterFlush && !queued()) {
+        refreshAfterFlush = false;
+        void refresh(true);
       }
     }
   }
 
   const unsubscribe = useStore.subscribe((s, prev) => {
-    if (applyingRemote) return;
     // Seuls les changements de données / préférences comptent (pas le toast, ni syncStatus lui-même).
     if (!dataChanged(s, prev) && !prefsChanged(s, prev)) return;
+    scheduleSave(); // copie locale, y compris pour ce qui vient du serveur
+    if (applyingRemote) return;
     enqueue(qProjects, prev.projects, s.projects);
     enqueue(qLots, prev.lots, s.lots);
     enqueue(qTasks, prev.tasks, s.tasks);
     if (prefsChanged(s, prev)) prefsDirty = true;
     if (queued()) {
+      persistQueue();
       if (useStore.getState().syncStatus !== 'offline') setStatus('pending');
       schedule();
     }
@@ -333,14 +394,17 @@ export async function startSync(userId: string): Promise<() => void> {
 
   /** Recharge les données du serveur — seulement si rien n'attend d'être envoyé, avant comme
    * après la requête (une édition faite pendant le chargement ne doit pas être écrasée). */
-  async function refresh() {
-    if (stopped || flushing || queued() || Date.now() - lastLoad < REFRESH_MIN_GAP) return;
+  async function refresh(force = false) {
+    if (stopped || flushing || queued()) return;
+    if (!force && Date.now() - lastLoad < REFRESH_MIN_GAP) return;
     lastLoad = Date.now();
     let data;
     try {
       data = await fetchData();
     } catch (e) {
       console.error('Rechargement Le Fil :', e);
+      if (!navigator.onLine) setStatus('offline');
+      refreshAfterFlush = true; // réessayer au retour du réseau
       return;
     }
     if (stopped || flushing || queued()) return;
@@ -355,9 +419,9 @@ export async function startSync(userId: string): Promise<() => void> {
     } finally {
       applyingRemote = false;
     }
+    setStatus('ok');
     advanceRecurring(); // l'appli a pu rester ouverte d'un jour sur l'autre
   }
-
 
   // Anniversaires & Cie : lots récurrents en retard → prochaine occurrence. Après l'abonnement
   // ci-dessus, pour que le changement soit détecté comme un diff et renvoyé à Supabase.
@@ -367,27 +431,41 @@ export async function startSync(userId: string): Promise<() => void> {
   };
   advanceRecurring();
 
-  // Arrière-plan / fermeture : dernière chance d'envoyer. Retour au premier plan : recharger.
+  // Arrière-plan / fermeture : dernière chance d'envoyer et d'écrire la copie locale.
+  // Retour au premier plan : recharger.
   const onVisibility = () => {
-    if (document.visibilityState === 'hidden') void flush();
-    else void refresh();
+    if (document.visibilityState === 'hidden') {
+      persistData();
+      void flush();
+    } else void refresh();
   };
   document.addEventListener('visibilitychange', onVisibility);
-  // Retour du réseau : on renvoie tout de suite ce qui attendait.
+  // Retour du réseau : on renvoie tout de suite ce qui attendait, puis on relit le serveur.
   const onOnline = () => {
-    if (queued()) {
-      setStatus('pending');
-      schedule(0);
-    }
+    refreshAfterFlush = true;
+    setStatus(queued() ? 'pending' : 'ok');
+    schedule(0);
   };
   const onOffline = () => setStatus('offline');
   window.addEventListener('online', onOnline);
   window.addEventListener('offline', onOffline);
-  if (!navigator.onLine) setStatus('offline');
 
-  return () => {
+  // Premier passage : envoie la file héritée (s'il y en a), puis relit le serveur si on est
+  // parti de la copie locale.
+  if (!navigator.onLine) setStatus('offline');
+  else if (queued() || refreshAfterFlush) {
+    if (queued()) setStatus('pending');
+    schedule(0);
+  }
+
+  // `forget` : déconnexion volontaire — la copie des données est effacée, la file est gardée.
+  return (forget = false) => {
     stopped = true;
     clearTimeout(timer);
+    clearTimeout(saveTimer);
+    if (forget) forgetUser(userId);
+    else persistData();
+    persistQueue();
     unsubscribe();
     document.removeEventListener('visibilitychange', onVisibility);
     window.removeEventListener('online', onOnline);

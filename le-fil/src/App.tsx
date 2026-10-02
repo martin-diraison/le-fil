@@ -1,11 +1,12 @@
-import { useEffect, useState } from 'react';
-import type { Session } from '@supabase/supabase-js';
+import { useEffect, useRef, useState } from 'react';
+import { isAuthRetryableFetchError, type Session } from '@supabase/supabase-js';
 import { isSupabaseConfigured, supabase } from './lib/supabase';
 import AuthScreen from './features/auth/AuthScreen';
 import DesktopShell from './features/shell/DesktopShell';
 import MobileShell from './features/mobile/MobileShell';
 import { resetStore, startSync } from './state/sync';
 import { useAppBadge } from './lib/badge';
+import { loadCache, readLastUser, saveLastUser } from './lib/localCache';
 
 // Session factice utilisée uniquement quand Supabase n'est pas encore configuré (voir
 // .env.example), pour pouvoir développer/prévisualiser l'appli sans compte au préalable.
@@ -31,19 +32,48 @@ export default function App() {
   const isMobile = useIsMobile();
   useAppBadge();
   const Shell = isMobile ? MobileShell : DesktopShell;
-  const [session, setSession] = useState<Session | null>(null);
+  const [realSession, setSession] = useState<Session | null>(null);
+  // Hors ligne avec un jeton expiré, Supabase ne rend pas de session (il ne peut pas la
+  // renouveler) mais la garde en mémoire : on rouvre alors le dernier compte sur sa copie locale.
+  // Le vrai jeton revient tout seul au retour du réseau (renouvellement automatique de Supabase).
+  const [offlineSession, setOfflineSession] = useState<Session | null>(null);
+  const session = realSession ?? offlineSession;
+  const signedOut = useRef(false); // déconnexion volontaire : effacer la copie locale
   const [loading, setLoading] = useState(isSupabaseConfigured);
 
   useEffect(() => {
     if (!isSupabaseConfigured) return;
-    supabase.auth.getSession().then(({ data }) => {
+    supabase.auth.getSession().then(({ data, error }) => {
       setSession(data.session);
+      if (!data.session && (!navigator.onLine || (error && isAuthRetryableFetchError(error)))) {
+        const last = readLastUser();
+        if (last && loadCache(last.id)) {
+          setOfflineSession({ user: { id: last.id, email: last.email } } as unknown as Session);
+        }
+      }
       setLoading(false);
     });
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => {
+    const { data: sub } = supabase.auth.onAuthStateChange((event, s) => {
+      if (event === 'SIGNED_OUT') {
+        signedOut.current = true;
+        setOfflineSession(null);
+      }
+      if (s) {
+        signedOut.current = false;
+        setOfflineSession(null);
+        saveLastUser({ id: s.user.id, email: s.user.email ?? '' });
+      }
       setSession(s);
     });
-    return () => sub.subscription.unsubscribe();
+    // Retour du réseau en mode hors ligne : redemander la session (déclenche le renouvellement).
+    const onOnline = () => {
+      void supabase.auth.getSession().then(({ data }) => data.session && setSession(data.session));
+    };
+    window.addEventListener('online', onOnline);
+    return () => {
+      sub.subscription.unsubscribe();
+      window.removeEventListener('online', onOnline);
+    };
   }, []);
 
   // Une fois connecté : charge les données du compte, puis synchronise chaque modification.
@@ -58,7 +88,7 @@ export default function App() {
       return;
     }
     let cancelled = false;
-    let stop: (() => void) | undefined;
+    let stop: ((forget?: boolean) => void) | undefined;
     setDataState('loading');
     startSync(userId).then(
       (fn) => {
@@ -72,7 +102,7 @@ export default function App() {
     );
     return () => {
       cancelled = true;
-      stop?.();
+      stop?.(signedOut.current);
     };
   }, [userId, attempt]);
 
@@ -93,7 +123,11 @@ export default function App() {
     return (
       <div style={{ padding: 32, fontFamily: 'sans-serif' }}>
         <p>Impossible de charger tes données.</p>
-        <p style={{ opacity: 0.7 }}>{dataState.error}</p>
+        <p style={{ opacity: 0.7 }}>
+          {navigator.onLine
+            ? dataState.error
+            : "Pas de connexion, et pas encore de copie locale sur cet appareil : il faut s'être connecté une fois en ligne."}
+        </p>
         <button onClick={() => setAttempt((n) => n + 1)}>Réessayer</button>{' '}
         <button onClick={() => supabase.auth.signOut()}>Se déconnecter</button>
       </div>

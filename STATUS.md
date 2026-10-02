@@ -73,7 +73,25 @@ Liste d'améliorations de l'utilisateur ; case « Google Calendar » déjà coch
   - Vérifié en mode démo (desktop + cadre 390 px) : partage, saisie rapide, remontée par tâche,
     recherche, archives. **Non testé** : pastille et raccourcis/partage (nécessitent la PWA
     installée en ligne).
-- **Reste du backlog** : partie 4 (cache local + hors ligne, flux .ics, temps réel) ; balayage
+- Commité et déployé : `99a439a`.
+- **Mode hors ligne (partie 4, 1er chantier) — fait, NON commité au moment d'écrire** :
+  - `lib/localCache.ts` : copie locale (localStorage, par compte) des données + préférences, de
+    la file d'envoi, et du dernier compte connecté.
+  - `sync.ts` : avec une copie locale, `startSync` affiche aussitôt les données puis envoie la
+    file héritée et relit le serveur en arrière-plan (démarrage instantané) ; sans copie,
+    comportement d'avant. File réécrite en local à chaque changement et après chaque envoi.
+    Retour du réseau : envoi puis relecture. Tâche rattachée à un lot supprimé ailleurs (erreur
+    23503) : abandonnée avec un toast, pour ne pas bloquer la file.
+  - `App.tsx` : hors ligne avec un jeton expiré, Supabase ne rend pas de session → on rouvre le
+    dernier compte sur sa copie locale (`offlineSession`) ; le vrai jeton revient au retour du
+    réseau. Déconnexion volontaire = copie des données effacée (file gardée).
+  - Service worker : polices Google mises en cache (`runtimeCaching` dans `vite.config.ts`).
+  - Testé avec un faux Supabase en mémoire (16 vérifications, scénarios coupure / réouverture
+    hors ligne / retour réseau / modif sur autre appareil / déconnexion). **Pas testé en vrai** :
+    la réouverture hors ligne avec jeton expiré (dépend du comportement réel de Supabase).
+- **Décision** : flux .ics abandonné au profit d'une synchro Google Calendar dans les deux sens
+  (chantier dédié). Reste aussi la synchro temps réel.
+- **Reste du backlog** : synchro Google Calendar dans les deux sens, synchro temps réel ; balayage
   toujours en attente d'affinage.
 - **Import des cours mis de côté dans `git stash`** (« import cours (non testé) ») pour ne pas
   bloquer la synchro : `git stash pop` pour le reprendre (conflits probables, mineurs, sur
