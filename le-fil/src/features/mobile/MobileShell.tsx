@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from '../../lib/supabase';
 import { DAYS_SHORT, MONTHS_SHORT } from '../../lib/format';
@@ -58,6 +58,35 @@ export default function MobileShell({ session }: { session: Session }) {
   const [calMonth, setCalMonth] = useState(() => ({ year: new Date().getFullYear(), month: new Date().getMonth() }));
   const [calDay, setCalDay] = useState(() => toDay(new Date()));
   const [calTall, setCalTall] = useState(false);
+
+  // Flèche retour du téléphone : chaque écran empilé (projet, lot, jour, compte) est une entrée
+  // d'historique ; popstate restaure l'état de vue au lieu de fermer l'appli.
+  const openLotId = useStore((s) => s.openLotId);
+  const lastKey = useRef('');
+  useEffect(() => {
+    const view = { screen, from, openProj, compte, lotId: openLotId };
+    const key = JSON.stringify(view);
+    if (key === lastKey.current) return;
+    const first = lastKey.current === '';
+    lastKey.current = key;
+    const deep = compte || screen === 'projet' || screen === 'lot' || screen === 'day';
+    if (first || !deep) history.replaceState(view, '');
+    else history.pushState(view, '');
+  }, [screen, from, openProj, compte, openLotId]);
+  useEffect(() => {
+    const onPop = (e: PopStateEvent) => {
+      const v = e.state as { screen: Screen; from: LotOrigin; openProj: ProjectKey | null; compte: boolean; lotId: string | null } | null;
+      if (!v) return;
+      lastKey.current = JSON.stringify(v);
+      setScreen(v.screen);
+      setFrom(v.from);
+      setOpenProj(v.openProj);
+      setCompte(v.compte);
+      openLotInStore(v.lotId);
+    };
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, [openLotInStore]);
 
   const now = useClock();
   const clock = `${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`;
