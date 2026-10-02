@@ -1,9 +1,41 @@
 # Le Fil — état d'avancement
 
-Dernière session : 2026-09-29 — traitement du backlog de retours utilisateur, puis chantier
+Dernière session : 2026-10-02 (voir section dédiée plus bas) ; précédente : 2026-09-29 — traitement du backlog de retours utilisateur, puis chantier
 « rdv/agenda » (horaire + lieu, vue journalière) implémenté en une fois. Appli en ligne, installée :
 https://martin-diraison.github.io/le-fil/ (déployée via GitHub Actions, connexion testée, PWA
 installée sur smartphone Samsung). **Code commité et poussé.**
+
+## Session du 2026-10-02 — retours utilisateur (tous commités et poussés, dernier commit `4e902ee`)
+Liste d'améliorations de l'utilisateur ; case « Google Calendar » déjà cochée. Fait :
+- **Flèche retour du téléphone** : chaque écran empilé mobile (projet, lot, vue jour, compte) est une
+  entrée d'historique (`MobileShell.tsx`, pushState/popstate) ; les changements d'onglet remplacent
+  l'entrée. À tester sur un vrai téléphone.
+- **Calendrier mobile** : swipe horizontal = mois suivant/précédent ; bouton compact/étendu retiré,
+  cases étendues seules (112 px, 8 intitulés), la grille remplit la hauteur jusqu'aux onglets.
+- **Vue jour mobile** : toucher un espace vide ouvre une feuille de création (lot ou tâche, heure
+  pré-remplie, lieu). `addLot`/`addTask` renvoient désormais l'id créé.
+- **Page lot mobile** : « terminer le lot » discret en bas de page et en deux temps ; « +1 j » et
+  « déplacer vers… » supprimés (le déplacement de projet reste possible sur desktop).
+- **Vues jour (mobile + desktop)** : lot = bloc plein à la couleur du projet ; tâche = bloc clair à
+  liseré épais. **Vue semaine desktop** refaite en agenda (`WeekView.tsx`, 7 colonnes sur grille
+  horaire, bandeau « journée », glisser-déposer = changer le jour, l'heure ne change pas) ;
+  logique partagée avec la vue jour dans `calendar/dayEntries.ts`.
+- Pas testé à l'écran par l'utilisateur au moment de la rédaction (build OK seulement).
+
+## 🔶 Chantier en suspens : import des cours (NON commité, NON testé)
+Brancher l'app « organisation-cours » (dépôt `Claude_Code/portail_GPN`, autre projet Supabase
+« portail », tables `oc_*`) sur Le Fil : import **lecture seule**, projet « BTS GPN », UE → lot,
+séance → tâche (horaire d'après les créneaux, salle → lieu), séquences ignorées, séances placées
+seulement, « mes séances » par défaut (case « toutes »). Fichiers locaux non commités :
+`src/lib/cours.ts`, `CoursSection` dans `features/account/AccountPanel.tsx`, `sourceId` dans
+`types/models.ts` + `state/sync.ts`, `supabase/06_source_id.sql`, `schema.sql`, `.env.example`.
+**Avant de tester** : (1) exécuter `supabase/06_source_id.sql` (sinon TOUTE la synchro de Le Fil
+échoue) ; (2) `VITE_COURS_SUPABASE_URL` / `VITE_COURS_SUPABASE_ANON_KEY` dans `.env.local` (URL +
+clé publique du projet portail, visibles dans `js/supabase-client.js` de l'app cours) ; (3) mêmes
+variables dans le workflow de déploiement + variables du dépôt GitHub. Piège : « mes séances »
+dépend de `oc_session_enseignants` ; si les séances ne sont reliées qu'à des initiales, l'import
+trouve 0 séance. Vérifier aussi le calcul de date (semaine ISO + jour). Idées écartées : widget
+Android (nécessite une appli native/TWA, jugé trop coûteux pour l'instant).
 
 ## ⚠️ Action manuelle requise avant de rouvrir le compte réel
 Le chantier horaire/lieu ajoute des colonnes (`start_time`, `end_time`, `location`) sur `lots` et
