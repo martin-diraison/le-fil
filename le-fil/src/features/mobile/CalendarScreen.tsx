@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import { useStore } from '../../state/store';
 import { computeUrgency, type Lot, type Task } from '../../types/models';
 import { contrastText } from '../../lib/palette';
@@ -60,8 +61,25 @@ export default function CalendarScreen({
 
   const max = tall ? 8 : 3;
 
+  // Swipe horizontal = mois suivant/précédent (ignoré si le geste est surtout vertical).
+  const touch = useRef<{ x: number; y: number } | null>(null);
+
   return (
-    <div className="m__col">
+    <div
+      className="m__col"
+      onTouchStart={(e) => {
+        touch.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+      }}
+      onTouchEnd={(e) => {
+        const t = touch.current;
+        touch.current = null;
+        if (!t) return;
+        const dx = e.changedTouches[0].clientX - t.x;
+        const dy = e.changedTouches[0].clientY - t.y;
+        if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+        step(dx > 0 ? -1 : 1);
+      }}
+    >
       <div className="m__calBar">
         <button className="m__calNav" onClick={() => step(-1)} aria-label="mois précédent">
           ‹
