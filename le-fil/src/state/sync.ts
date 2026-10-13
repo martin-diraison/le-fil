@@ -1,6 +1,7 @@
 import { supabase } from '../lib/supabase';
 import type { CalMode, Lot, Project, SortMode, Task, ViewMode } from '../types/models';
 import { advanceRecurringLots } from '../lib/recurrence';
+import { requestGcalSync } from '../lib/gcal';
 import { NO_PROJECT, useStore, type SyncStatus } from './store';
 import {
   forgetUser,
@@ -333,6 +334,10 @@ export async function startSync(userId: string): Promise<(forget?: boolean) => v
     }
     flushing = true;
     let ok = false;
+    // Des projets/lots/tâches partent (pas seulement des préférences) → Google Agenda à suivre.
+    const sendsData =
+      qProjects.upserts.size + qProjects.deletes.size + qLots.upserts.size + qLots.deletes.size +
+        qTasks.upserts.size + qTasks.deletes.size > 0;
     try {
       // Ordre imposé par les clés étrangères : parents avant enfants, enfants avant parents à la suppression.
       await upsertGroup('projects', qProjects, toProject);
@@ -360,6 +365,7 @@ export async function startSync(userId: string): Promise<(forget?: boolean) => v
       }
       fails = 0;
       ok = true;
+      if (sendsData) requestGcalSync(userId);
       if (useStore.getState().syncError) useStore.setState({ syncError: null });
       if (!queued()) setStatus('ok');
     } catch (e) {
@@ -468,7 +474,8 @@ export async function startSync(userId: string): Promise<(forget?: boolean) => v
   // Premier passage : envoie la file héritée (s'il y en a), puis relit le serveur si on est
   // parti de la copie locale.
   if (!navigator.onLine) setStatus('offline');
-  else if (queued() || refreshAfterFlush) {
+  else requestGcalSync(userId); // rattrapage au démarrage (sans effet si Google n'est pas relié)
+  if (navigator.onLine && (queued() || refreshAfterFlush)) {
     if (queued()) setStatus('pending');
     schedule(0);
   }

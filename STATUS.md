@@ -1,9 +1,64 @@
 # Le Fil — état d'avancement
 
-Dernière session : 2026-10-02 (voir section dédiée plus bas) ; précédente : 2026-09-29 — traitement du backlog de retours utilisateur, puis chantier
+Dernière session : 2026-10-13 (voir section dédiée plus bas) ; avant : 2026-10-02 ; précédente : 2026-09-29 — traitement du backlog de retours utilisateur, puis chantier
 « rdv/agenda » (horaire + lieu, vue journalière) implémenté en une fois. Appli en ligne, installée :
 https://martin-diraison.github.io/le-fil/ (déployée via GitHub Actions, connexion testée, PWA
 installée sur smartphone Samsung). **Code commité et poussé.**
+
+## Lot 2 (2026-10-13) — Le Fil → Google Agenda, sens unique (✅ déployé, testé en réel)
+Choix utilisateur : envoi **côté serveur** (fonction Edge Supabase), **lots + tâches datés**,
+terminés **gardés avec « ✓ »**, dans l'**agenda principal** (Le Fil ne touche qu'à ses événements,
+marqués `extendedProperties.private.lefil=1`). Remplace l'idée du flux .ics.
+- `le-fil/supabase/06_google_agenda.sql` : table `le_fil.gcal_links` (jeton longue durée Google),
+  RLS sans politique + droits retirés à `authenticated` → lisible par la fonction seule.
+- `le-fil/supabase/functions/gcal/index.ts` (Deno) : actions `status` / `connect` (échange du code
+  OAuth, `redirect_uri=postmessage`) / `sync` / `disconnect` (retire les événements Le Fil + révoque).
+  Réconciliation complète à chaque appel : ids déterministes `lfl`/`lft` + uuid sans tirets (pas de
+  doublon, pas de table de correspondance), empreinte `h` pour ne renvoyer que ce qui change,
+  budget 100 s puis `partial` (l'appli relance). Événements : journée entière (fourchette
+  début→échéance) ou horaire sur le jour d'échéance (sans fin = 1 h), Europe/Paris, couleur Google
+  la plus proche du projet, RRULE pour les lots récurrents, rappels = défauts de l'agenda.
+  Tâche = « ↳ libellé · titre du lot ». Secrets : `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`.
+  Logique testée sous Node avec faux Supabase/Google (15 vérifications), pas encore en réel.
+- Appli : `src/lib/gcal.ts` (appels, popup Google Identity Services en flux « code », synchro
+  regroupée 4 s après chaque envoi réussi de données dans `sync.ts` + une au démarrage ; mémo
+  local « non relié » pour ne pas appeler la fonction pour rien) ; section « google agenda » dans
+  `AccountPanel.tsx` (relier / synchroniser maintenant / délier en deux temps, dernière synchro,
+  dernière erreur). L'ID client Google est fourni par la fonction (`status`) : aucune variable de
+  build ni réglage GitHub à ajouter.
+- **Étapes manuelles** : exécuter `06_google_agenda.sql` ; projet Google Cloud (API Calendar,
+  écran de consentement **publié en production** sinon l'accès expire au bout de 7 jours, client
+  OAuth « application Web » avec origines `https://martin-diraison.github.io` et
+  `http://localhost:5173`) ; secrets dans Supabase ; déploiement
+  `npx supabase functions deploy gcal --project-ref <ref> --use-api` (après `npx supabase login`).
+- **Fait le 2026-10-13** : SQL exécuté, projet Google Cloud « Le Fil » (écran de consentement
+  publié en production, client Web « Le Fil – web »), secrets posés, fonction déployée
+  (`--use-api`, CLI connecté sur le PC de l'utilisateur). Liaison faite depuis localhost:5173 :
+  10 événements créés (2 lots, 8 tâches), visibles dans Google Agenda puis sur Android (Calendrier
+  Samsung). L'appli en ligne n'aura la section/le déclenchement qu'après le push.
+- Redéployer la fonction après modification : `cd le-fil && npx supabase functions deploy gcal
+  --project-ref <ref> --use-api`.
+
+## Session du 2026-10-13 — retours des tests téléphone, lot 1 (petits réglages)
+Retours : synchro PC → Android OK ; mode avion Android testé ; réouverture hors ligne > 1 h et
+pastille **pas encore testées**. Fait (build OK, vérifié en mode démo) :
+- **Raccourci « Nouveau lot » de l'icône retiré** (ouvrait le Fil sans saisie, jugé inutile).
+  Le partage Android vers Le Fil est gardé (`share_target`, `launchIntent.ts` simplifié).
+- **« Synchro en échec » sur PC resté en ligne** (cause non identifiée, probablement sortie de
+  veille : réseau pas encore revenu ou jeton expiré). `sync.ts` : erreur réseau (fetch impossible)
+  → « hors ligne » + nouvelles tentatives espacées (5 s × n, max 1 min) ; « JWT/401 » →
+  `refreshSession()` avant la tentative suivante ; « synchro en échec » + toast seulement après
+  3 échecs consécutifs. Le dernier message d'erreur est dans `syncError` (store) et s'affiche au
+  survol de l'indicateur (desktop + mobile) : à relever si le problème revient.
+- **Bouton « tout afficher »** (desktop, colonne projets, au-dessus de « sans projet ») : coche
+  tous les projets + sans projet (`selectAll`) ; recliquer vide la sélection.
+- **Calendrier sans aucun filtre** (desktop mois/semaine/jour + mobile) : ni sélection, ni
+  « retard uniquement », ni recherche ; **archives comprises** (tout ce qui est daté). Seul le
+  bouton « tâches » agit. `buildDayEntries` n'a plus de paramètre `search`.
+- **Calendrier toujours ouvert en mode mois** au démarrage (`calMode` forcé à `mois` dans
+  `startSync`, le dernier mode choisi n'est plus rétabli).
+- Ensuite (décidé) : synchro **Le Fil → Google Calendar, sens unique** ; puis import des cours.
+  Temps réel et balayage : secondaires.
 
 ## Session du 2026-10-02 — retours utilisateur (tous commités et poussés, dernier commit `4e902ee`)
 Liste d'améliorations de l'utilisateur ; case « Google Calendar » déjà cochée. Fait :
@@ -74,7 +129,7 @@ Liste d'améliorations de l'utilisateur ; case « Google Calendar » déjà coch
     recherche, archives. **Non testé** : pastille et raccourcis/partage (nécessitent la PWA
     installée en ligne).
 - Commité et déployé : `99a439a`.
-- **Mode hors ligne (partie 4, 1er chantier) — fait, NON commité au moment d'écrire** :
+- **Mode hors ligne (partie 4, 1er chantier) — fait, commité et déployé (`bb4a71b`)** :
   - `lib/localCache.ts` : copie locale (localStorage, par compte) des données + préférences, de
     la file d'envoi, et du dernier compte connecté.
   - `sync.ts` : avec une copie locale, `startSync` affiche aussitôt les données puis envoie la

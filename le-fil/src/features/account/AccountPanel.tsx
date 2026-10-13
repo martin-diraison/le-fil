@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from '../../lib/supabase';
 import { useStore } from '../../state/store';
+import { gcalConnect, gcalDisconnect, gcalStatus, gcalSyncNow, loadGoogleScript, type GcalStatus } from '../../lib/gcal';
 import './AccountDrawer.css';
 
 function deviceName(): string {
@@ -186,6 +187,8 @@ export default function AccountPanel({ session }: { session: Session }) {
         {othersMsg && <span className="acctDrawer__stats">{othersMsg}</span>}
       </div>
 
+      <GoogleSection userId={session.user.id} />
+
       <div className="acctDrawer__section">
         <span className="acctDrawer__sectionTitle">données</span>
         <span className="acctDrawer__hint">Projets, lots et tâches dans un fichier JSON lisible.</span>
@@ -199,6 +202,105 @@ export default function AccountPanel({ session }: { session: Session }) {
           se déconnecter
         </button>
       </div>
+    </div>
+  );
+}
+
+const SYNC_TIME = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+
+/** Google Agenda : relier / délier, état de la dernière synchro (sens unique Le Fil → Google). */
+function GoogleSection({ userId }: { userId: string }) {
+  const [status, setStatus] = useState<GcalStatus | null>(null);
+  const [google, setGoogle] = useState<Awaited<ReturnType<typeof loadGoogleScript>> | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState('');
+  const [err, setErr] = useState('');
+  const [confirmUnlink, setConfirmUnlink] = useState(false);
+
+  // État + script Google chargés à l'avance : la fenêtre d'autorisation doit s'ouvrir dans le clic.
+  useEffect(() => {
+    let alive = true;
+    gcalStatus(userId)
+      .then((s) => {
+        if (!alive) return;
+        setStatus(s);
+        if (!s.linked) return loadGoogleScript().then((g) => alive && setGoogle(g));
+      })
+      .catch((e) => alive && setErr(e.message));
+    return () => {
+      alive = false;
+    };
+  }, [userId]);
+
+  async function act(fn: () => Promise<string>) {
+    setBusy(true);
+    setErr('');
+    setMsg('');
+    try {
+      setMsg(await fn());
+      setStatus(await gcalStatus(userId));
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const connect = () =>
+    status && google && act(async () => {
+      await gcalConnect(google, status.clientId, userId);
+      return 'agenda relié : les lots et tâches datés y sont envoyés';
+    });
+  const syncNow = () =>
+    act(async () => {
+      const r = await gcalSyncNow(userId);
+      return r.partial ? 'synchro en cours (beaucoup d\u2019événements), elle se poursuit…' : 'agenda à jour';
+    });
+  const unlink = () => {
+    if (!confirmUnlink) return setConfirmUnlink(true);
+    setConfirmUnlink(false);
+    act(async () => {
+      const n = await gcalDisconnect(userId);
+      loadGoogleScript().then(setGoogle).catch(() => {});
+      return `agenda délié · ${n} événement${n > 1 ? 's' : ''} retiré${n > 1 ? 's' : ''} de Google`;
+    });
+  };
+
+  return (
+    <div className="acctDrawer__section">
+      <span className="acctDrawer__sectionTitle">google agenda</span>
+      <span className="acctDrawer__hint">
+        Sens unique : les lots et tâches datés sont recopiés dans ton agenda Google principal (terminés
+        marqués ✓). Les modifications faites dans Google ne reviennent pas dans Le Fil.
+      </span>
+      {!status && !err && <span className="acctDrawer__stats">…</span>}
+      {status?.linked && (
+        <>
+          <span className="acctDrawer__stats">
+            relié · {status.lastSync ? `dernière synchro ${SYNC_TIME.format(new Date(status.lastSync))}` : 'pas encore synchronisé'}
+          </span>
+          {status.lastError && <div className="acctDrawer__msg acctDrawer__msg--error">{status.lastError}</div>}
+          <button className="acctDrawer__btn" onClick={syncNow} disabled={busy}>
+            synchroniser maintenant
+          </button>
+          <button
+            className="acctDrawer__btn acctDrawer__btn--danger"
+            onClick={unlink}
+            onBlur={() => setConfirmUnlink(false)}
+            disabled={busy}
+          >
+            {confirmUnlink ? 'confirmer : retirer les événements Le Fil de Google' : 'délier google agenda'}
+          </button>
+        </>
+      )}
+      {status && !status.linked && (
+        <button className="acctDrawer__btn acctDrawer__btn--primary" onClick={connect} disabled={busy || !google}>
+          relier google agenda
+        </button>
+      )}
+      {busy && <span className="acctDrawer__stats">…</span>}
+      {msg && <div className="acctDrawer__msg acctDrawer__msg--ok">{msg}</div>}
+      {err && <div className="acctDrawer__msg acctDrawer__msg--error">{err}</div>}
     </div>
   );
 }
