@@ -6,6 +6,7 @@ import { formatTimeRange } from '../../lib/format';
 import { MONTHS_LONG, WEEK_HEAD, isDayInRange, mondayOf, shiftDays, startOfDay, toDay } from '../../lib/dates';
 import { projectColor, shortLabel } from './labels';
 import type { MobileNav } from './MobileShell';
+import { itemColor } from '../../lib/coursColors';
 
 // Calendrier mobile (README §4 « Calendrier ») : grille du mois. Taper une case ouvre la vue
 // journalière (DayScreen) — cadrage utilisateur du 2026-09-29.
@@ -31,7 +32,7 @@ export default function CalendarScreen({
 
   const todayKey = toDay(startOfDay());
   const lotById = new Map(lots.map((l) => [l.id, l]));
-  const colorOf = (l: Lot) => projectColor(projects, l.projectId);
+  const colorOf = (l: Lot) => itemColor(projectColor(projects, l.projectId), l);
 
   // Sur plusieurs jours : le lot/la tâche reste visible dans chaque case de la fourchette, pas
   // seulement à l'échéance (décision utilisateur, retour du 2026-09-29).
@@ -119,7 +120,7 @@ export default function CalendarScreen({
                     };
                   }),
                   ...tasksOn(key).map((t) => {
-                    const col = colorOf(lotById.get(t.lotId)!);
+                    const col = itemColor(colorOf(lotById.get(t.lotId)!), t);
                     return {
                       id: t.id,
                       task: true,

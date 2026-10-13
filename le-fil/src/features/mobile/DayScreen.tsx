@@ -6,6 +6,7 @@ import { DAY_GRID_HOURS, layoutDayGrid, type DayGridEntry } from '../../lib/dayG
 import { contrastText } from '../../lib/palette';
 import { projectColor } from './labels';
 import type { MobileNav } from './MobileShell';
+import { itemColor } from '../../lib/coursColors';
 
 // Vue journalière mobile (grille horaire type agenda, façon widget calendrier smartphone) —
 // cadrage utilisateur du 2026-09-29 : ouverte en tapant une case du mois, swipe gauche/droite
@@ -166,7 +167,7 @@ export default function DayScreen({
       startTime: lot.startTime ?? '',
       endTime: lot.endTime,
       label: lot.title,
-      color: projectColor(projects, lot.projectId),
+      color: itemColor(projectColor(projects, lot.projectId), lot),
       done: lot.done,
       lotId: lot.id,
       kind: 'lot',
@@ -182,7 +183,7 @@ export default function DayScreen({
           startTime: t.startTime ?? '',
           endTime: t.endTime,
           label: t.label,
-          color: projectColor(projects, lot.projectId),
+          color: itemColor(projectColor(projects, lot.projectId), t),
           done: t.done,
           lotId: lot.id,
           kind: 'task',

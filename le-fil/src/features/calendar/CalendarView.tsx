@@ -7,6 +7,7 @@ import { MONTHS_LONG, WEEK_HEAD, daysInRange, mondayOf, shiftDays, startOfDay, t
 import DayView from './DayView';
 import WeekView from './WeekView';
 import './CalendarView.css';
+import { itemColor } from '../../lib/coursColors';
 
 // Vue Calendrier desktop — README §3.5, prototype `buildCell()` / `dropOn()`.
 
@@ -83,7 +84,7 @@ export default function CalendarView() {
     // Les lots d'abord, puis les tâches, dans chaque case.
     for (const lot of lots) {
       if (!lot.due) continue;
-      const col = colorOf(lot.projectId);
+      const col = itemColor(colorOf(lot.projectId), lot);
       const open = openLotId === lot.id;
       const item: Item = {
         key: lot.id,
@@ -103,9 +104,10 @@ export default function CalendarView() {
     }
     if (showTasks) {
       for (const lot of lots) {
-        const col = colorOf(lot.projectId);
+        const projCol = colorOf(lot.projectId);
         for (const t of tasks) {
           if (t.lotId !== lot.id || !t.due) continue;
+          const col = itemColor(projCol, t);
           const late = !t.done && t.due < todayKey;
           const item: Item = {
             key: t.id,

@@ -29,18 +29,23 @@ async function call<T>(action: string, extra: Record<string, unknown> = {}): Pro
 }
 
 // Mémo local « agenda relié ? » par compte : évite d'appeler la fonction après chaque modif quand
-// Google n'est pas relié. Inconnu (premier lancement sur cet appareil) = on essaie une fois.
+// Google n'est pas relié. Le lien se fait depuis un seul appareil : un « non relié » mémorisé
+// ailleurs deviendrait faux sans que cet appareil le sache. Il n'est donc cru qu'une heure, et
+// chaque démarrage revérifie (requestGcalSync(…, true)). Inconnu = on essaie.
 const linkKey = (userId: string) => `lefil:gcal:${userId}`;
+const UNLINKED_TTL = 60 * 60_000;
 function rememberLinked(userId: string, linked: boolean) {
   try {
-    localStorage.setItem(linkKey(userId), linked ? '1' : '0');
+    localStorage.setItem(linkKey(userId), linked ? '1' : `0:${Date.now()}`);
   } catch {
     /* stockage indisponible : on appellera la fonction pour rien, sans gravité */
   }
 }
 function knownUnlinked(userId: string): boolean {
   try {
-    return localStorage.getItem(linkKey(userId)) === '0';
+    const v = localStorage.getItem(linkKey(userId)) ?? '';
+    // Ancien format « 0 » sans date : considéré comme périmé.
+    return v.startsWith('0:') && Date.now() - Number(v.slice(2)) < UNLINKED_TTL;
   } catch {
     return false;
   }
@@ -70,9 +75,10 @@ let timer: ReturnType<typeof setTimeout> | undefined;
 let running = false;
 let again = false;
 
-/** À appeler après chaque envoi réussi de données à Supabase : synchro Google regroupée. */
-export function requestGcalSync(userId: string) {
-  if (knownUnlinked(userId)) return;
+/** À appeler après chaque envoi réussi de données à Supabase : synchro Google regroupée.
+ * `force` : ignore le mémo « non relié » (démarrage de l'appli). */
+export function requestGcalSync(userId: string, force = false) {
+  if (!force && knownUnlinked(userId)) return;
   clearTimeout(timer);
   timer = setTimeout(() => void run(userId), SYNC_DELAY);
 }

@@ -26,7 +26,17 @@ installée sur smartphone Samsung). **Code commité et poussé.**
   30 min appli visible ; seulement si l'appareil est connecté à l'app cours. Préférences appareil
   `lefil:cours:all` / `lefil:cours:last`. Ids des éléments importés **déterministes** (SHA-256 du
   compte + source_id) pour que deux appareils qui importent en même temps ne se bloquent pas.
-- ✅ Affichage testé sur téléphone. À tester : import automatique (déplacer une séance côté cours).
+- ✅ Affichage testé sur téléphone ; import auto OK (réunion déplacée → Le Fil → Google web ; le
+  calendrier Android suit avec retard, c'est sa propre synchro).
+- **Couleurs par semestre** (code de l'app cours : S1 `#3a6ea5`, S2 `#c08a12`, S3 `#b0423f`,
+  S4 `#41874f`, `lib/coursColors.ts`) : source_id des séances `cours:seance:GPN1.S1:<id>` (semestre
+  de l'UE), périodes d'une classe = semestre de la séance la plus proche, commun/réunions gris.
+  Le Fil : calendriers, Fil, Liste (lot de classe = semestre de sa prochaine séance). Google :
+  S1 Myrtille 9, S2 Banane 5, S3 Tomate 11, S4 Basilic 10, sinon Graphite 8 (choisies à la main).
+  Titre Google des séances : « 8h15 UE 1.1 · titre » (heure lisible en vue mois Android).
+  Import : tâches retrouvées par sorte + id (`sameItem`), donc promo/semestre peuvent changer.
+- Synchro Google : le mémo local « non relié » (`lefil:gcal:<user>`) n'est cru qu'1 h et le
+  démarrage revérifie (`requestGcalSync(userId, true)`).
 
 ## Liste desktop réorganisée (2026-10-13)
 

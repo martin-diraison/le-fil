@@ -64,6 +64,18 @@ async function stableId(userId: string, src: string): Promise<string> {
   return `${h.slice(0, 8)}-${h.slice(8, 12)}-5${h.slice(13, 16)}-${((parseInt(h[16], 16) & 3) | 8).toString(16)}${h.slice(17, 20)}-${h.slice(20, 32)}`;
 }
 
+/** « Semestre 3 » → « S3 » (code couleur des semestres, voir lib/coursColors.ts). */
+function semesterTag(semester: string | null | undefined): string | null {
+  const m = /([1-4])/.exec(semester ?? '');
+  return m ? `S${m[1]}` : null;
+}
+
+/** Identité d'un élément importé sans sa promo/semestre : `cours:seance:GPN1.S1:x` → `seance:x`. */
+function sameItem(src: string): string {
+  const parts = src.split(':');
+  return `${parts[1]}:${parts.slice(3).join(':')}`;
+}
+
 /** « GPN1 » / « GPN2 » si une seule promo est concernée, sinon « tous ». */
 function promoKey(promos: (string | null | undefined)[]): string {
   const set = new Set(promos.filter((p): p is string => !!p));
@@ -81,7 +93,7 @@ type SessionRow = {
   end_slot: number | null;
   room: string | null;
 };
-type UeRow = { id: string; code: string; title: string; promotion: string };
+type UeRow = { id: string; code: string; title: string; promotion: string; semester: string | null };
 type WeekRow = { id: string; week_number: number; iso_year: number };
 type PeriodRow = { id: string; label: string; type: string; date_debut: string; date_fin: string; promotions: string[] };
 type MeetingRow = { id: string; date: string | null; lieu: string | null; sujets: string | null };
@@ -147,7 +159,7 @@ async function runImport(opts: { all: boolean }): Promise<ImportReport> {
   const ueIds = [...new Set(sessions.map((s) => s.ue_id).filter((x): x is string => !!x))];
   const weekIds = [...new Set(sessions.map((s) => s.week_id))];
   const [ues, weeks] = await Promise.all([
-    ueIds.length ? client.from('oc_ues').select('id,code,title,promotion').in('id', ueIds) : { data: [], error: null },
+    ueIds.length ? client.from('oc_ues').select('id,code,title,promotion,semester').in('id', ueIds) : { data: [], error: null },
     weekIds.length ? client.from('oc_weeks').select('id,week_number,iso_year').in('id', weekIds) : { data: [], error: null },
   ]);
   if (ues.error) throw new Error(ues.error.message);
@@ -218,9 +230,13 @@ async function runImport(opts: { all: boolean }): Promise<ImportReport> {
 
   function upsertTask(src: string, lotId: string, fields: Pick<Task, 'label' | 'startDate' | 'due' | 'startTime' | 'endTime' | 'location'>) {
     seenTasks.add(src);
-    const all = { lotId, ...fields };
-    const found = tasks.find((t) => t.sourceId === src);
+    const all = { lotId, ...fields, sourceId: src };
+    // Retrouvée par sorte + id seulement : si la promo ou le semestre change (ou à la première
+    // reprise d'un import plus ancien, sans semestre), la tâche est mise à jour, pas recréée.
+    const key = sameItem(src);
+    const found = tasks.find((t) => t.sourceId && sameItem(t.sourceId) === key);
     if (found) {
+      seenTasks.add(found.sourceId!);
       if ((Object.keys(all) as (keyof typeof all)[]).some((k) => found[k] !== all[k])) {
         tasks = tasks.map((t) => (t.id === found.id ? { ...t, ...all } : t));
         updated++;
@@ -229,7 +245,7 @@ async function runImport(opts: { all: boolean }): Promise<ImportReport> {
     }
     tasks = [
       ...tasks,
-      { id: ids.get(src)!, ...all, done: false, position: tasks.filter((t) => t.lotId === lotId).length, sourceId: src },
+      { id: ids.get(src)!, ...all, done: false, position: tasks.filter((t) => t.lotId === lotId).length },
     ];
     created++;
   }
@@ -241,6 +257,17 @@ async function runImport(opts: { all: boolean }): Promise<ImportReport> {
   type Item = { src: string; promo: string; fields: Pick<Task, 'label' | 'startDate' | 'due' | 'startTime' | 'endTime' | 'location'> };
   const items: Item[] = [];
   let sessionCount = 0;
+  const semesterDays: { promo: string; day: string; sem: string }[] = [];
+  const nearestSemester = (promo: string, day: string): string | null => {
+    const t = new Date(day).getTime();
+    let best: { sem: string; d: number } | null = null;
+    for (const x of semesterDays) {
+      if (x.promo !== promo) continue;
+      const d = Math.abs(new Date(x.day).getTime() - t);
+      if (!best || d < best.d) best = { sem: x.sem, d };
+    }
+    return best?.sem ?? null;
+  };
 
   for (const s of sessions) {
     const week = weekById.get(s.week_id);
@@ -252,9 +279,11 @@ async function runImport(opts: { all: boolean }): Promise<ImportReport> {
     const day = toDay(date);
     const ue = s.ue_id ? ueById.get(s.ue_id) : undefined;
     const promo = ue?.promotion ?? s.promotion;
+    const sem = semesterTag(ue?.semester);
     sessionCount++;
+    if (sem) semesterDays.push({ promo, day, sem });
     items.push({
-      src: `${SOURCE_PREFIX}seance:${promo}:${s.id}`,
+      src: `${SOURCE_PREFIX}seance:${sem ? `${promo}.${sem}` : promo}:${s.id}`,
       promo,
       fields: {
         label: ue ? `${ue.code} · ${s.title}` : s.title,
@@ -269,8 +298,10 @@ async function runImport(opts: { all: boolean }): Promise<ImportReport> {
   for (const p of periods) {
     const end = p.date_fin || p.date_debut;
     const promo = promoKey(p.promotions ?? []);
+    // Période d'une seule classe : semestre de la séance de cette classe la plus proche dans le temps.
+    const sem = promo === 'tous' ? null : nearestSemester(promo, p.date_debut);
     items.push({
-      src: `${SOURCE_PREFIX}periode:${promo}:${p.id}`,
+      src: `${SOURCE_PREFIX}periode:${sem ? `${promo}.${sem}` : promo}:${p.id}`,
       promo,
       fields: {
         label: p.label,

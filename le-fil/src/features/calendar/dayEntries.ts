@@ -2,6 +2,7 @@ import type { Lot, Task } from '../../types/models';
 import { isDayInRange } from '../../lib/dates';
 import { contrastText } from '../../lib/palette';
 import type { DayGridEntry } from '../../lib/dayGrid';
+import { itemColor } from '../../lib/coursColors';
 
 // Éléments d'un jour (lots et tâches) pour les grilles horaires desktop (vue jour, vue semaine) :
 // avec heure → grille ; sans heure → bandeau « toute la journée ».
@@ -31,7 +32,7 @@ export function buildDayEntries(opts: {
       startTime: lot.startTime ?? '',
       endTime: lot.endTime,
       label: lot.title,
-      color: colorOf(lot.projectId),
+      color: itemColor(colorOf(lot.projectId), lot),
       done: lot.done,
       lotId: lot.id,
       kind: 'lot',
@@ -46,7 +47,7 @@ export function buildDayEntries(opts: {
           startTime: t.startTime ?? '',
           endTime: t.endTime,
           label: t.label,
-          color: colorOf(lot.projectId),
+          color: itemColor(colorOf(lot.projectId), t),
           done: t.done,
           lotId: lot.id,
           kind: 'task',

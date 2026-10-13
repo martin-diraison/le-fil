@@ -485,7 +485,7 @@ export async function startSync(userId: string): Promise<(forget?: boolean) => v
   // Premier passage : envoie la file héritée (s'il y en a), puis relit le serveur si on est
   // parti de la copie locale.
   if (!navigator.onLine) setStatus('offline');
-  else requestGcalSync(userId); // rattrapage au démarrage (sans effet si Google n'est pas relié)
+  else requestGcalSync(userId, true); // rattrapage au démarrage, revérifie le lien (sans effet si Google n'est pas relié)
   if (navigator.onLine && (queued() || refreshAfterFlush)) {
     if (queued()) setStatus('pending');
     schedule(0);

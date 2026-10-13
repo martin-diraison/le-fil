@@ -241,14 +241,24 @@ function buildEvent(o: {
   };
 }
 
-// Éléments importés de l'app de cours (source_id `cours:<sorte>:<promo>:<id>`, voir src/lib/cours.ts) :
-// affichage simplifié — couleur par classe plutôt que par projet, titre court, pas de « ✓ » (ce
-// sont des rendez-vous, pas des choses à faire).
-const PROMO_COLOR: Record<string, string> = { GPN1: '9', GPN2: '6' }; // Myrtille, Mandarine ; sinon Graphite
+// Éléments importés de l'app de cours (source_id `cours:<sorte>:<promo>[.<semestre>]:<id>`, voir
+// src/lib/cours.ts) : affichage simplifié — couleur du semestre (code couleur de l'app de cours,
+// S1 bleu, S2 ambre, S3 rouge, S4 vert, choisies à la main parmi les 11 de Google : la plus proche
+// confondrait S2 et S3), gris pour ce qui concerne les deux classes ; titre court, heure en tête
+// pour les séances (lisible en vue mois sur Android) ; pas de « ✓ » (des rendez-vous, pas des
+// choses à faire).
+const SEMESTER_GCOLOR: Record<string, string> = { S1: '9', S2: '5', S3: '11', S4: '10' }; // Myrtille, Banane, Tomate, Basilic
 function coursInfo(sourceId: unknown): { kind: string; colorId: string } | null {
   const m = /^cours:([a-z]+):([^:]+):/.exec(String(sourceId ?? ''));
-  return m ? { kind: m[1], colorId: PROMO_COLOR[m[2]] ?? '8' } : null;
+  if (!m) return null;
+  const sem = /\.(S[1-4])$/.exec(m[2]);
+  return { kind: m[1], colorId: sem ? SEMESTER_GCOLOR[sem[1]] : '8' }; // sinon Graphite
 }
+/** « 08:15 » → « 8h15 », « 10:00 » → « 10h ». */
+const shortTime = (t: string) => {
+  const [h, m] = t.split(':');
+  return `${Number(h)}h${m === '00' ? '' : m}`;
+};
 
 /** Toutes les lignes d'une table (PostgREST plafonne chaque réponse à 1000 lignes). */
 async function fetchAll(db: SupabaseClient, table: string): Promise<Row[]> {
@@ -300,8 +310,10 @@ async function desiredEvents(db: SupabaseClient): Promise<Map<string, GEvent>> {
     const label = String(t.label).trim() || 'tâche';
     const ev = buildEvent({
       id: evId('lft', t.id),
-      // Cours : le libellé seul (« UE 1.1 · titre de la séance », nom de la période, « Réunion · … »).
-      summary: cours ? label : (t.done ? '✓ ' : '') + `↳ ${label} · ${String(l.title).trim()}`,
+      // Cours : le libellé seul (« 8h15 UE 1.1 · titre de la séance », nom de la période, « Réunion · … »).
+      summary: cours
+        ? (cours.kind === 'seance' && hhmm(t.start_time) ? `${shortTime(hhmm(t.start_time)!)} ` : '') + label
+        : (t.done ? '✓ ' : '') + `↳ ${label} · ${String(l.title).trim()}`,
       description: [`Lot : ${l.title}`, p ? `Projet : ${p.name}` : 'Sans projet'].join('\n'),
       location: String(t.location ?? ''),
       startDate: (t.start_date as string) ?? null,

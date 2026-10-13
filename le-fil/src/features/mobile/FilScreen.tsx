@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { lotMatches, useStore } from '../../state/store';
 import { isArchived, type Lot, type Urgency } from '../../types/models';
 import { URGENCY_GROUPS, byFocus, focusByLot } from '../../lib/urgencyGroups';
+import { lotColor } from '../../lib/coursColors';
 import { DoneBox, DraftBar } from './parts';
 import { lotMeta, projectColor, projectName, taskFocusLabel } from './labels';
 import type { MobileNav } from './MobileShell';
@@ -102,10 +103,14 @@ export default function FilScreen({ nav }: { nav: MobileNav }) {
               </button>
               {isOpen &&
                 g.lots.map((lot) => {
-                  const late = focus.get(lot.id)!.urgency === 'late';
+                  const f = focus.get(lot.id)!;
+                  const late = f.urgency === 'late';
                   return (
                     <div key={lot.id} className="m__row">
-                      <span className="m__edge" style={{ background: projectColor(projects, lot.projectId) }} />
+                      <span
+                        className="m__edge"
+                        style={{ background: lotColor(projectColor(projects, lot.projectId), lot, f.task) }}
+                      />
                       <DoneBox
                         done={lot.done}
                         late={late}

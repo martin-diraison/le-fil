@@ -4,6 +4,7 @@ import { isArchived, type Lot, type Task, type Urgency } from '../../types/model
 import { dateSubLabel, daysUntil, formatShortDate } from '../../lib/format';
 import { NO_PROJECT_COLOR } from '../../lib/palette';
 import { URGENCY_GROUPS, byFocus, focusByLot, type LotFocusInfo } from '../../lib/urgencyGroups';
+import { lotColor } from '../../lib/coursColors';
 import './LotList.css';
 
 // Liste desktop : les lots de la sélection, en sections. Deux rangements :
@@ -237,7 +238,7 @@ function LotRow({
 }) {
   const urgency: Urgency = focus.urgency;
   const late = urgency === 'late';
-  const color = project?.color ?? 'var(--text-tertiary)';
+  const color = lotColor(project?.color ?? 'var(--text-tertiary)', lot, focus.task);
   // Colonne date : l'échéance effective (celle de la tâche qui fait remonter le lot, le cas échéant).
   const dateColor = late ? (selected ? 'var(--red)' : 'var(--paper)') : selected ? 'var(--paper)' : 'var(--ink)';
   const subColor = late ? (selected ? 'var(--red)' : 'var(--paper)') : selected ? '#c9c9c4' : 'var(--text-secondary)';
@@ -275,7 +276,7 @@ function LotRow({
         {(showProject || focus.tasks.length > 0) && (
           <span className="lotRow__metaRow">
             {showProject && (
-              <span className="lotRow__project" style={{ color: selected ? '#c9c9c4' : color }}>
+              <span className="lotRow__project" style={{ color: selected ? '#c9c9c4' : (project?.color ?? 'var(--text-tertiary)') }}>
                 {project ? project.name : 'sans projet'}
               </span>
             )}
