@@ -27,7 +27,7 @@ export function focusByLot(lots: Lot[], tasks: Task[]): Map<string, LotFocusInfo
   for (const l of lots) {
     const lt = byLot.get(l.id) ?? [];
     const f = lotFocus(l, lt);
-    m.set(l.id, { ...f, urgency: computeUrgency({ done: l.done, due: f.due }), tasks: lt });
+    m.set(l.id, { ...f, urgency: computeUrgency({ done: l.done, due: f.due, sourceId: l.sourceId }), tasks: lt });
   }
   return m;
 }

@@ -241,6 +241,15 @@ function buildEvent(o: {
   };
 }
 
+// Éléments importés de l'app de cours (source_id `cours:<sorte>:<promo>:<id>`, voir src/lib/cours.ts) :
+// affichage simplifié — couleur par classe plutôt que par projet, titre court, pas de « ✓ » (ce
+// sont des rendez-vous, pas des choses à faire).
+const PROMO_COLOR: Record<string, string> = { GPN1: '9', GPN2: '6' }; // Myrtille, Mandarine ; sinon Graphite
+function coursInfo(sourceId: unknown): { kind: string; colorId: string } | null {
+  const m = /^cours:([a-z]+):([^:]+):/.exec(String(sourceId ?? ''));
+  return m ? { kind: m[1], colorId: PROMO_COLOR[m[2]] ?? '8' } : null;
+}
+
 /** Toutes les lignes d'une table (PostgREST plafonne chaque réponse à 1000 lignes). */
 async function fetchAll(db: SupabaseClient, table: string): Promise<Row[]> {
   const out: Row[] = [];
@@ -267,9 +276,10 @@ async function desiredEvents(db: SupabaseClient): Promise<Map<string, GEvent>> {
     if (!l.due) continue;
     const p = l.project_id ? projectById.get(l.project_id as string) : undefined;
     const body = String(l.body ?? '').slice(0, 4000);
+    const cours = coursInfo(l.source_id);
     const ev = buildEvent({
       id: evId('lfl', l.id),
-      summary: (l.done ? '✓ ' : '') + (String(l.title).trim() || 'sans titre'),
+      summary: (l.done && !cours ? '✓ ' : '') + (String(l.title).trim() || 'sans titre'),
       description: [p ? `Projet : ${p.name}` : 'Sans projet', body].filter(Boolean).join('\n\n'),
       location: String(l.location ?? ''),
       startDate: (l.start_date as string) ?? null,
@@ -277,7 +287,7 @@ async function desiredEvents(db: SupabaseClient): Promise<Map<string, GEvent>> {
       startTime: hhmm(l.start_time),
       endTime: hhmm(l.end_time),
       repeat: String(l.repeat ?? 'none'),
-      colorId: nearestColorId(p?.color as string | undefined),
+      colorId: cours?.colorId ?? nearestColorId(p?.color as string | undefined),
     });
     out.set(ev.id, ev);
   }
@@ -286,9 +296,12 @@ async function desiredEvents(db: SupabaseClient): Promise<Map<string, GEvent>> {
     const l = lotById.get(t.lot_id as string);
     if (!l) continue;
     const p = l.project_id ? projectById.get(l.project_id as string) : undefined;
+    const cours = coursInfo(t.source_id);
+    const label = String(t.label).trim() || 'tâche';
     const ev = buildEvent({
       id: evId('lft', t.id),
-      summary: (t.done ? '✓ ' : '') + `↳ ${String(t.label).trim() || 'tâche'} · ${String(l.title).trim()}`,
+      // Cours : le libellé seul (« UE 1.1 · titre de la séance », nom de la période, « Réunion · … »).
+      summary: cours ? label : (t.done ? '✓ ' : '') + `↳ ${label} · ${String(l.title).trim()}`,
       description: [`Lot : ${l.title}`, p ? `Projet : ${p.name}` : 'Sans projet'].join('\n'),
       location: String(t.location ?? ''),
       startDate: (t.start_date as string) ?? null,
@@ -296,7 +309,7 @@ async function desiredEvents(db: SupabaseClient): Promise<Map<string, GEvent>> {
       startTime: hhmm(t.start_time),
       endTime: hhmm(t.end_time),
       repeat: 'none',
-      colorId: nearestColorId(p?.color as string | undefined),
+      colorId: cours?.colorId ?? nearestColorId(p?.color as string | undefined),
     });
     out.set(ev.id, ev);
   }

@@ -13,6 +13,7 @@ export type Project = {
   name: string;
   color: string; // hex, choisi dans la palette (voir src/lib/palette.ts)
   position: number; // ordre manuel (glisser-déposer)
+  sourceId?: string | null; // identifiant dans une source externe (import cours) — null = créé à la main
 };
 
 /** Récurrence d'une échéance de lot (anniversaires, tâches périodiques…). */
@@ -35,6 +36,7 @@ export type Lot = {
   position: number | null; // ordre manuel dans le volet 2 (tri « manuel »)
   createdAt: string; // ISO
   updatedAt: string; // ISO
+  sourceId?: string | null; // voir Project.sourceId
 };
 
 export type Task = {
@@ -48,6 +50,7 @@ export type Task = {
   location: string; // lieu du rdv (texte libre, optionnel)
   done: boolean;
   position: number;
+  sourceId?: string | null; // voir Project.sourceId
 };
 
 export type SortMode = 'urgence' | 'récent' | 'manuel';
@@ -78,13 +81,25 @@ export type UserPrefs = {
  */
 export type Urgency = 'late' | 'today' | 'week' | 'month' | 'soon' | 'none' | 'done';
 
-export function computeUrgency(lot: Pick<Lot, 'done' | 'due'>, today: Date = new Date()): Urgency {
+/**
+ * Élément importé d'un agenda externe (séances, périodes, réunions de l'app de cours) : c'est un
+ * rendez-vous, pas une chose à faire — il n'est jamais « en retard », il est simplement passé.
+ */
+export function isAgenda(x: { sourceId?: string | null }): boolean {
+  return !!x.sourceId?.startsWith('cours:');
+}
+
+export function computeUrgency(
+  lot: Pick<Lot, 'done' | 'due'> & { sourceId?: string | null },
+  today: Date = new Date(),
+): Urgency {
   if (lot.done) return 'done';
-  if (!lot.due) return 'none';
+  // Lot d'agenda sans prochaine échéance (toutes ses séances sont passées) : terminé.
+  if (!lot.due) return isAgenda(lot) ? 'done' : 'none';
   const dueDate = new Date(lot.due + 'T00:00:00');
   const todayMidnight = new Date(today.getFullYear(), today.getMonth(), today.getDate());
   const diffDays = Math.round((dueDate.getTime() - todayMidnight.getTime()) / 86_400_000);
-  if (diffDays < 0) return 'late';
+  if (diffDays < 0) return isAgenda(lot) ? 'done' : 'late';
   if (diffDays === 0) return 'today';
   if (diffDays <= 7) return 'week';
   if (diffDays <= 30) return 'month';
@@ -109,12 +124,16 @@ export function compareUrgency(a: Urgency, b: Urgency): number {
  * Échéance « effective » d'un lot pour le Fil : la plus pressante entre la sienne et celle de ses
  * tâches ouvertes. `task` = la tâche qui fait remonter le lot (null si c'est l'échéance du lot).
  * Un lot sans date dont une tâche est due demain apparaît ainsi dans « 7 prochains jours ».
+ * Les séances importées déjà passées ne comptent pas (voir `isAgenda`) : c'est la prochaine qui
+ * fait remonter l'UE.
  */
-export function lotFocus(lot: Lot, lotTasks: Task[]): { due: string | null; task: Task | null } {
+export function lotFocus(lot: Lot, lotTasks: Task[], today: Date = new Date()): { due: string | null; task: Task | null } {
   if (lot.done) return { due: lot.due, task: null };
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
   let task: Task | null = null;
   for (const t of lotTasks) {
-    if (!t.done && t.due && (!task || t.due < task.due!)) task = t;
+    if (t.done || !t.due || (isAgenda(t) && t.due < todayStr)) continue;
+    if (!task || t.due < task.due!) task = t;
   }
   if (task && (!lot.due || task.due! < lot.due)) return { due: task.due, task };
   return { due: lot.due, task: null };

@@ -52,8 +52,15 @@ const fromProject = (r: Row): Project => ({
   name: r.name as string,
   color: r.color as string,
   position: r.position as number,
+  sourceId: (r.source_id as string | null) ?? null,
 });
-const toProject = (p: Project): Row => ({ id: p.id, name: p.name, color: p.color, position: p.position });
+const toProject = (p: Project): Row => ({
+  id: p.id,
+  name: p.name,
+  color: p.color,
+  position: p.position,
+  source_id: p.sourceId ?? null,
+});
 
 const fromLot = (r: Row): Lot => ({
   id: r.id as string,
@@ -71,6 +78,7 @@ const fromLot = (r: Row): Lot => ({
   position: (r.position as number | null) ?? null,
   createdAt: r.created_at as string,
   updatedAt: r.updated_at as string,
+  sourceId: (r.source_id as string | null) ?? null,
 });
 const toLot = (l: Lot): Row => ({
   id: l.id,
@@ -86,6 +94,7 @@ const toLot = (l: Lot): Row => ({
   done: l.done,
   position: l.position,
   created_at: l.createdAt,
+  source_id: l.sourceId ?? null,
 });
 
 const fromTask = (r: Row): Task => ({
@@ -99,6 +108,7 @@ const fromTask = (r: Row): Task => ({
   location: (r.location as string | null) ?? '',
   done: r.done as boolean,
   position: r.position as number,
+  sourceId: (r.source_id as string | null) ?? null,
 });
 const toTask = (t: Task): Row => ({
   id: t.id,
@@ -111,6 +121,7 @@ const toTask = (t: Task): Row => ({
   location: t.location,
   done: t.done,
   position: t.position,
+  source_id: t.sourceId ?? null,
 });
 
 // ------------------------------------------------------------ diff / file

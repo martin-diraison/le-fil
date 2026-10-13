@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useStore } from '../state/store';
-import { computeUrgency, lotFocus } from '../types/models';
+import { focusByLot } from './urgencyGroups';
 
 /**
  * Pastille sur l'icône de l'appli installée : nombre de lots en retard ou du jour (en tenant
@@ -13,9 +13,9 @@ export function useAppBadge() {
   useEffect(() => {
     if (!('setAppBadge' in navigator)) return;
     const update = () => {
+      const focus = focusByLot(lots, tasks);
       const count = lots.filter((l) => {
-        if (l.done) return false;
-        const u = computeUrgency({ done: false, due: lotFocus(l, tasks.filter((t) => t.lotId === l.id)).due });
+        const u = focus.get(l.id)!.urgency;
         return u === 'late' || u === 'today';
       }).length;
       const p = count ? navigator.setAppBadge(count) : navigator.clearAppBadge();

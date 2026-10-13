@@ -38,6 +38,8 @@ jobs:
         env:
           VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
+          VITE_COURS_SUPABASE_URL: ${{ vars.VITE_COURS_SUPABASE_URL }}
+          VITE_COURS_SUPABASE_ANON_KEY: ${{ vars.VITE_COURS_SUPABASE_ANON_KEY }}
 
       # SPA sur GitHub Pages : toute URL inconnue (ex. après un refresh) doit
       # quand même servir index.html pour laisser React Router... (ici notre

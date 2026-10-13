@@ -5,6 +5,24 @@ Dernière session : 2026-10-13 (voir section dédiée plus bas) ; avant : 2026-1
 https://martin-diraison.github.io/le-fil/ (déployée via GitHub Actions, connexion testée, PWA
 installée sur smartphone Samsung). **Code commité et poussé.**
 
+## Lot 3 (2026-10-13) — import des cours (✅ testé sur desktop, déployé)
+- App « organisation-cours » (dépôt `Claude_Code/portail_GPN`, projet Supabase « portail », tables
+  `oc_*`) lue en **lecture seule** par un second client Supabase (`src/lib/cours.ts`), connexion
+  avec le compte enseignant dans compte › « cours (BTS GPN) », bouton « synchroniser les cours ».
+- Organisation : projet **BTS GPN** → lots **GPN1**, **GPN2**, **Commun** ; tâches = séances placées
+  (« UE 1.1 · titre », horaire des créneaux, salle), périodes (types Semaine thématique, Examen/CCF,
+  Sortie/terrain, Événement établissement, Autre — pas vacances/stage/férié/absence ; fourchette
+  début→fin) et réunions (journée entière). « Mes séances » via `oc_session_enseignants`, case « toutes ».
+- `source_id` = `cours:<sorte>:<promo|tous>:<id>` sur projects/lots/tasks (`supabase/07_source_id.sql`,
+  exécuté). Ré-import idempotent, retire ce qui a disparu côté cours.
+- Éléments importés = rendez-vous : jamais « en retard » (`isAgenda` dans `types/models.ts`, utilisé
+  par `computeUrgency`/`lotFocus`) ; une UE/classe dont tout est passé = terminée.
+- Google (fonction `gcal` redéployée) : titre = libellé de la tâche, couleur par classe (GPN1
+  Myrtille 9, GPN2 Mandarine 6, commun Graphite 8), pas de « ✓ ».
+- Variables `VITE_COURS_SUPABASE_URL` / `VITE_COURS_SUPABASE_ANON_KEY` : `.env.local`, workflow
+  `deploy.yml` et variables du dépôt GitHub.
+- À tester : import depuis le téléphone ; rendu Google sur Android.
+
 ## Liste desktop réorganisée (2026-10-13)
 
 - Sections repliables par **échéance** (mêmes groupes que le Fil mobile, « terminés » replié) ou par
@@ -157,24 +175,8 @@ Liste d'améliorations de l'utilisateur ; case « Google Calendar » déjà coch
   (chantier dédié). Reste aussi la synchro temps réel.
 - **Reste du backlog** : synchro Google Calendar dans les deux sens, synchro temps réel ; balayage
   toujours en attente d'affinage.
-- **Import des cours mis de côté dans `git stash`** (« import cours (non testé) ») pour ne pas
-  bloquer la synchro : `git stash pop` pour le reprendre (conflits probables, mineurs, sur
+- ~~Import des cours mis de côté dans `git stash`~~ → repris et livré au lot 3 (2026-10-13). Ancienne note : `git stash pop` pour le reprendre (conflits probables, mineurs, sur
   `sync.ts` et `AccountPanel.tsx`).
-
-## 🔶 Chantier en suspens : import des cours (NON commité, NON testé)
-Brancher l'app « organisation-cours » (dépôt `Claude_Code/portail_GPN`, autre projet Supabase
-« portail », tables `oc_*`) sur Le Fil : import **lecture seule**, projet « BTS GPN », UE → lot,
-séance → tâche (horaire d'après les créneaux, salle → lieu), séquences ignorées, séances placées
-seulement, « mes séances » par défaut (case « toutes »). Fichiers locaux non commités :
-`src/lib/cours.ts`, `CoursSection` dans `features/account/AccountPanel.tsx`, `sourceId` dans
-`types/models.ts` + `state/sync.ts`, `supabase/06_source_id.sql`, `schema.sql`, `.env.example`.
-**Avant de tester** : (1) exécuter `supabase/06_source_id.sql` (sinon TOUTE la synchro de Le Fil
-échoue) ; (2) `VITE_COURS_SUPABASE_URL` / `VITE_COURS_SUPABASE_ANON_KEY` dans `.env.local` (URL +
-clé publique du projet portail, visibles dans `js/supabase-client.js` de l'app cours) ; (3) mêmes
-variables dans le workflow de déploiement + variables du dépôt GitHub. Piège : « mes séances »
-dépend de `oc_session_enseignants` ; si les séances ne sont reliées qu'à des initiales, l'import
-trouve 0 séance. Vérifier aussi le calcul de date (semaine ISO + jour). Idées écartées : widget
-Android (nécessite une appli native/TWA, jugé trop coûteux pour l'instant).
 
 ## ⚠️ Action manuelle requise avant de rouvrir le compte réel
 Le chantier horaire/lieu ajoute des colonnes (`start_time`, `end_time`, `location`) sur `lots` et

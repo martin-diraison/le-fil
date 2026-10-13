@@ -44,6 +44,7 @@ create table if not exists le_fil.tasks (
   start_time time, -- heure de début (optionnelle), rattachée au jour « due »
   end_time   time, -- heure de fin (optionnelle)
   location   text not null default '', -- lieu du rdv (texte libre, optionnel)
+  source_id  text, -- identifiant dans une source externe (import cours), voir 07_source_id.sql
   done       boolean not null default false,
   position   integer not null default 0
 );
@@ -126,3 +127,10 @@ grant usage on schema le_fil to authenticated;
 grant select, insert, update, delete on all tables in schema le_fil to authenticated;
 alter default privileges in schema le_fil
   grant select, insert, update, delete on tables to authenticated;
+
+-- Import des cours (voir 07_source_id.sql) : source_id sur projects/lots (+ index uniques).
+alter table le_fil.projects add column if not exists source_id text;
+alter table le_fil.lots     add column if not exists source_id text;
+create unique index if not exists projects_source_uq on le_fil.projects(user_id, source_id) where source_id is not null;
+create unique index if not exists lots_source_uq     on le_fil.lots(user_id, source_id)     where source_id is not null;
+create unique index if not exists tasks_source_uq    on le_fil.tasks(user_id, source_id)    where source_id is not null;

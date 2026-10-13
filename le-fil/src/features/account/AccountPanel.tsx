@@ -3,7 +3,104 @@ import type { Session } from '@supabase/supabase-js';
 import { supabase } from '../../lib/supabase';
 import { useStore } from '../../state/store';
 import { gcalConnect, gcalDisconnect, gcalStatus, gcalSyncNow, loadGoogleScript, type GcalStatus } from '../../lib/gcal';
+import { coursSignIn, coursSignOut, coursSignedInEmail, importCours, isCoursConfigured } from '../../lib/cours';
 import './AccountDrawer.css';
+
+/** Import des séances de l'app « organisation-cours » (autre projet Supabase, lecture seule). */
+function CoursSection() {
+  const [email, setEmail] = useState<string | null | undefined>(undefined); // undefined = chargement
+  const [mail, setMail] = useState('');
+  const [pwd, setPwd] = useState('');
+  const [all, setAll] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState('');
+  const [err, setErr] = useState('');
+
+  useEffect(() => {
+    void coursSignedInEmail().then(setEmail);
+  }, []);
+
+  async function connect() {
+    setBusy(true);
+    setErr('');
+    const e = await coursSignIn(mail.trim(), pwd);
+    setBusy(false);
+    if (e) return setErr(e);
+    setPwd('');
+    setEmail(mail.trim());
+  }
+
+  async function sync() {
+    setBusy(true);
+    setErr('');
+    setMsg('');
+    try {
+      const r = await importCours({ all });
+      setMsg(
+        `${r.sessions} séances, ${r.periods} périodes, ${r.meetings} réunions lues — ` +
+          `${r.created} ajout(s), ${r.updated} mise(s) à jour, ${r.removed} retrait(s)`,
+      );
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : String(e));
+    }
+    setBusy(false);
+  }
+
+  return (
+    <div className="acctDrawer__section">
+      <span className="acctDrawer__sectionTitle">cours (BTS GPN)</span>
+      <span className="acctDrawer__hint">
+        Importe de l’app « organisation cours », dans le projet BTS GPN : une UE = un lot, une séance placée = une
+        tâche, plus les semaines thématiques, examens, sorties, événements et tes réunions. Lecture seule : rien
+        n’est modifié côté cours. Dans Google Agenda, une couleur par classe.
+      </span>
+      {email === undefined ? null : email ? (
+        <>
+          <span className="acctDrawer__stats">connecté : {email}</span>
+          <label className="acctDrawer__hint">
+            <input type="checkbox" checked={all} onChange={(e) => setAll(e.target.checked)} /> toutes les séances
+            (pas seulement les miennes)
+          </label>
+          <button className="acctDrawer__btn acctDrawer__btn--primary" onClick={sync} disabled={busy}>
+            {busy ? 'synchronisation…' : 'synchroniser les cours'}
+          </button>
+          <button
+            className="acctDrawer__btn"
+            onClick={() => {
+              void coursSignOut();
+              setEmail(null);
+              setMsg('');
+            }}
+          >
+            se déconnecter des cours
+          </button>
+        </>
+      ) : (
+        <>
+          <label className="acctDrawer__field">
+            <span className="acctDrawer__fieldLabel">e-mail du compte cours</span>
+            <input type="email" autoComplete="off" value={mail} onChange={(e) => setMail(e.target.value)} />
+          </label>
+          <label className="acctDrawer__field">
+            <span className="acctDrawer__fieldLabel">mot de passe</span>
+            <input
+              type="password"
+              autoComplete="off"
+              value={pwd}
+              onChange={(e) => setPwd(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && connect()}
+            />
+          </label>
+          <button className="acctDrawer__btn acctDrawer__btn--primary" onClick={connect} disabled={busy || !mail || !pwd}>
+            se connecter aux cours
+          </button>
+        </>
+      )}
+      {err && <div className="acctDrawer__msg acctDrawer__msg--error">{err}</div>}
+      {msg && <div className="acctDrawer__msg acctDrawer__msg--ok">{msg}</div>}
+    </div>
+  );
+}
 
 function deviceName(): string {
   const ua = typeof navigator !== 'undefined' ? navigator.userAgent : '';
@@ -196,6 +293,8 @@ export default function AccountPanel({ session }: { session: Session }) {
           exporter mes données
         </button>
       </div>
+
+      {isCoursConfigured && <CoursSection />}
 
       <div className="acctDrawer__section" style={{ borderBottom: 'none' }}>
         <button className="acctDrawer__btn acctDrawer__btn--danger" onClick={() => supabase.auth.signOut()}>
