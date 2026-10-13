@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { filterLots, useStore } from '../../state/store';
+import { useStore } from '../../state/store';
 import { NO_PROJECT_COLOR } from '../../lib/palette';
 import { DAYS_SHORT, MONTHS_SHORT, formatTime } from '../../lib/format';
 import { shiftDays, toDay } from '../../lib/dates';
@@ -13,12 +13,11 @@ import './WeekView.css';
 // Cliquer l'en-tête d'un jour ouvre la vue journalière.
 
 export default function WeekView({ weekStart, todayKey }: { weekStart: Date; todayKey: string }) {
+  // Le calendrier montre toujours tout ce qui est daté (archives comprises) : ni sélection, ni
+  // « retard uniquement », ni recherche (décision utilisateur du 2026-10-13).
   const lots = useStore((s) => s.lots);
   const tasks = useStore((s) => s.tasks);
   const projects = useStore((s) => s.projects);
-  const selected = useStore((s) => s.selected);
-  const lateOnly = useStore((s) => s.lateOnly);
-  const search = useStore((s) => s.search);
   const showTasks = useStore((s) => s.showTasksInCalendar);
   const openLotId = useStore((s) => s.openLotId);
   const toggleOpenLot = useStore((s) => s.toggleOpenLot);
@@ -61,11 +60,10 @@ export default function WeekView({ weekStart, todayKey }: { weekStart: Date; tod
 
   const colorOf = (projectId: string | null) =>
     projectId ? (projects.find((p) => p.id === projectId)?.color ?? NO_PROJECT_COLOR) : NO_PROJECT_COLOR;
-  const vis = filterLots({ lots, tasks, selected, lateOnly, search, view: 'cal' });
 
   const days = Array.from({ length: 7 }, (_, i) => shiftDays(weekStart, i)).map((date) => {
     const key = toDay(date);
-    return { date, key, ...buildDayEntries({ day: key, lots: vis, tasks, showTasks, search, colorOf }) };
+    return { date, key, ...buildDayEntries({ day: key, lots, tasks, showTasks, colorOf }) };
   });
 
   // Ouvre la grille sur la matinée plutôt qu'à minuit.

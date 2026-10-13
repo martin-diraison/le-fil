@@ -7,7 +7,9 @@ const LABELS: Record<SyncStatus, { label: string; color: string }> = {
   error: { label: 'synchro en échec', color: 'var(--red)' },
 };
 
-/** Libellé + couleur de l'état réel de la synchro (alimenté par sync.ts). */
+/** Libellé + couleur de l'état réel de la synchro (alimenté par sync.ts), et l'erreur en infobulle. */
 export function useSyncLabel() {
-  return LABELS[useStore((s) => s.syncStatus)];
+  const status = useStore((s) => s.syncStatus);
+  const error = useStore((s) => s.syncError);
+  return { ...LABELS[status], title: error ?? undefined };
 }

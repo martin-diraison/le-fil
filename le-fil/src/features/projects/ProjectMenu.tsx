@@ -33,6 +33,7 @@ export default function ProjectMenu({ userEmail, onOpenAccount }: Props) {
   const toggleSelected = useStore((s) => s.toggleSelected);
   const selectOnly = useStore((s) => s.selectOnly);
   const clearSelected = useStore((s) => s.clearSelected);
+  const selectAll = useStore((s) => s.selectAll);
   const toggleLateOnly = useStore((s) => s.toggleLateOnly);
   const setSearch = useStore((s) => s.setSearch);
   const setProjectFilter = useStore((s) => s.setProjectFilter);
@@ -86,6 +87,7 @@ export default function ProjectMenu({ userEmail, onOpenAccount }: Props) {
   }
 
   const hasSel = selected.length > 0;
+  const allSel = selected.includes(NO_PROJECT) && projects.every((p) => selected.includes(p.id));
 
   return (
     <div className="menu">
@@ -107,6 +109,15 @@ export default function ProjectMenu({ userEmail, onOpenAccount }: Props) {
       >
         retard uniquement
         <span>{lateCount}</span>
+      </button>
+
+      {/* Raccourci : tous les projets + le sans-projet ; recliquer vide la sélection. */}
+      <button
+        className={`menu__noProjToggle ${allSel ? 'menu__noProjToggle--active' : ''}`}
+        onClick={allSel ? clearSelected : selectAll}
+      >
+        tout afficher
+        <span>{allSel ? '✕' : ''}</span>
       </button>
 
       <button
@@ -304,7 +315,7 @@ export default function ProjectMenu({ userEmail, onOpenAccount }: Props) {
             </button>
           </div>
         )}
-        <button className="menu__syncBtn" title="compte et synchronisation" onClick={() => setAcctOpen((v) => !v)}>
+        <button className="menu__syncBtn" title={sync.title ?? 'compte et synchronisation'} onClick={() => setAcctOpen((v) => !v)}>
           <span className="menu__syncDot" style={{ background: sync.color }} />
           <span className="menu__syncLabel" style={{ color: 'var(--text-secondary)' }}>
             {sync.label}

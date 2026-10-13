@@ -71,6 +71,8 @@ interface State {
   toastUndo: (() => void) | null;
   /** État réel de la synchro Supabase (alimenté par sync.ts) — 'ok' en mode démo. */
   syncStatus: SyncStatus;
+  /** Dernier message d'erreur de synchro (affiché au survol de l'indicateur), null si tout va bien. */
+  syncError: string | null;
 
   // Édition / interactions
   colorPickerProjectId: string | null;
@@ -101,6 +103,7 @@ interface State {
   /** Clic sur le nom : n'affiche que ce projet (remplace la sélection). */
   selectOnly: (key: ProjectKey) => void;
   clearSelected: () => void;
+  selectAll: () => void;
 
   // Actions — lots
   /**
@@ -211,6 +214,7 @@ export const useStore = create<State>((set, get) => ({
   toast: null,
   toastUndo: null,
   syncStatus: 'ok',
+  syncError: null,
 
   colorPickerProjectId: null,
   projectRenameDraft: '',
@@ -303,6 +307,8 @@ export const useStore = create<State>((set, get) => ({
   },
 
   clearSelected: () => set({ selected: [] }),
+  // Tous les projets + le sans-projet : la Liste montre tout.
+  selectAll: () => set((s) => ({ selected: [...s.projects.map((p) => p.id), NO_PROJECT] })),
 
   addLot: (rawTitle, projectKey, opts) => {
     const raw = rawTitle.trim();

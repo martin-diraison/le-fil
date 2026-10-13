@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { NO_PROJECT, taskMatchesSearch, useActiveLots, useStore } from '../../state/store';
+import { NO_PROJECT, useStore } from '../../state/store';
 import { DAYS_SHORT, MONTHS_SHORT, formatTime } from '../../lib/format';
 import { isDayInRange, parseDay, shiftDays, toDay } from '../../lib/dates';
 import { DAY_GRID_HOURS, layoutDayGrid, type DayGridEntry } from '../../lib/dayGrid';
@@ -144,11 +144,10 @@ export default function DayScreen({
   setDay: (d: string) => void;
   onBack: () => void;
 }) {
-  const lots = useActiveLots();
+  const lots = useStore((s) => s.lots); // calendrier : tout ce qui est daté, archives comprises
   const tasks = useStore((s) => s.tasks);
   const projects = useStore((s) => s.projects);
   const showTasks = useStore((s) => s.showTasksInCalendar);
-  const search = useStore((s) => s.search);
 
   const touchX = useRef<number | null>(null);
   const [addHour, setAddHour] = useState<number | null>(null);
@@ -178,7 +177,6 @@ export default function DayScreen({
     for (const lot of lots) {
       for (const t of tasks) {
         if (t.lotId !== lot.id || !t.due || !isDayInRange(t.startDate, t.due, day)) continue;
-        if (!taskMatchesSearch(lot, t, search)) continue;
         const entry: Entry = {
           id: t.id,
           startTime: t.startTime ?? '',

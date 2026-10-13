@@ -25,11 +25,8 @@ export default function DesktopShell({ session }: { session: Session }) {
   const setView = useStore((s) => s.setView);
 
   const [accountOpen, setAccountOpen] = useState(false);
-  // Partage reçu : le lot est déjà ouvert par addLot (volet 3). « Nouveau lot » : rien de plus à faire.
-  useLaunchIntent(
-    () => {},
-    () => {},
-  );
+  // Partage reçu : le lot est déjà ouvert par addLot (volet 3).
+  useLaunchIntent(() => {});
 
   const showV3 = !!openLotId;
 

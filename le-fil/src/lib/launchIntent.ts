@@ -1,14 +1,12 @@
-// Ouverture de l'appli par le raccourci « nouveau lot » de l'icône (?nouveau=1) ou par le menu
-// Partager d'Android (?share_title=…&share_text=…&share_url=…, voir share_target dans
+// Ouverture de l'appli par le menu Partager d'Android (?share_title=…&share_text=…&share_url=…, voir share_target dans
 // vite.config.ts). Lu une seule fois au chargement du module, puis retiré de l'adresse.
 
-export type LaunchIntent = { kind: 'new' } | { kind: 'share'; title: string; body: string } | null;
+export type LaunchIntent = { title: string; body: string } | null;
 
 const URL_RE = /https?:\/\/\S+/;
 
 function read(): LaunchIntent {
   const p = new URLSearchParams(window.location.search);
-  if (p.has('nouveau')) return { kind: 'new' };
   if (!p.has('share_title') && !p.has('share_text') && !p.has('share_url')) return null;
   const title = (p.get('share_title') ?? '').trim();
   const text = (p.get('share_text') ?? '').trim();
@@ -18,7 +16,7 @@ function read(): LaunchIntent {
   const firstLine = textNoUrl.split('\n')[0].trim();
   const lotTitle = title || firstLine || url || 'partage';
   const body = [textNoUrl === lotTitle ? '' : textNoUrl, url].filter(Boolean).join('\n');
-  return { kind: 'share', title: lotTitle, body };
+  return { title: lotTitle, body };
 }
 
 let pending: LaunchIntent = read();

@@ -56,8 +56,6 @@ export default function MobileShell({ session }: { session: Session }) {
   const [openProj, setOpenProj] = useState<ProjectKey | null>(null);
   const [acctOpen, setAcctOpen] = useState(false);
   const [compte, setCompte] = useState(false);
-  // Raccourci « nouveau lot » de l'icône : le Fil s'ouvre avec le champ de création actif.
-  const [focusDraft, setFocusDraft] = useState(false);
 
   // Calendrier : conservé en changeant d'onglet.
   const [calMonth, setCalMonth] = useState(() => ({ year: new Date().getFullYear(), month: new Date().getMonth() }));
@@ -116,10 +114,7 @@ export default function MobileShell({ session }: { session: Session }) {
     },
   };
 
-  useLaunchIntent(
-    (id) => nav.openLot(id, 'fil'),
-    () => setFocusDraft(true),
-  );
+  useLaunchIntent((id) => nav.openLot(id, 'fil'));
 
   const tabOn = (key: string) =>
     screen === key ||
@@ -133,7 +128,7 @@ export default function MobileShell({ session }: { session: Session }) {
         <span>
           {clock} · {todayShort}
         </span>
-        <button className="m__sync" onClick={() => setAcctOpen((v) => !v)}>
+        <button className="m__sync" title={sync.title} onClick={() => setAcctOpen((v) => !v)}>
           <span className="m__syncDot" style={{ background: sync.color }} />
           {sync.label}
         </button>
@@ -172,7 +167,7 @@ export default function MobileShell({ session }: { session: Session }) {
             </div>
           </div>
         ) : screen === 'fil' ? (
-          <FilScreen nav={nav} focusDraft={focusDraft} />
+          <FilScreen nav={nav} />
         ) : screen === 'projets' ? (
           <ProjectsScreen nav={nav} />
         ) : screen === 'projet' && openProj ? (

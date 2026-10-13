@@ -25,6 +25,11 @@ import {
 
 const FLUSH_DELAY = 600;
 const RETRY_DELAY = 5000;
+/** Échecs consécutifs avant d'afficher « synchro en échec » : un raté isolé (sortie de veille,
+ * Wi-Fi qui se reconnecte, jeton expiré) se règle tout seul à la tentative suivante. */
+const FAILS_BEFORE_ERROR = 3;
+/** Coupure réseau (fetch impossible) plutôt que refus du serveur. */
+const NETWORK_RE = /failed to fetch|networkerror|load failed|network request failed|timeout|aborted/i;
 /** Délai minimal entre deux rechargements au retour au premier plan. */
 const REFRESH_MIN_GAP = 30_000;
 /** Délai de regroupement avant de réécrire la copie locale des données. */
@@ -240,13 +245,14 @@ export async function startSync(userId: string): Promise<(forget?: boolean) => v
       openLotId: null,
       syncStatus: 'ok',
       ...cached.prefs,
+      calMode: 'mois', // le calendrier s'ouvre toujours sur le mois (le dernier mode n'est pas rétabli)
     });
   } else {
     const [data, pf] = await Promise.all([fetchData(), supabase.from('user_prefs').select('*').maybeSingle()]);
     if (pf.error) fail('Chargement des préférences', pf.error);
     const known = new Set<string>([NO_PROJECT, ...data.projects.map((p) => p.id)]);
     const p = pf.data as Row | null;
-    useStore.setState({ ...data, openLotId: null, syncStatus: 'ok', ...(p && prefsFromRow(p, known)) });
+    useStore.setState({ ...data, openLotId: null, syncStatus: 'ok', ...(p && prefsFromRow(p, known)), calMode: 'mois' });
     saveCache(userId, { ...data, prefs: pickPrefs(useStore.getState()) });
   }
 
@@ -261,7 +267,7 @@ export async function startSync(userId: string): Promise<(forget?: boolean) => v
   let flushing = false;
   let again = false;
   let stopped = false;
-  let failing = false; // évite de répéter le toast d'échec à chaque nouvelle tentative
+  let fails = 0; // échecs consécutifs ; le toast d'échec n'est montré qu'une fois par série
   let applyingRemote = false; // rechargement en cours d'application : pas à renvoyer au serveur
   let refreshAfterFlush = !!cached; // copie locale affichée : vérifier le serveur dès que possible
 
@@ -352,17 +358,26 @@ export async function startSync(userId: string): Promise<(forget?: boolean) => v
           fail('Préférences', error);
         }
       }
-      failing = false;
+      fails = 0;
       ok = true;
+      if (useStore.getState().syncError) useStore.setState({ syncError: null });
       if (!queued()) setStatus('ok');
     } catch (e) {
       console.error('Synchro Le Fil :', e);
+      const message = e instanceof Error ? e.message : String(e);
+      fails++;
+      useStore.setState({ syncError: message });
       const offline = !navigator.onLine;
-      setStatus(offline ? 'offline' : 'error');
-      if (!failing && !offline) useStore.getState().flash('Synchronisation impossible — nouvelle tentative…');
-      failing = true;
-      // Hors ligne : on attend l'événement « online » plutôt que de marteler le réseau.
-      if (!offline) schedule(RETRY_DELAY);
+      if (offline || NETWORK_RE.test(message)) setStatus('offline');
+      else if (fails >= FAILS_BEFORE_ERROR) {
+        if (useStore.getState().syncStatus !== 'error') useStore.getState().flash('Synchronisation impossible — nouvelle tentative…');
+        setStatus('error');
+      }
+      // Jeton expiré (PC sorti de veille) : on le renouvelle avant la tentative suivante.
+      if (/jwt|401/i.test(message)) await supabase.auth.refreshSession().catch(() => {});
+      // Hors ligne d'après le navigateur : on attend l'événement « online ». Sinon (réseau qui
+      // revient, serveur qui refuse) : nouvelle tentative, de plus en plus espacée (max 1 min).
+      if (!offline) schedule(Math.min(RETRY_DELAY * fails, 60_000));
     } finally {
       flushing = false;
       persistQueue(); // ce qui a été envoyé sort de la copie locale de la file

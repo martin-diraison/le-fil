@@ -21,7 +21,7 @@ const GROUPS: { key: Urgency; label: string; tone?: 'late' | 'muted' }[] = [
 // le reste se déplie au tap (état local, pas persisté — repart replié à chaque ouverture).
 const DEFAULT_OPEN: Urgency[] = ['late', 'today', 'week', 'month'];
 
-export default function FilScreen({ nav, focusDraft = false }: { nav: MobileNav; focusDraft?: boolean }) {
+export default function FilScreen({ nav }: { nav: MobileNav }) {
   const lots = useStore((s) => s.lots);
   const tasks = useStore((s) => s.tasks);
   const projects = useStore((s) => s.projects);
@@ -166,7 +166,6 @@ export default function FilScreen({ nav, focusDraft = false }: { nav: MobileNav;
         {groups.length === 0 && <div className="m__empty">{q ? 'rien trouvé' : 'rien ici'}</div>}
       </div>
       <DraftBar
-        autoFocus={focusDraft}
         placeholder="NOUVEAU LOT…"
         onCommit={(title) => {
           addLot(title, null);

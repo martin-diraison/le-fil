@@ -1,4 +1,3 @@
-import { taskMatchesSearch } from '../../state/store';
 import type { Lot, Task } from '../../types/models';
 import { isDayInRange } from '../../lib/dates';
 import { contrastText } from '../../lib/palette';
@@ -17,13 +16,12 @@ export type DayEntry = DayGridEntry & {
 
 export function buildDayEntries(opts: {
   day: string;
-  lots: Lot[]; // lots visibles (déjà filtrés)
+  lots: Lot[]; // tous les lots : le calendrier n'est jamais filtré
   tasks: Task[];
   showTasks: boolean;
-  search: string;
   colorOf: (projectId: string | null) => string;
 }): { timed: DayEntry[]; allDay: DayEntry[] } {
-  const { day, lots, tasks, showTasks, search, colorOf } = opts;
+  const { day, lots, tasks, showTasks, colorOf } = opts;
   const timed: DayEntry[] = [];
   const allDay: DayEntry[] = [];
   for (const lot of lots) {
@@ -43,7 +41,6 @@ export function buildDayEntries(opts: {
     for (const lot of lots) {
       for (const t of tasks) {
         if (t.lotId !== lot.id || !t.due || !isDayInRange(t.startDate, t.due, day)) continue;
-        if (!taskMatchesSearch(lot, t, search)) continue;
         (t.startTime ? timed : allDay).push({
           id: t.id,
           startTime: t.startTime ?? '',

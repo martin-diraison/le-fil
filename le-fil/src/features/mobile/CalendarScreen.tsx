@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { useActiveLots, useStore } from '../../state/store';
+import { useStore } from '../../state/store';
 import { computeUrgency, type Lot, type Task } from '../../types/models';
 import { contrastText } from '../../lib/palette';
 import { formatTimeRange } from '../../lib/format';
@@ -23,7 +23,7 @@ export default function CalendarScreen({
   setMonth: (m: Month) => void;
   day: string;
 }) {
-  const lots = useActiveLots();
+  const lots = useStore((s) => s.lots); // calendrier : tout ce qui est daté, archives comprises
   const tasks = useStore((s) => s.tasks);
   const projects = useStore((s) => s.projects);
   const showTasks = useStore((s) => s.showTasksInCalendar);

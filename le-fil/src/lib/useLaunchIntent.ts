@@ -2,12 +2,11 @@ import { useEffect } from 'react';
 import { useStore } from '../state/store';
 import { takeLaunchIntent } from './launchIntent';
 
-/** À appeler dans la coquille (données déjà chargées) : crée le lot partagé, ou signale « nouveau lot ». */
-export function useLaunchIntent(onShared: (lotId: string) => void, onNew: () => void) {
+/** À appeler dans la coquille (données déjà chargées) : crée le lot partagé. */
+export function useLaunchIntent(onShared: (lotId: string) => void) {
   useEffect(() => {
     const intent = takeLaunchIntent();
     if (!intent) return;
-    if (intent.kind === 'new') return onNew();
     const s = useStore.getState();
     const id = s.addLot(intent.title, null, { parse: false });
     if (!id) return;

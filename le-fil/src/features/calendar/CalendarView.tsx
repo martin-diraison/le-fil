@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { filterLots, taskMatchesSearch, useStore } from '../../state/store';
+import { useStore } from '../../state/store';
 import { computeUrgency } from '../../types/models';
 import { contrastText, NO_PROJECT_COLOR } from '../../lib/palette';
 import { formatShortDate, formatTimeRange, MONTHS_SHORT } from '../../lib/format';
@@ -26,12 +26,11 @@ type Item = {
 };
 
 export default function CalendarView() {
+  // Le calendrier montre toujours tout ce qui est daté (archives comprises) : ni sélection, ni
+  // « retard uniquement », ni recherche (décision utilisateur du 2026-10-13).
   const lots = useStore((s) => s.lots);
   const tasks = useStore((s) => s.tasks);
   const projects = useStore((s) => s.projects);
-  const selected = useStore((s) => s.selected);
-  const lateOnly = useStore((s) => s.lateOnly);
-  const search = useStore((s) => s.search);
   const openLotId = useStore((s) => s.openLotId);
   const calMode = useStore((s) => s.calMode);
   const calMonth = useStore((s) => s.calMonth);
@@ -75,7 +74,6 @@ export default function CalendarView() {
   const itemsByDay = useMemo(() => {
     const colorOf = (projectId: string | null) =>
       projectId ? projects.find((p) => p.id === projectId)?.color ?? NO_PROJECT_COLOR : NO_PROJECT_COLOR;
-    const vis = filterLots({ lots, tasks, selected, lateOnly, search, view: 'cal' });
     const map = new Map<string, Item[]>();
     const push = (day: string, item: Item) => {
       const list = map.get(day);
@@ -83,7 +81,7 @@ export default function CalendarView() {
       else map.set(day, [item]);
     };
     // Les lots d'abord, puis les tâches, dans chaque case.
-    for (const lot of vis) {
+    for (const lot of lots) {
       if (!lot.due) continue;
       const col = colorOf(lot.projectId);
       const open = openLotId === lot.id;
@@ -104,10 +102,10 @@ export default function CalendarView() {
       for (const day of daysInRange(lot.startDate, lot.due)) push(day, item);
     }
     if (showTasks) {
-      for (const lot of vis) {
+      for (const lot of lots) {
         const col = colorOf(lot.projectId);
         for (const t of tasks) {
-          if (t.lotId !== lot.id || !t.due || !taskMatchesSearch(lot, t, search)) continue;
+          if (t.lotId !== lot.id || !t.due) continue;
           const late = !t.done && t.due < todayKey;
           const item: Item = {
             key: t.id,
@@ -128,7 +126,7 @@ export default function CalendarView() {
     // Éléments horodatés d'abord, triés par heure ; les autres (sans heure) restent à la suite.
     for (const list of map.values()) list.sort((a, b) => (a.time ?? '24:60').localeCompare(b.time ?? '24:60'));
     return map;
-  }, [lots, tasks, projects, selected, lateOnly, search, openLotId, showTasks, todayKey]);
+  }, [lots, tasks, projects, openLotId, showTasks, todayKey]);
 
   function dropOn(day: string) {
     if (!drag) return;
