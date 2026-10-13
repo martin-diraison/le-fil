@@ -85,8 +85,6 @@ interface State {
   taskDatePickerId: string | null;
   dragProjectId: string | null;
   overProjectId: string | null;
-  dragLotId: string | null;
-  overLotId: string | null;
 
   // Actions — projets
   /** Renvoie l'id du projet créé (null si le nom est vide). */
@@ -127,7 +125,6 @@ interface State {
   moveLotToProject: (id: string, projectId: string | null) => void;
   /** Supprime le lot et ses tâches, avec « annuler » dans le toast. */
   deleteLot: (id: string) => void;
-  reorderLots: (fromId: string, toId: string) => void;
   toggleMoveMenu: () => void;
 
   // Actions — tâches
@@ -149,7 +146,6 @@ interface State {
   setSearch: (q: string) => void;
   setProjectFilter: (q: string) => void;
   toggleLateOnly: () => void;
-  cycleSort: () => void;
   setView: (v: ViewMode) => void;
 
   // Actions — calendrier / gantt
@@ -169,8 +165,6 @@ interface State {
   // Drag state setters (menu projets)
   setDragProject: (id: string | null) => void;
   setOverProject: (id: string | null) => void;
-  setDragLot: (id: string | null) => void;
-  setOverLot: (id: string | null) => void;
 }
 
 /** Le lot ouvert reste ouvert seulement si son projet fait encore partie de la sélection. */
@@ -187,8 +181,6 @@ type CreateOpts = { parse?: boolean };
 export type SyncStatus = 'ok' | 'pending' | 'offline' | 'error';
 
 let toastTimer: ReturnType<typeof setTimeout> | undefined;
-
-const SORT_CYCLE: SortMode[] = ['urgence', 'récent', 'manuel'];
 
 export const useStore = create<State>((set, get) => ({
   // Données factices en mode démo uniquement ; avec Supabase, elles sont chargées par sync.ts.
@@ -226,8 +218,6 @@ export const useStore = create<State>((set, get) => ({
   taskDatePickerId: null,
   dragProjectId: null,
   overProjectId: null,
-  dragLotId: null,
-  overLotId: null,
 
   addProject: (rawName) => {
     const name = rawName.trim();
@@ -438,25 +428,6 @@ export const useStore = create<State>((set, get) => ({
     );
   },
 
-  reorderLots: (fromId, toId) => {
-    if (!fromId || fromId === toId) return;
-    set((s) => {
-      const visible = s.lots.slice().sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
-      const from = visible.findIndex((l) => l.id === fromId);
-      const to = visible.findIndex((l) => l.id === toId);
-      if (from < 0 || to < 0) return {};
-      const [moved] = visible.splice(from, 1);
-      visible.splice(to, 0, moved);
-      const repositioned = visible.map((l, i) => ({ ...l, position: i }));
-      return {
-        lots: s.lots.map((l) => repositioned.find((r) => r.id === l.id) ?? l),
-        sort: 'manuel' as SortMode,
-        dragLotId: null,
-        overLotId: null,
-      };
-    });
-  },
-
   addTask: (lotId, rawLabel, opts) => {
     const raw = rawLabel.trim();
     if (!raw) return null;
@@ -555,13 +526,6 @@ export const useStore = create<State>((set, get) => ({
   setProjectFilter: (q) => set({ projectFilter: q }),
   toggleLateOnly: () => set((s) => ({ lateOnly: !s.lateOnly })),
 
-  cycleSort: () => {
-    set((s) => {
-      const i = SORT_CYCLE.indexOf(s.sort);
-      return { sort: SORT_CYCLE[(i + 1) % SORT_CYCLE.length] };
-    });
-  },
-
   // En repassant en Liste avec un lot ouvert, son projet est ajouté à la sélection (§3.1).
   setView: (v) => {
     set((s) => {
@@ -611,8 +575,6 @@ export const useStore = create<State>((set, get) => ({
 
   setDragProject: (id) => set({ dragProjectId: id }),
   setOverProject: (id) => set({ overProjectId: id }),
-  setDragLot: (id) => set({ dragLotId: id }),
-  setOverLot: (id) => set({ overLotId: id }),
 }));
 
 /** Urgence + tri d'une liste de lots, cf. règles métier README §1 (voir note sur l'ordre dans types/models.ts). */

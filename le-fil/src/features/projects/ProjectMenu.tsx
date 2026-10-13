@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { NO_PROJECT, useStore } from '../../state/store';
 import { PALETTE } from '../../lib/palette';
 import { contrastText } from '../../lib/palette';
-import { computeUrgency } from '../../types/models';
+import { focusByLot } from '../../lib/urgencyGroups';
 import { supabase } from '../../lib/supabase';
 import { useSyncLabel } from '../shell/SyncStatus';
 import './ProjectMenu.css';
@@ -57,9 +57,12 @@ export default function ProjectMenu({ userEmail, onOpenAccount }: Props) {
     return (title + ' ' + body).toLowerCase().includes(q);
   };
 
+  // Urgence effective (une tâche en retard compte) : même règle que la Liste et le Fil.
+  const tasks = useStore((s) => s.tasks);
+  const focus = useMemo(() => focusByLot(lots, tasks), [lots, tasks]);
   const lateCount = useMemo(
-    () => lots.filter((l) => matchesQuery(l.title, l.body) && computeUrgency(l) === 'late').length,
-    [lots, search],
+    () => lots.filter((l) => matchesQuery(l.title, l.body) && focus.get(l.id)?.urgency === 'late').length,
+    [lots, search, focus],
   );
   const noProjectCount = useMemo(
     () => lots.filter((l) => l.projectId === null && matchesQuery(l.title, l.body)).length,
@@ -82,7 +85,7 @@ export default function ProjectMenu({ userEmail, onOpenAccount }: Props) {
     const ls = lots.filter((l) => l.projectId === projectId && matchesQuery(l.title, l.body));
     return {
       open: ls.filter((l) => !l.done).length,
-      late: ls.filter((l) => computeUrgency(l) === 'late').length,
+      late: ls.filter((l) => focus.get(l.id)?.urgency === 'late').length,
     };
   }
 

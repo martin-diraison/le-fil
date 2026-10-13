@@ -5,6 +5,15 @@ Dernière session : 2026-10-13 (voir section dédiée plus bas) ; avant : 2026-1
 https://martin-diraison.github.io/le-fil/ (déployée via GitHub Actions, connexion testée, PWA
 installée sur smartphone Samsung). **Code commité et poussé.**
 
+## Liste desktop réorganisée (2026-10-13)
+
+- Sections repliables par **échéance** (mêmes groupes que le Fil mobile, « terminés » replié) ou par
+  **projet** (bouton échéance | projet, mémorisé par appareil en localStorage `lefil:listGroup`).
+- Urgence **effective** partout (`lib/urgencyGroups.ts`, partagé avec le Fil) : une tâche datée ouverte
+  fait remonter son lot, affichée sous le titre (« ↳ tâche · demain »). Compteurs « retard » du menu idem.
+- Tri manuel / récent et glisser-déposer des lots supprimés (la colonne `sort` des préférences reste
+  en base, inutilisée par la Liste).
+
 ## Lot 2 (2026-10-13) — Le Fil → Google Agenda, sens unique (✅ déployé, testé en réel)
 Choix utilisateur : envoi **côté serveur** (fonction Edge Supabase), **lots + tâches datés**,
 terminés **gardés avec « ✓ »**, dans l'**agenda principal** (Le Fil ne touche qu'à ses événements,

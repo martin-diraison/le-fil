@@ -1,21 +1,12 @@
 import { useMemo, useState } from 'react';
 import { lotMatches, useStore } from '../../state/store';
-import { compareUrgency, computeUrgency, isArchived, lotFocus, type Lot, type Task, type Urgency } from '../../types/models';
+import { isArchived, type Lot, type Urgency } from '../../types/models';
+import { URGENCY_GROUPS, byFocus, focusByLot } from '../../lib/urgencyGroups';
 import { DoneBox, DraftBar } from './parts';
 import { lotMeta, projectColor, projectName, taskFocusLabel } from './labels';
 import type { MobileNav } from './MobileShell';
 
-// Le Fil — tous les lots, groupés par urgence (README §4 « Fil »). L'urgence d'un lot tient
-// compte de ses tâches datées (`lotFocus`) : la plus pressante fait remonter le lot.
-const GROUPS: { key: Urgency; label: string; tone?: 'late' | 'muted' }[] = [
-  { key: 'late', label: 'en retard', tone: 'late' },
-  { key: 'today', label: "aujourd'hui" },
-  { key: 'week', label: 'dans les 7 prochains jours' },
-  { key: 'month', label: 'dans les 30 prochains jours' },
-  { key: 'soon', label: 'plus tard' },
-  { key: 'none', label: 'sans date', tone: 'muted' },
-  { key: 'done', label: 'terminés', tone: 'muted' },
-];
+// Le Fil — tous les lots, groupés par urgence effective (README §4 « Fil », lib/urgencyGroups).
 
 // Groupes ouverts par défaut : on ne veut voir tout de suite que ce qui presse ;
 // le reste se déplie au tap (état local, pas persisté — repart replié à chaque ouverture).
@@ -44,18 +35,7 @@ export default function FilScreen({ nav }: { nav: MobileNav }) {
       return next;
     });
 
-  // Urgence effective + tâche qui fait remonter le lot, calculées une fois par lot.
-  const focus = useMemo(() => {
-    const byLot = new Map<string, Task[]>();
-    for (const t of tasks) byLot.set(t.lotId, [...(byLot.get(t.lotId) ?? []), t]);
-    const m = new Map<string, { urgency: Urgency; due: string | null; task: Task | null; tasks: Task[] }>();
-    for (const l of lots) {
-      const lt = byLot.get(l.id) ?? [];
-      const f = lotFocus(l, lt);
-      m.set(l.id, { ...f, urgency: computeUrgency({ done: l.done, due: f.due }), tasks: lt });
-    }
-    return m;
-  }, [lots, tasks]);
+  const focus = useMemo(() => focusByLot(lots, tasks), [lots, tasks]);
 
   const archivedCount = useMemo(() => lots.filter((l) => isArchived(l)).length, [lots]);
 
@@ -64,13 +44,9 @@ export default function FilScreen({ nav }: { nav: MobileNav }) {
     const list = lots
       .filter((l) => (q ? lotMatches(l, tasks, q) : showArchived || !isArchived(l)))
       .filter((l) => !lateOnly || focus.get(l.id)!.urgency === 'late')
-      .sort((a, b) => {
-        const fa = focus.get(a.id)!;
-        const fb = focus.get(b.id)!;
-        return compareUrgency(fa.urgency, fb.urgency) || (fa.due ?? '').localeCompare(fb.due ?? '');
-      });
+      .sort(byFocus(focus));
     // « terminés » reste affiché (même vide) s'il y a des archives, pour garder le lien vers elles.
-    return GROUPS.map((g) => ({ ...g, lots: list.filter((l) => focus.get(l.id)!.urgency === g.key) })).filter(
+    return URGENCY_GROUPS.map((g) => ({ ...g, lots: list.filter((l) => focus.get(l.id)!.urgency === g.key) })).filter(
       (g) => g.lots.length > 0 || (g.key === 'done' && !q && !lateOnly && archivedCount > 0),
     );
   }, [lots, tasks, lateOnly, focus, q, showArchived, archivedCount]);

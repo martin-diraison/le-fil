@@ -1,9 +1,34 @@
 import { useMemo, useState } from 'react';
-import { NO_PROJECT, filterLots, sortLots, useStore } from '../../state/store';
-import { computeUrgency, isArchived } from '../../types/models';
-import { dateSubLabel, formatShortDate } from '../../lib/format';
+import { NO_PROJECT, filterLots, useStore, type ProjectKey } from '../../state/store';
+import { isArchived, type Lot, type Task, type Urgency } from '../../types/models';
+import { dateSubLabel, daysUntil, formatShortDate } from '../../lib/format';
 import { NO_PROJECT_COLOR } from '../../lib/palette';
+import { URGENCY_GROUPS, byFocus, focusByLot, type LotFocusInfo } from '../../lib/urgencyGroups';
 import './LotList.css';
+
+// Liste desktop : les lots de la sélection, en sections. Deux rangements :
+// - « échéance » (par défaut) : mêmes sections que le Fil mobile, selon l'urgence effective
+//   (une tâche datée ouverte peut faire remonter son lot, elle est alors affichée sous le titre) ;
+// - « projet » : un bloc par projet sélectionné, trié par urgence effective à l'intérieur.
+// Le choix est mémorisé sur l'appareil (préférence d'affichage, pas une donnée du compte).
+type Grouping = 'echeance' | 'projet';
+const GROUPING_KEY = 'lefil:listGroup';
+function readGrouping(): Grouping {
+  try {
+    return localStorage.getItem(GROUPING_KEY) === 'projet' ? 'projet' : 'echeance';
+  } catch {
+    return 'echeance';
+  }
+}
+function saveGrouping(g: Grouping) {
+  try {
+    localStorage.setItem(GROUPING_KEY, g);
+  } catch {
+    /* stockage indisponible : le choix vaudra pour la session */
+  }
+}
+
+type Section = { key: string; label: string; color?: string; tone?: 'late' | 'muted'; lots: Lot[] };
 
 export default function LotList() {
   const lots = useStore((s) => s.lots);
@@ -12,41 +37,66 @@ export default function LotList() {
   const selected = useStore((s) => s.selected);
   const lateOnly = useStore((s) => s.lateOnly);
   const search = useStore((s) => s.search);
-  const sort = useStore((s) => s.sort);
   const openLotId = useStore((s) => s.openLotId);
   const lotDraft = useStore((s) => s.lotDraft);
-  const dragLotId = useStore((s) => s.dragLotId);
-  const overLotId = useStore((s) => s.overLotId);
   const showArchived = useStore((s) => s.showArchived);
   const toggleShowArchived = useStore((s) => s.toggleShowArchived);
-
   const addLot = useStore((s) => s.addLot);
-  const cycleSort = useStore((s) => s.cycleSort);
   const openLot = useStore((s) => s.openLot);
-  const reorderLots = useStore((s) => s.reorderLots);
-  const setDragLot = useStore((s) => s.setDragLot);
-  const setOverLot = useStore((s) => s.setOverLot);
 
   const [draftLocal, setDraftLocal] = useState(lotDraft);
+  const [grouping, setGrouping] = useState<Grouping>(readGrouping);
+  // Sections repliées (état local) : « terminés » l'est d'office.
+  const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set(['done']));
 
   const projectById = useMemo(() => new Map(projects.map((p) => [p.id, p])), [projects]);
+  const focus = useMemo(() => focusByLot(lots, tasks), [lots, tasks]);
 
-  const filtered = useMemo(
-    () => filterLots({ lots, tasks, selected, lateOnly, search, view: 'liste', showArchived }),
-    [lots, tasks, selected, lateOnly, search, showArchived],
+  // Le filtre « retard » porte sur l'urgence effective (comme le Fil), pas sur la seule date du lot.
+  const visible = useMemo(
+    () =>
+      filterLots({ lots, tasks, selected, lateOnly: false, search, view: 'liste', showArchived })
+        .filter((l) => !lateOnly || focus.get(l.id)!.urgency === 'late')
+        .sort(byFocus(focus)),
+    [lots, tasks, selected, lateOnly, search, showArchived, focus],
   );
   // Archives de la sélection (terminés depuis plus de 30 j) — lien en bas de liste.
   const archivedCount = useMemo(
     () =>
-      search
+      search || lateOnly
         ? 0
-        : filterLots({ lots, tasks, selected, lateOnly, search, view: 'liste', showArchived: true }).filter((l) =>
-            isArchived(l),
+        : filterLots({ lots, tasks, selected, lateOnly: false, search, view: 'liste', showArchived: true }).filter(
+            (l) => isArchived(l),
           ).length,
     [lots, tasks, selected, lateOnly, search],
   );
 
-  const sorted = useMemo(() => sortLots(filtered, sort), [filtered, sort]);
+  const sections = useMemo<Section[]>(() => {
+    if (grouping === 'echeance') {
+      return URGENCY_GROUPS.map((g) => ({
+        key: g.key,
+        label: g.label,
+        tone: g.tone,
+        lots: visible.filter((l) => focus.get(l.id)!.urgency === g.key),
+      })).filter((g) => g.lots.length > 0);
+    }
+    const order: ProjectKey[] = [
+      ...projects
+        .slice()
+        .sort((a, b) => a.position - b.position)
+        .map((p) => p.id)
+        .filter((id) => selected.includes(id)),
+      ...(selected.includes(NO_PROJECT) ? [NO_PROJECT] : []),
+    ];
+    return order
+      .map((k) => ({
+        key: k,
+        label: k === NO_PROJECT ? 'sans projet' : (projectById.get(k)?.name ?? ''),
+        color: k === NO_PROJECT ? NO_PROJECT_COLOR : projectById.get(k)?.color,
+        lots: visible.filter((l) => (l.projectId ?? NO_PROJECT) === k),
+      }))
+      .filter((g) => g.lots.length > 0);
+  }, [grouping, visible, focus, projects, projectById, selected]);
 
   const draftHint =
     selected.length === 1 && selected[0] !== NO_PROJECT ? 'LOT DANS CE PROJET…' : 'ÉCRIS, ON TRIE APRÈS…';
@@ -64,6 +114,18 @@ export default function LotList() {
     addLot(draftLocal);
     setDraftLocal('');
   }
+  function chooseGrouping(g: Grouping) {
+    setGrouping(g);
+    saveGrouping(g);
+  }
+  function toggleSection(key: string) {
+    setCollapsed((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }
 
   return (
     <div className="lotPane">
@@ -77,11 +139,19 @@ export default function LotList() {
           {selLabel}
         </span>
         <span className="lotPane__count">
-          {sorted.length} {sorted.length > 1 ? 'lots' : 'lot'}
+          {visible.length} {visible.length > 1 ? 'lots' : 'lot'}
         </span>
-        <button className="lotPane__sort" onClick={cycleSort}>
-          tri · {sort}
-        </button>
+        <span className="lotPane__grouping" role="group" aria-label="ranger par">
+          {(['echeance', 'projet'] as Grouping[]).map((g) => (
+            <button
+              key={g}
+              className={`lotPane__groupBtn ${grouping === g ? 'lotPane__groupBtn--on' : ''}`}
+              onClick={() => chooseGrouping(g)}
+            >
+              {g === 'echeance' ? 'échéance' : 'projet'}
+            </button>
+          ))}
+        </span>
       </div>
       <div className="lotPane__new">
         <button className="lotPane__newIcon" title="nouveau lot" tabIndex={-1}>
@@ -102,103 +172,35 @@ export default function LotList() {
       </div>
 
       <div className="lotPane__list">
-        {sorted.map((lot) => {
-          const urgency = computeUrgency(lot);
-          const project = lot.projectId ? projectById.get(lot.projectId) : null;
-          const color = project?.color ?? 'var(--text-tertiary)';
-          const isSelected = openLotId === lot.id;
-          const classes = [
-            'lotRow',
-            isSelected ? 'lotRow--selected' : '',
-            overLotId === lot.id ? 'lotRow--over' : '',
-            dragLotId === lot.id ? 'lotRow--dragging' : '',
-          ]
-            .filter(Boolean)
-            .join(' ');
+        {sections.map((sec) => {
+          // Pendant une recherche, toutes les sections trouvées sont dépliées.
+          const isOpen = search !== '' || !collapsed.has(sec.key);
           return (
-            <button
-              key={lot.id}
-              className={classes}
-              draggable
-              title="glisser pour réordonner"
-              onClick={() => openLot(lot.id)}
-              onDragStart={() => setDragLot(lot.id)}
-              onDragOver={(e) => {
-                e.preventDefault();
-                if (overLotId !== lot.id) setOverLot(lot.id);
-              }}
-              onDrop={(e) => {
-                e.preventDefault();
-                reorderLots(dragLotId ?? '', lot.id);
-              }}
-              onDragEnd={() => {
-                setDragLot(null);
-                setOverLot(null);
-              }}
-            >
-              <span className="lotRow__edge" style={{ background: color }} />
-              <span
-                className="lotRow__date"
-                style={{
-                  background: !isSelected && urgency === 'late' ? 'var(--red)' : 'transparent',
-                }}
+            <div key={sec.key}>
+              <button
+                className={`lotPane__group ${sec.tone ? 'lotPane__group--' + sec.tone : ''}`}
+                onClick={() => toggleSection(sec.key)}
               >
-                <span
-                  className="lotRow__dateTop"
-                  style={{
-                    color:
-                      urgency === 'late'
-                        ? isSelected
-                          ? 'var(--red)'
-                          : 'var(--paper)'
-                        : isSelected
-                        ? 'var(--paper)'
-                        : 'var(--ink)',
-                  }}
-                >
-                  {lot.due ? formatShortDate(lot.due) : '—'}
-                </span>
-                <span
-                  className="lotRow__dateSub"
-                  style={{
-                    color:
-                      urgency === 'late'
-                        ? isSelected
-                          ? 'var(--red)'
-                          : 'var(--paper)'
-                        : isSelected
-                        ? '#c9c9c4'
-                        : 'var(--text-secondary)',
-                  }}
-                >
-                  {dateSubLabel(lot.due, urgency)}
-                </span>
-              </span>
-              <span className="lotRow__body">
-                <span
-                  className="lotRow__title"
-                  style={{
-                    font: isSelected ? '800 13.5px var(--font-ui)' : '500 13.5px var(--font-ui)',
-                    color: isSelected ? 'var(--paper)' : lot.done ? 'var(--text-secondary)' : 'var(--ink)',
-                    textDecoration: lot.done ? 'line-through' : 'none',
-                  }}
-                >
-                  {lot.title}
-                </span>
-                <span className="lotRow__metaRow">
-                  <span
-                    className="lotRow__project"
-                    style={{ color: isSelected ? '#c9c9c4' : color }}
-                  >
-                    {project ? project.name : 'sans projet'}
-                  </span>
-                  <TaskCount lotId={lot.id} selected={isSelected} />
-                </span>
-              </span>
-            </button>
+                {sec.color && <span className="lotPane__groupDot" style={{ background: sec.color }} />}
+                {sec.label} · {sec.lots.length}
+                <span className="lotPane__groupMark">{isOpen ? '▾' : '▸'}</span>
+              </button>
+              {isOpen &&
+                sec.lots.map((lot) => (
+                  <LotRow
+                    key={lot.id}
+                    lot={lot}
+                    focus={focus.get(lot.id)!}
+                    project={lot.projectId ? projectById.get(lot.projectId) : undefined}
+                    showProject={grouping === 'echeance'}
+                    selected={openLotId === lot.id}
+                    onOpen={() => openLot(lot.id)}
+                  />
+                ))}
+            </div>
           );
         })}
-        {sorted.length === 0 && <div className="lotPane__empty">rien ici — {emptyHint}</div>}
+        {sections.length === 0 && <div className="lotPane__empty">rien ici — {emptyHint}</div>}
         {archivedCount > 0 && (
           <button className="lotPane__archives" onClick={toggleShowArchived}>
             {showArchived ? 'masquer les archives' : `voir les archives · ${archivedCount}`}
@@ -209,17 +211,82 @@ export default function LotList() {
   );
 }
 
-function TaskCount({ lotId, selected }: { lotId: string; selected: boolean }) {
-  // Sélectionner le tableau complet (référence stable tant que rien ne change) plutôt que
-  // de filtrer dans le sélecteur : un .filter() y renverrait un nouveau tableau à chaque
-  // rendu et déclencherait une boucle de mise à jour infinie avec Zustand.
-  const allTasks = useStore((s) => s.tasks);
-  const tasks = useMemo(() => allTasks.filter((t) => t.lotId === lotId), [allTasks, lotId]);
-  if (tasks.length === 0) return null;
-  const done = tasks.filter((t) => t.done).length;
+/** « aujourd'hui » / « demain » / « 3 j de retard » / « 5 OCT » pour la tâche qui fait remonter un lot. */
+function taskWhen(task: Task): string {
+  const d = daysUntil(task.due)!;
+  if (d < 0) return `${-d} j de retard`;
+  if (d === 0) return "aujourd'hui";
+  if (d === 1) return 'demain';
+  return formatShortDate(task.due);
+}
+
+function LotRow({
+  lot,
+  focus,
+  project,
+  showProject,
+  selected,
+  onOpen,
+}: {
+  lot: Lot;
+  focus: LotFocusInfo;
+  project: { name: string; color: string } | undefined;
+  showProject: boolean;
+  selected: boolean;
+  onOpen: () => void;
+}) {
+  const urgency: Urgency = focus.urgency;
+  const late = urgency === 'late';
+  const color = project?.color ?? 'var(--text-tertiary)';
+  // Colonne date : l'échéance effective (celle de la tâche qui fait remonter le lot, le cas échéant).
+  const dateColor = late ? (selected ? 'var(--red)' : 'var(--paper)') : selected ? 'var(--paper)' : 'var(--ink)';
+  const subColor = late ? (selected ? 'var(--red)' : 'var(--paper)') : selected ? '#c9c9c4' : 'var(--text-secondary)';
+  const doneCount = focus.tasks.filter((t) => t.done).length;
   return (
-    <span className="lotRow__taskCount" style={{ color: selected ? '#c9c9c4' : 'var(--text-secondary)' }}>
-      {done}/{tasks.length}
-    </span>
+    <button className={`lotRow ${selected ? 'lotRow--selected' : ''}`} onClick={onOpen}>
+      <span className="lotRow__edge" style={{ background: color }} />
+      <span className="lotRow__date" style={{ background: !selected && late ? 'var(--red)' : 'transparent' }}>
+        <span className="lotRow__dateTop" style={{ color: dateColor }}>
+          {focus.due ? formatShortDate(focus.due) : '—'}
+        </span>
+        <span className="lotRow__dateSub" style={{ color: subColor }}>
+          {dateSubLabel(focus.due, urgency)}
+        </span>
+      </span>
+      <span className="lotRow__body">
+        <span
+          className="lotRow__title"
+          style={{
+            font: selected ? '800 13.5px var(--font-ui)' : '500 13.5px var(--font-ui)',
+            color: selected ? 'var(--paper)' : lot.done ? 'var(--text-secondary)' : 'var(--ink)',
+            textDecoration: lot.done ? 'line-through' : 'none',
+          }}
+        >
+          {lot.title}
+        </span>
+        {focus.task && (
+          <span
+            className="lotRow__focusTask"
+            style={{ color: selected ? '#c9c9c4' : late ? 'var(--red)' : 'var(--text-secondary)' }}
+          >
+            ↳ {focus.task.label} · {taskWhen(focus.task)}
+          </span>
+        )}
+        {(showProject || focus.tasks.length > 0) && (
+          <span className="lotRow__metaRow">
+            {showProject && (
+              <span className="lotRow__project" style={{ color: selected ? '#c9c9c4' : color }}>
+                {project ? project.name : 'sans projet'}
+              </span>
+            )}
+            {focus.tasks.length > 0 && (
+              <span className="lotRow__taskCount" style={{ color: selected ? '#c9c9c4' : 'var(--text-secondary)' }}>
+                {doneCount}/{focus.tasks.length}
+              </span>
+            )}
+          </span>
+        )}
+      </span>
+    </button>
   );
 }
