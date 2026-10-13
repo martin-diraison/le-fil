@@ -3,7 +3,16 @@ import type { Session } from '@supabase/supabase-js';
 import { supabase } from '../../lib/supabase';
 import { useStore } from '../../state/store';
 import { gcalConnect, gcalDisconnect, gcalStatus, gcalSyncNow, loadGoogleScript, type GcalStatus } from '../../lib/gcal';
-import { coursSignIn, coursSignOut, coursSignedInEmail, importCours, isCoursConfigured } from '../../lib/cours';
+import {
+  coursAllPref,
+  coursSignIn,
+  coursSignOut,
+  coursSignedInEmail,
+  importCoursNow,
+  isCoursConfigured,
+  lastCoursImport,
+  setCoursAllPref,
+} from '../../lib/cours';
 import './AccountDrawer.css';
 
 /** Import des séances de l'app « organisation-cours » (autre projet Supabase, lecture seule). */
@@ -11,7 +20,8 @@ function CoursSection() {
   const [email, setEmail] = useState<string | null | undefined>(undefined); // undefined = chargement
   const [mail, setMail] = useState('');
   const [pwd, setPwd] = useState('');
-  const [all, setAll] = useState(false);
+  const [all, setAll] = useState(coursAllPref);
+  const [last, setLast] = useState(lastCoursImport);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState('');
   const [err, setErr] = useState('');
@@ -35,7 +45,8 @@ function CoursSection() {
     setErr('');
     setMsg('');
     try {
-      const r = await importCours({ all });
+      const r = await importCoursNow();
+      setLast(lastCoursImport());
       setMsg(
         `${r.sessions} séances, ${r.periods} périodes, ${r.meetings} réunions lues — ` +
           `${r.created} ajout(s), ${r.updated} mise(s) à jour, ${r.removed} retrait(s)`,
@@ -57,12 +68,24 @@ function CoursSection() {
       {email === undefined ? null : email ? (
         <>
           <span className="acctDrawer__stats">connecté : {email}</span>
+          <span className="acctDrawer__hint">
+            Mise à jour automatique à l’ouverture, puis toutes les 30 min
+            {last ? ` · dernier import ${last.toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}` : ''}
+          </span>
           <label className="acctDrawer__hint">
-            <input type="checkbox" checked={all} onChange={(e) => setAll(e.target.checked)} /> toutes les séances
+            <input
+              type="checkbox"
+              checked={all}
+              onChange={(e) => {
+                setAll(e.target.checked);
+                setCoursAllPref(e.target.checked);
+              }}
+            />{' '}
+            toutes les séances
             (pas seulement les miennes)
           </label>
           <button className="acctDrawer__btn acctDrawer__btn--primary" onClick={sync} disabled={busy}>
-            {busy ? 'synchronisation…' : 'synchroniser les cours'}
+            {busy ? 'synchronisation…' : 'synchroniser maintenant'}
           </button>
           <button
             className="acctDrawer__btn"

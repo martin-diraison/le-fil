@@ -21,7 +21,12 @@ installée sur smartphone Samsung). **Code commité et poussé.**
   Myrtille 9, GPN2 Mandarine 6, commun Graphite 8), pas de « ✓ ».
 - Variables `VITE_COURS_SUPABASE_URL` / `VITE_COURS_SUPABASE_ANON_KEY` : `.env.local`, workflow
   `deploy.yml` et variables du dépôt GitHub.
-- À tester : import depuis le téléphone ; rendu Google sur Android.
+- Import **automatique** (`startCoursAutoImport`, lancé par App.tsx une fois les données prêtes) :
+  au démarrage (+5 s) et au retour sur l'appli si le dernier import a > 15 min, puis toutes les
+  30 min appli visible ; seulement si l'appareil est connecté à l'app cours. Préférences appareil
+  `lefil:cours:all` / `lefil:cours:last`. Ids des éléments importés **déterministes** (SHA-256 du
+  compte + source_id) pour que deux appareils qui importent en même temps ne se bloquent pas.
+- ✅ Affichage testé sur téléphone. À tester : import automatique (déplacer une séance côté cours).
 
 ## Liste desktop réorganisée (2026-10-13)
 

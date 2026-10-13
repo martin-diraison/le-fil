@@ -53,6 +53,17 @@ function isoMonday(year: number, week: number): Date {
   return monday;
 }
 
+/**
+ * Identifiant stable d'un élément importé, dérivé du compte et de sa source : deux appareils qui
+ * importent la même nouvelle séance en même temps produisent le même id (sinon l'index unique sur
+ * source_id refuserait le second envoi et bloquerait la synchro). Format uuid (SHA-256 tronqué).
+ */
+async function stableId(userId: string, src: string): Promise<string> {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(`${userId}|${src}`));
+  const h = [...new Uint8Array(buf).slice(0, 16)].map((b) => b.toString(16).padStart(2, '0')).join('');
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-5${h.slice(13, 16)}-${((parseInt(h[16], 16) & 3) | 8).toString(16)}${h.slice(17, 20)}-${h.slice(20, 32)}`;
+}
+
 /** « GPN1 » / « GPN2 » si une seule promo est concernée, sinon « tous ». */
 function promoKey(promos: (string | null | undefined)[]): string {
   const set = new Set(promos.filter((p): p is string => !!p));
@@ -93,8 +104,18 @@ export async function coursSignOut() {
 
 export type ImportReport = { sessions: number; periods: number; meetings: number; created: number; updated: number; removed: number };
 
-/** Lit l'app de cours et met à jour le store (donc, via la synchro, Le Fil et Google Agenda). */
-export async function importCours(opts: { all: boolean }): Promise<ImportReport> {
+let current: Promise<ImportReport> | null = null;
+
+/** Lit l'app de cours et met à jour le store (donc, via la synchro, Le Fil et Google Agenda).
+ * Un seul import à la fois : un appel pendant qu'un autre tourne reçoit le même résultat. */
+export function importCours(opts: { all: boolean }): Promise<ImportReport> {
+  current ??= runImport(opts).finally(() => {
+    current = null;
+  });
+  return current;
+}
+
+async function runImport(opts: { all: boolean }): Promise<ImportReport> {
   if (!client) throw new Error('import des cours non configuré');
   const { data: auth } = await client.auth.getUser();
   if (!auth.user) throw new Error('non connecté à l’app de cours');
@@ -144,7 +165,7 @@ export async function importCours(opts: { all: boolean }): Promise<ImportReport>
   let project = projects.find((p) => p.sourceId === PROJECT_SOURCE);
   if (!project) {
     project = {
-      id: crypto.randomUUID(),
+      id: await stableId(userId, PROJECT_SOURCE),
       userId,
       name: PROJECT_NAME,
       color: nextProjectColor(projects.map((p) => p.color)),
@@ -176,7 +197,7 @@ export async function importCours(opts: { all: boolean }): Promise<ImportReport>
       return found.id;
     }
     const lot: Lot = {
-      id: crypto.randomUUID(),
+      id: ids.get(src)!,
       userId,
       projectId,
       repeat: 'none',
@@ -208,7 +229,7 @@ export async function importCours(opts: { all: boolean }): Promise<ImportReport>
     }
     tasks = [
       ...tasks,
-      { id: crypto.randomUUID(), ...all, done: false, position: tasks.filter((t) => t.lotId === lotId).length, sourceId: src },
+      { id: ids.get(src)!, ...all, done: false, position: tasks.filter((t) => t.lotId === lotId).length, sourceId: src },
     ];
     created++;
   }
@@ -277,12 +298,17 @@ export async function importCours(opts: { all: boolean }): Promise<ImportReport>
     });
   }
 
+  const promos = [...new Set(items.map((i) => i.promo))].sort();
+  const classSrc = (promo: string) => `${SOURCE_PREFIX}classe:${promo}:-`;
+  const allSrc = [...promos.map(classSrc), ...items.map((i) => i.src)];
+  const ids = new Map(await Promise.all(allSrc.map(async (src) => [src, await stableId(userId, src)] as const)));
+
   const lotIdByPromo = new Map<string, string>();
-  for (const promo of [...new Set(items.map((i) => i.promo))].sort()) {
+  for (const promo of promos) {
     const last = items.filter((i) => i.promo === promo).reduce((m, i) => (i.fields.due! > m ? i.fields.due! : m), '');
     lotIdByPromo.set(
       promo,
-      upsertLot(`${SOURCE_PREFIX}classe:${promo}:-`, {
+      upsertLot(classSrc(promo), {
         title: promo === 'tous' ? 'Commun' : promo,
         body: '',
         startDate: null,
@@ -304,4 +330,82 @@ export async function importCours(opts: { all: boolean }): Promise<ImportReport>
 
   useStore.setState({ projects, lots, tasks });
   return { sessions: sessionCount, periods: periods.length, meetings: meetings.length, created, updated, removed };
+}
+
+// ------------------------------------------------------------ import automatique
+// Préférences de l'appareil (localStorage) : option « toutes les séances » et heure du dernier
+// import réussi. Le bouton du panneau Compte reste là pour forcer une mise à jour.
+const ALL_KEY = 'lefil:cours:all';
+const LAST_KEY = 'lefil:cours:last';
+const STALE_AFTER = 15 * 60_000; // retour sur l'appli : ré-import si le dernier date de plus de 15 min
+const EVERY = 30 * 60_000; // appli ouverte et visible : toutes les 30 min
+const FIRST_DELAY = 5_000; // au démarrage, laisser la synchro Le Fil relire le serveur d'abord
+
+export function coursAllPref(): boolean {
+  try {
+    return localStorage.getItem(ALL_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+export function setCoursAllPref(all: boolean) {
+  try {
+    localStorage.setItem(ALL_KEY, all ? '1' : '0');
+  } catch {
+    /* stockage indisponible : l'option vaudra pour la session */
+  }
+}
+export function lastCoursImport(): Date | null {
+  try {
+    const v = localStorage.getItem(LAST_KEY);
+    return v ? new Date(Number(v)) : null;
+  } catch {
+    return null;
+  }
+}
+function markImported() {
+  try {
+    localStorage.setItem(LAST_KEY, String(Date.now()));
+  } catch {
+    /* sans gravité */
+  }
+}
+
+/** Import manuel (bouton) : même chemin que l'automatique, et mémorise l'heure. */
+export async function importCoursNow(): Promise<ImportReport> {
+  const r = await importCours({ all: coursAllPref() });
+  markImported();
+  return r;
+}
+
+/**
+ * Lance l'import automatique (à appeler une fois les données de Le Fil chargées) : au démarrage,
+ * au retour sur l'appli si le dernier import a plus de 15 min, puis toutes les 30 min tant que
+ * l'appli est visible. Sans effet si l'appareil n'est pas connecté à l'app de cours. Silencieux :
+ * une erreur est seulement notée dans la console (le bouton du panneau Compte l'affiche).
+ */
+export function startCoursAutoImport(): () => void {
+  if (!client) return () => {};
+  const run = async () => {
+    if (!navigator.onLine || document.visibilityState !== 'visible') return;
+    if (!(await coursSignedInEmail())) return;
+    try {
+      await importCoursNow();
+    } catch (e) {
+      console.warn('Import automatique des cours :', e);
+    }
+  };
+  const runIfStale = () => {
+    const last = lastCoursImport();
+    if (!last || Date.now() - last.getTime() > STALE_AFTER) void run();
+  };
+  const first = setTimeout(runIfStale, FIRST_DELAY);
+  const every = setInterval(() => void run(), EVERY);
+  const onVisible = () => document.visibilityState === 'visible' && runIfStale();
+  document.addEventListener('visibilitychange', onVisible);
+  return () => {
+    clearTimeout(first);
+    clearInterval(every);
+    document.removeEventListener('visibilitychange', onVisible);
+  };
 }

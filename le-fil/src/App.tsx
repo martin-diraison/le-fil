@@ -6,6 +6,7 @@ import DesktopShell from './features/shell/DesktopShell';
 import MobileShell from './features/mobile/MobileShell';
 import { resetStore, startSync } from './state/sync';
 import { useAppBadge } from './lib/badge';
+import { startCoursAutoImport } from './lib/cours';
 import { loadCache, readLastUser, saveLastUser } from './lib/localCache';
 
 // Session factice utilisée uniquement quand Supabase n'est pas encore configuré (voir
@@ -105,6 +106,11 @@ export default function App() {
       stop?.(signedOut.current);
     };
   }, [userId, attempt]);
+
+  // Import automatique des cours, une fois les données de Le Fil chargées (sinon il écrirait
+  // dans un store vide et recréerait le projet BTS GPN).
+  const ready = dataState === 'ready';
+  useEffect(() => (ready ? startCoursAutoImport() : undefined), [ready]);
 
   if (loading) return null;
 
