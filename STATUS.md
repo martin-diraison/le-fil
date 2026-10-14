@@ -5,6 +5,14 @@ Dernière session : 2026-10-13 (voir section dédiée plus bas) ; avant : 2026-1
 https://martin-diraison.github.io/le-fil/ (déployée via GitHub Actions, connexion testée, PWA
 installée sur smartphone Samsung). **Code commité et poussé.**
 
+## Liste desktop : tâches suivantes visibles (2026-10-14, déployé)
+- Avant : une ligne par lot avec seulement **la** tâche la plus proche (`lotFocus`) → la 2ᵉ tâche
+  d'un lot n'apparaissait qu'une fois la 1ʳᵉ cochée.
+- Maintenant (`rowTasks` dans `LotList.tsx`) : sous le titre, **toutes** les tâches ouvertes datées
+  en retard ou dans les 7 prochains jours, triées (date, heure) ; à défaut, la tâche qui fait
+  remonter le lot. Choix de l'utilisateur : une ligne par lot (pas de lot répété par section),
+  horizon 7 j, **même règle pour les séances de cours**. Rouge par tâche en retard. Fil mobile inchangé.
+
 ## Lot 3 (2026-10-13) — import des cours (✅ testé sur desktop, déployé)
 - App « organisation-cours » (dépôt `Claude_Code/portail_GPN`, projet Supabase « portail », tables
   `oc_*`) lue en **lecture seule** par un second client Supabase (`src/lib/cours.ts`), connexion

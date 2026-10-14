@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { NO_PROJECT, filterLots, useStore, type ProjectKey } from '../../state/store';
-import { isArchived, type Lot, type Task, type Urgency } from '../../types/models';
+import { isAgenda, isArchived, type Lot, type Task, type Urgency } from '../../types/models';
 import { dateSubLabel, daysUntil, formatShortDate } from '../../lib/format';
 import { NO_PROJECT_COLOR } from '../../lib/palette';
 import { URGENCY_GROUPS, byFocus, focusByLot, type LotFocusInfo } from '../../lib/urgencyGroups';
@@ -9,7 +9,8 @@ import './LotList.css';
 
 // Liste desktop : les lots de la sélection, en sections. Deux rangements :
 // - « échéance » (par défaut) : mêmes sections que le Fil mobile, selon l'urgence effective
-//   (une tâche datée ouverte peut faire remonter son lot, elle est alors affichée sous le titre) ;
+//   (une tâche datée ouverte peut faire remonter son lot) ; sous le titre, les tâches ouvertes datées
+//   des 7 prochains jours (retards compris), pour ne pas cacher la deuxième derrière la première ;
 // - « projet » : un bloc par projet sélectionné, trié par urgence effective à l'intérieur.
 // Le choix est mémorisé sur l'appareil (préférence d'affichage, pas une donnée du compte).
 type Grouping = 'echeance' | 'projet';
@@ -221,6 +222,20 @@ function taskWhen(task: Task): string {
   return formatShortDate(task.due);
 }
 
+/** Tâches à montrer sous le titre : toutes les tâches ouvertes datées en retard ou dans les 7 prochains
+ * jours (séances passées exclues), dans l'ordre. Sans quoi, la tâche qui fait remonter le lot. */
+const TASK_HORIZON_DAYS = 7;
+function rowTasks(focus: LotFocusInfo): Task[] {
+  const near = focus.tasks
+    .filter((t) => {
+      if (t.done || !t.due) return false;
+      const d = daysUntil(t.due)!;
+      return d <= TASK_HORIZON_DAYS && !(isAgenda(t) && d < 0);
+    })
+    .sort((a, b) => a.due!.localeCompare(b.due!) || (a.startTime ?? '').localeCompare(b.startTime ?? '') || a.position - b.position);
+  return near.length > 0 ? near : focus.task ? [focus.task] : [];
+}
+
 function LotRow({
   lot,
   focus,
@@ -265,14 +280,21 @@ function LotRow({
         >
           {lot.title}
         </span>
-        {focus.task && (
+        {rowTasks(focus).map((t) => (
           <span
+            key={t.id}
             className="lotRow__focusTask"
-            style={{ color: selected ? '#c9c9c4' : late ? 'var(--red)' : 'var(--text-secondary)' }}
+            style={{
+              color: selected
+                ? '#c9c9c4'
+                : !isAgenda(t) && daysUntil(t.due)! < 0
+                  ? 'var(--red)'
+                  : 'var(--text-secondary)',
+            }}
           >
-            ↳ {focus.task.label} · {taskWhen(focus.task)}
+            ↳ {t.label} · {taskWhen(t)}
           </span>
-        )}
+        ))}
         {(showProject || focus.tasks.length > 0) && (
           <span className="lotRow__metaRow">
             {showProject && (
