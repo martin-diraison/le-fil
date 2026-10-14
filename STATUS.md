@@ -5,13 +5,20 @@ Dernière session : 2026-10-13 (voir section dédiée plus bas) ; avant : 2026-1
 https://martin-diraison.github.io/le-fil/ (déployée via GitHub Actions, connexion testée, PWA
 installée sur smartphone Samsung). **Code commité et poussé.**
 
-## Liste desktop : tâches suivantes visibles (2026-10-14, déployé)
+## Liste desktop : tâches suivantes visibles (2026-10-14)
 - Avant : une ligne par lot avec seulement **la** tâche la plus proche (`lotFocus`) → la 2ᵉ tâche
   d'un lot n'apparaissait qu'une fois la 1ʳᵉ cochée.
-- Maintenant (`rowTasks` dans `LotList.tsx`) : sous le titre, **toutes** les tâches ouvertes datées
-  en retard ou dans les 7 prochains jours, triées (date, heure) ; à défaut, la tâche qui fait
-  remonter le lot. Choix de l'utilisateur : une ligne par lot (pas de lot répété par section),
-  horizon 7 j, **même règle pour les séances de cours**. Rouge par tâche en retard. Fil mobile inchangé.
+- 1er essai (commit `e428fde`) : une ligne par lot, toutes les tâches à ≤ 7 j dessous → **refusé à
+  l'usage** par l'utilisateur.
+- Règle retenue (déployée) : `lotEntries` dans `LotList.tsx`. Un lot est
+  **répété dans chaque section proche** (en retard, aujourd'hui, 7 j, 30 j) où tombe une de ses tâches
+  ouvertes datées ou sa propre échéance, avec sous le titre **les seules tâches de cette section**.
+  Tâches au-delà de 30 j non listées ; un lot sans rien de proche garde une ligne à son urgence
+  effective (plus tard / sans date / terminé) avec la tâche qui le fait remonter.
+- Lots de cours (`isAgenda`) : même répétition, mais seule la prochaine séance de la section,
+  suivie de « + N séances ». Séances passées ignorées.
+- Rangement « projet » : mêmes lignes dans chaque projet, sous des intitulés d'échéance
+  (`lotPane__sub`). Compteur de section = nombre de lignes. Fil mobile inchangé.
 
 ## Lot 3 (2026-10-13) — import des cours (✅ testé sur desktop, déployé)
 - App « organisation-cours » (dépôt `Claude_Code/portail_GPN`, projet Supabase « portail », tables

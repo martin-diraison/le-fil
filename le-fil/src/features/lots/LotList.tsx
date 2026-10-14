@@ -1,6 +1,14 @@
-import { useMemo, useState } from 'react';
+import { Fragment, useMemo, useState } from 'react';
 import { NO_PROJECT, filterLots, useStore, type ProjectKey } from '../../state/store';
-import { isAgenda, isArchived, type Lot, type Task, type Urgency } from '../../types/models';
+import {
+  compareUrgency,
+  computeUrgency,
+  isAgenda,
+  isArchived,
+  type Lot,
+  type Task,
+  type Urgency,
+} from '../../types/models';
 import { dateSubLabel, daysUntil, formatShortDate } from '../../lib/format';
 import { NO_PROJECT_COLOR } from '../../lib/palette';
 import { URGENCY_GROUPS, byFocus, focusByLot, type LotFocusInfo } from '../../lib/urgencyGroups';
@@ -9,9 +17,9 @@ import './LotList.css';
 
 // Liste desktop : les lots de la sélection, en sections. Deux rangements :
 // - « échéance » (par défaut) : mêmes sections que le Fil mobile, selon l'urgence effective
-//   (une tâche datée ouverte peut faire remonter son lot) ; sous le titre, les tâches ouvertes datées
-//   des 7 prochains jours (retards compris), pour ne pas cacher la deuxième derrière la première ;
-// - « projet » : un bloc par projet sélectionné, trié par urgence effective à l'intérieur.
+//   mais un lot est répété dans chaque section proche (retard → 30 j) où tombe une de ses tâches
+//   ouvertes datées (ou sa propre échéance), avec sous son titre les tâches de cette section (`lotEntries`) ;
+// - « projet » : un bloc par projet sélectionné, mêmes lignes, sous des intitulés d'échéance.
 // Le choix est mémorisé sur l'appareil (préférence d'affichage, pas une donnée du compte).
 type Grouping = 'echeance' | 'projet';
 const GROUPING_KEY = 'lefil:listGroup';
@@ -30,7 +38,51 @@ function saveGrouping(g: Grouping) {
   }
 }
 
-type Section = { key: string; label: string; color?: string; tone?: 'late' | 'muted'; lots: Lot[] };
+// Une ligne de la liste : un lot dans une section d'échéance, avec l'échéance et les tâches propres
+// à cette section. `more` : séances de cours de la section non listées (voir `lotEntries`).
+type Entry = { lot: Lot; urgency: Urgency; due: string | null; tasks: Task[]; more: number };
+type Section = { key: string; label: string; color?: string; tone?: 'late' | 'muted'; entries: Entry[] };
+
+const byDueThenTime = (a: Task, b: Task) =>
+  a.due!.localeCompare(b.due!) || (a.startTime ?? '').localeCompare(b.startTime ?? '') || a.position - b.position;
+
+// Sections où un lot est répété : chaque tâche ouverte datée qui y tombe y est listée.
+const NEAR: Urgency[] = ['late', 'today', 'week', 'month'];
+const URGENCY_INFO = new Map(URGENCY_GROUPS.map((g) => [g.key, g]));
+
+/**
+ * Lignes d'un lot : une par section proche (retard, aujourd'hui, 7 j, 30 j) où tombe une de ses
+ * tâches ouvertes datées ou sa propre échéance, avec les seules tâches de cette section. Sans rien
+ * de proche : une ligne à son urgence effective (plus tard / sans date / terminé) avec la tâche qui
+ * le fait remonter. Lots de cours : seule la prochaine séance de la section, les autres comptées.
+ */
+function lotEntries(lot: Lot, info: LotFocusInfo): Entry[] {
+  const fallback: Entry = { lot, urgency: info.urgency, due: info.due, tasks: info.task ? [info.task] : [], more: 0 };
+  if (lot.done) return [fallback];
+  const by = new Map<Urgency, Task[]>();
+  for (const t of info.tasks) {
+    if (t.done || !t.due) continue;
+    const u = computeUrgency({ done: false, due: t.due, sourceId: t.sourceId });
+    if (!NEAR.includes(u)) continue; // séance passée (done) ou au-delà de 30 j
+    const list = by.get(u);
+    if (list) list.push(t);
+    else by.set(u, [t]);
+  }
+  const lotU = lot.due ? computeUrgency(lot) : null;
+  if (lotU && NEAR.includes(lotU) && !by.has(lotU)) by.set(lotU, []);
+  if (by.size === 0) return [fallback];
+  const agenda = isAgenda(lot);
+  return [...by].map(([urgency, ts]) => {
+    ts.sort(byDueThenTime);
+    let due = ts[0]?.due ?? null;
+    if (urgency === lotU && (!due || lot.due! < due)) due = lot.due;
+    const shown = agenda ? ts.slice(0, 1) : ts;
+    return { lot, urgency, due, tasks: shown, more: ts.length - shown.length };
+  });
+}
+
+const byEntry = (a: Entry, b: Entry) =>
+  compareUrgency(a.urgency, b.urgency) || (a.due ?? '').localeCompare(b.due ?? '');
 
 export default function LotList() {
   const lots = useStore((s) => s.lots);
@@ -73,14 +125,24 @@ export default function LotList() {
     [lots, tasks, selected, lateOnly, search],
   );
 
+  // Toutes les lignes, triées par urgence puis échéance (le filtre « retard » ne garde que les retards).
+  const allEntries = useMemo(
+    () =>
+      visible
+        .flatMap((l) => lotEntries(l, focus.get(l.id)!))
+        .filter((e) => !lateOnly || e.urgency === 'late')
+        .sort(byEntry),
+    [visible, focus, lateOnly],
+  );
+
   const sections = useMemo<Section[]>(() => {
     if (grouping === 'echeance') {
       return URGENCY_GROUPS.map((g) => ({
         key: g.key,
         label: g.label,
         tone: g.tone,
-        lots: visible.filter((l) => focus.get(l.id)!.urgency === g.key),
-      })).filter((g) => g.lots.length > 0);
+        entries: allEntries.filter((e) => e.urgency === g.key),
+      })).filter((g) => g.entries.length > 0);
     }
     const order: ProjectKey[] = [
       ...projects
@@ -95,10 +157,10 @@ export default function LotList() {
         key: k,
         label: k === NO_PROJECT ? 'sans projet' : (projectById.get(k)?.name ?? ''),
         color: k === NO_PROJECT ? NO_PROJECT_COLOR : projectById.get(k)?.color,
-        lots: visible.filter((l) => (l.projectId ?? NO_PROJECT) === k),
+        entries: allEntries.filter((e) => (e.lot.projectId ?? NO_PROJECT) === k),
       }))
-      .filter((g) => g.lots.length > 0);
-  }, [grouping, visible, focus, projects, projectById, selected]);
+      .filter((g) => g.entries.length > 0);
+  }, [grouping, allEntries, projects, projectById, selected]);
 
   const draftHint =
     selected.length === 1 && selected[0] !== NO_PROJECT ? 'LOT DANS CE PROJET…' : 'ÉCRIS, ON TRIE APRÈS…';
@@ -184,20 +246,30 @@ export default function LotList() {
                 onClick={() => toggleSection(sec.key)}
               >
                 {sec.color && <span className="lotPane__groupDot" style={{ background: sec.color }} />}
-                {sec.label} · {sec.lots.length}
+                {sec.label} · {sec.entries.length}
                 <span className="lotPane__groupMark">{isOpen ? '▾' : '▸'}</span>
               </button>
               {isOpen &&
-                sec.lots.map((lot) => (
-                  <LotRow
-                    key={lot.id}
-                    lot={lot}
-                    focus={focus.get(lot.id)!}
-                    project={lot.projectId ? projectById.get(lot.projectId) : undefined}
-                    showProject={grouping === 'echeance'}
-                    selected={openLotId === lot.id}
-                    onOpen={() => openLot(lot.id)}
-                  />
+                sec.entries.map(({ lot, ...entry }, i) => (
+                  <Fragment key={lot.id + ':' + entry.urgency}>
+                    {/* Rangement « projet » : intitulé d'échéance quand elle change dans le projet. */}
+                    {grouping === 'projet' && entry.urgency !== sec.entries[i - 1]?.urgency && (
+                      <div
+                        className={`lotPane__sub ${URGENCY_INFO.get(entry.urgency)?.tone ? 'lotPane__sub--' + URGENCY_INFO.get(entry.urgency)!.tone : ''}`}
+                      >
+                        {URGENCY_INFO.get(entry.urgency)?.label}
+                      </div>
+                    )}
+                    <LotRow
+                      lot={lot}
+                      entry={entry}
+                      allTasks={focus.get(lot.id)!.tasks}
+                      project={lot.projectId ? projectById.get(lot.projectId) : undefined}
+                      showProject={grouping === 'echeance'}
+                      selected={openLotId === lot.id}
+                      onOpen={() => openLot(lot.id)}
+                    />
+                  </Fragment>
                 ))}
             </div>
           );
@@ -222,51 +294,39 @@ function taskWhen(task: Task): string {
   return formatShortDate(task.due);
 }
 
-/** Tâches à montrer sous le titre : toutes les tâches ouvertes datées en retard ou dans les 7 prochains
- * jours (séances passées exclues), dans l'ordre. Sans quoi, la tâche qui fait remonter le lot. */
-const TASK_HORIZON_DAYS = 7;
-function rowTasks(focus: LotFocusInfo): Task[] {
-  const near = focus.tasks
-    .filter((t) => {
-      if (t.done || !t.due) return false;
-      const d = daysUntil(t.due)!;
-      return d <= TASK_HORIZON_DAYS && !(isAgenda(t) && d < 0);
-    })
-    .sort((a, b) => a.due!.localeCompare(b.due!) || (a.startTime ?? '').localeCompare(b.startTime ?? '') || a.position - b.position);
-  return near.length > 0 ? near : focus.task ? [focus.task] : [];
-}
-
 function LotRow({
   lot,
-  focus,
+  entry,
+  allTasks,
   project,
   showProject,
   selected,
   onOpen,
 }: {
   lot: Lot;
-  focus: LotFocusInfo;
+  entry: Omit<Entry, 'lot'>;
+  allTasks: Task[];
   project: { name: string; color: string } | undefined;
   showProject: boolean;
   selected: boolean;
   onOpen: () => void;
 }) {
-  const urgency: Urgency = focus.urgency;
+  const urgency: Urgency = entry.urgency;
   const late = urgency === 'late';
-  const color = lotColor(project?.color ?? 'var(--text-tertiary)', lot, focus.task);
-  // Colonne date : l'échéance effective (celle de la tâche qui fait remonter le lot, le cas échéant).
+  const color = lotColor(project?.color ?? 'var(--text-tertiary)', lot, entry.tasks[0]);
+  // Colonne date : l'échéance de la ligne (sa tâche la plus proche dans la section, ou celle du lot).
   const dateColor = late ? (selected ? 'var(--red)' : 'var(--paper)') : selected ? 'var(--paper)' : 'var(--ink)';
   const subColor = late ? (selected ? 'var(--red)' : 'var(--paper)') : selected ? '#c9c9c4' : 'var(--text-secondary)';
-  const doneCount = focus.tasks.filter((t) => t.done).length;
+  const doneCount = allTasks.filter((t) => t.done).length;
   return (
     <button className={`lotRow ${selected ? 'lotRow--selected' : ''}`} onClick={onOpen}>
       <span className="lotRow__edge" style={{ background: color }} />
       <span className="lotRow__date" style={{ background: !selected && late ? 'var(--red)' : 'transparent' }}>
         <span className="lotRow__dateTop" style={{ color: dateColor }}>
-          {focus.due ? formatShortDate(focus.due) : '—'}
+          {entry.due ? formatShortDate(entry.due) : '—'}
         </span>
         <span className="lotRow__dateSub" style={{ color: subColor }}>
-          {dateSubLabel(focus.due, urgency)}
+          {dateSubLabel(entry.due, urgency)}
         </span>
       </span>
       <span className="lotRow__body">
@@ -280,7 +340,7 @@ function LotRow({
         >
           {lot.title}
         </span>
-        {rowTasks(focus).map((t) => (
+        {entry.tasks.map((t) => (
           <span
             key={t.id}
             className="lotRow__focusTask"
@@ -295,16 +355,27 @@ function LotRow({
             ↳ {t.label} · {taskWhen(t)}
           </span>
         ))}
-        {(showProject || focus.tasks.length > 0) && (
+        {entry.more > 0 && (
+          <span
+            className="lotRow__focusTask lotRow__more"
+            style={{ color: selected ? '#c9c9c4' : 'var(--text-secondary)' }}
+          >
+            + {entry.more} {entry.more > 1 ? 'séances' : 'séance'}
+          </span>
+        )}
+        {(showProject || allTasks.length > 0) && (
           <span className="lotRow__metaRow">
             {showProject && (
-              <span className="lotRow__project" style={{ color: selected ? '#c9c9c4' : (project?.color ?? 'var(--text-tertiary)') }}>
+              <span
+                className="lotRow__project"
+                style={{ color: selected ? '#c9c9c4' : (project?.color ?? 'var(--text-tertiary)') }}
+              >
                 {project ? project.name : 'sans projet'}
               </span>
             )}
-            {focus.tasks.length > 0 && (
+            {allTasks.length > 0 && (
               <span className="lotRow__taskCount" style={{ color: selected ? '#c9c9c4' : 'var(--text-secondary)' }}>
-                {doneCount}/{focus.tasks.length}
+                {doneCount}/{allTasks.length}
               </span>
             )}
           </span>

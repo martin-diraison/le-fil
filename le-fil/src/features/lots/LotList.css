@@ -97,6 +97,20 @@
 .lotPane__group--muted {
   color: var(--text-secondary);
 }
+.lotPane__sub {
+  padding: 5px 12px 3px 20px;
+  border-bottom: 1px solid var(--rule);
+  color: var(--text-secondary);
+  font: 700 8px var(--font-ui);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+.lotPane__sub--late {
+  color: var(--red);
+}
+.lotRow__more {
+  padding-left: 11px;
+}
 .lotPane__groupDot {
   width: 8px;
   height: 8px;
