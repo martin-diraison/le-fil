@@ -393,3 +393,68 @@
 .taskRow__pickerDate:focus-visible {
   outline: 1px solid var(--yellow);
 }
+
+/* Lot de cours : séances par semaine (AgendaTasks dans LotDetail.tsx). */
+.agendaTasks__head {
+  display: block;
+  width: 100%;
+  border: none;
+  border-bottom: 1px solid var(--rule-on-ink);
+  background: #1b1b19;
+  color: var(--on-ink-secondary);
+  padding: 6px 13px;
+  font: 700 8px var(--font-ui);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  text-align: left;
+}
+.agendaTasks__head--past {
+  cursor: pointer;
+  color: #9c9c98;
+}
+.agendaTasks__head--past:hover {
+  background: var(--yellow);
+  color: var(--ink);
+}
+.sessionRow__day,
+.sessionRow__time {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  padding-left: 10px;
+  font: 600 8.5px var(--font-ui);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #9c9c98;
+  white-space: nowrap;
+}
+.sessionRow__day {
+  width: 46px;
+}
+.sessionRow__day--range {
+  width: 128px; /* jour + horaire : le libellé reste aligné sur celui des séances */
+}
+.sessionRow__time {
+  width: 72px;
+  letter-spacing: 0.04em;
+  text-transform: none;
+}
+.sessionRow__label {
+  flex: 1;
+  min-width: 0;
+  padding: 9px 0 9px 6px;
+  font: 500 12.5px var(--font-ui);
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sessionRow__place {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  padding: 0 13px 0 10px;
+  font: 600 9px var(--font-ui);
+  color: var(--on-ink-secondary);
+  white-space: nowrap;
+}

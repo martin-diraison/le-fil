@@ -20,6 +20,15 @@ installée sur smartphone Samsung). **Code commité et poussé.**
 - Rangement « projet » : mêmes lignes dans chaque projet, sous des intitulés d'échéance
   (`lotPane__sub`). Compteur de section = nombre de lignes. Fil mobile inchangé.
 
+## Volet 3 : séances des lots de cours rangées par semaine (2026-10-14, déployé)
+- `AgendaTasks` / `SessionRow` dans `LotDetail.tsx` (lot `isAgenda` seulement) : ordre chronologique,
+  intitulés « cette semaine », « semaine prochaine », « semaine du 26 OCT » ; ligne = jour, horaire,
+  libellé, salle. Période (fourchette) rangée à la semaine où elle commence (ou à celle-ci si déjà
+  commencée). Passées (séances passées, tâches faites passées) repliées en tête, date complète.
+- Choix de l'utilisateur : séances importées en **lecture seule** (seule la case « fait » reste) ;
+  les tâches ajoutées à la main gardent la ligne modifiable habituelle (datées dans leur semaine,
+  sans date à la fin). Autres lots inchangés ; mobile (LotScreen) inchangé.
+
 ## Lot 3 (2026-10-13) — import des cours (✅ testé sur desktop, déployé)
 - App « organisation-cours » (dépôt `Claude_Code/portail_GPN`, projet Supabase « portail », tables
   `oc_*`) lue en **lecture seule** par un second client Supabase (`src/lib/cours.ts`), connexion

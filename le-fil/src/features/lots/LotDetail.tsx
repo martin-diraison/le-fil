@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { useStore } from '../../state/store';
 import { contrastText } from '../../lib/palette';
-import { computeUrgency } from '../../types/models';
+import { computeUrgency, isAgenda, type Task } from '../../types/models';
 import { DATE_CHOICES, REPEAT_CHOICES, type DateChoiceKey } from '../../state/dateShortcuts';
 import type { Repeat } from '../../types/models';
-import { formatShortDate } from '../../lib/format';
+import { DAYS_SHORT, formatShortDate, formatTimeRange } from '../../lib/format';
+import { mondayOf, parseDay, shiftDays, toDay } from '../../lib/dates';
 import { copyToClipboard, formatLotTasksAsText } from '../../lib/exportTasks';
 import { handleTaskPaste } from '../../lib/paste';
 import './LotDetail.css';
@@ -53,6 +54,8 @@ export default function LotDetail({ drawer = false }: { drawer?: boolean }) {
   const project = lot?.projectId ? projects.find((p) => p.id === lot.projectId) : null;
   const color = project?.color ?? 'var(--text-tertiary)';
   const lotTasks = lot ? tasks.filter((t) => t.lotId === lot.id) : [];
+  // Lot de cours : séances rangées par semaine, passées repliées (état local, replié d'office).
+  const [pastOpen, setPastOpen] = useState(false);
 
   useEffect(() => {
     const ta = textareaRef.current;
@@ -66,10 +69,117 @@ export default function LotDetail({ drawer = false }: { drawer?: boolean }) {
 
   if (!lot) return null;
 
+  const agenda = isAgenda(lot);
   const urgency = computeUrgency(lot);
   const dueFg = urgency === 'late' ? 'var(--red)' : '#c9c9c4';
   const dueLabel = urgency === 'late' ? `retard ${Math.abs(daysLate(lot.due))} J` : lot.due ? formatShortDate(lot.due) : 'SANS DATE';
   const doneCount = lotTasks.filter((t) => t.done).length;
+
+  // Ligne de tâche modifiable (libellé, date, suppression).
+  const renderTask = (t: Task) => {
+    const late = t.due ? daysFromToday(t.due) < 0 && !t.done : false;
+    const picking = taskDatePickerId === t.id;
+    return (
+      <div key={t.id} className="taskRow">
+        <div className="taskRow__main">
+          <button
+            className="taskRow__box"
+            title={t.done ? 'rouvrir la tâche' : 'terminer la tâche'}
+            onClick={() => toggleTask(t.id)}
+            style={{
+              borderColor: t.done ? 'var(--yellow)' : late ? 'var(--red)' : '#6f6f6c',
+              background: t.done ? 'var(--yellow)' : 'transparent',
+            }}
+          >
+            {t.done ? '✓' : ''}
+          </button>
+          <input
+            className="taskRow__label"
+            value={t.label}
+            onChange={(e) => updateTaskLabel(t.id, e.target.value)}
+            style={{
+              color: t.done ? '#9c9c98' : 'var(--paper)',
+              textDecoration: t.done ? 'line-through' : 'none',
+            }}
+          />
+          <button
+            className="taskRow__due"
+            title="échéance de la tâche"
+            style={{ color: late ? 'var(--red)' : '#9c9c98' }}
+            onClick={() => openTaskDatePicker(t.id)}
+          >
+            {t.due ? (late ? `retard ${Math.abs(daysFromToday(t.due))}J` : formatShortDate(t.due)) : '+ date'}
+          </button>
+          <button className="taskRow__delete" title="supprimer la tâche" onClick={() => deleteTask(t.id)}>
+            ✕
+          </button>
+        </div>
+        {picking && (
+          <div className="taskRow__picker">
+            <span className="taskRow__pickerLabel">début</span>
+            <input
+              type="date"
+              className="taskRow__pickerDate"
+              title="début de la fourchette (optionnel)"
+              aria-label="début de la fourchette de la tâche"
+              value={t.startDate ?? ''}
+              onChange={(e) => setTaskStartDate(t.id, e.target.value || null)}
+            />
+            <span className="taskRow__pickerLabel">fin</span>
+            <input
+              type="date"
+              className="taskRow__pickerDate"
+              title="date précise"
+              aria-label="échéance précise de la tâche"
+              value={t.due ?? ''}
+              onChange={(e) => setTaskDueDate(t.id, e.target.value || null)}
+            />
+            {DATE_CHOICES.map((c) => {
+              const current = t.due && daysFromToday(t.due) === c.offset;
+              return (
+                <button
+                  key={c.key}
+                  className="taskRow__pickerChoice"
+                  style={{
+                    background: current ? 'var(--yellow)' : 'transparent',
+                    color: current ? 'var(--ink)' : '#e4e4e0',
+                    borderColor: current ? 'var(--yellow)' : '#3a3a38',
+                  }}
+                  onClick={() => setTaskDue(t.id, c.key as DateChoiceKey)}
+                >
+                  {c.label}
+                </button>
+              );
+            })}
+            <span className="taskRow__pickerLabel">de</span>
+            <input
+              type="time"
+              className="taskRow__pickerDate"
+              aria-label="heure de début de la tâche"
+              value={t.startTime ?? ''}
+              onChange={(e) => setTaskStartTime(t.id, e.target.value || null)}
+            />
+            <span className="taskRow__pickerLabel">à</span>
+            <input
+              type="time"
+              className="taskRow__pickerDate"
+              aria-label="heure de fin de la tâche"
+              value={t.endTime ?? ''}
+              onChange={(e) => setTaskEndTime(t.id, e.target.value || null)}
+            />
+            <input
+              type="text"
+              className="taskRow__pickerDate taskRow__pickerLocation"
+              aria-label="lieu de la tâche"
+              placeholder="lieu (optionnel)"
+              value={t.location}
+              onChange={(e) => setTaskLocation(t.id, e.target.value)}
+            />
+          </div>
+        )}
+      </div>
+    );
+  };
 
   const moveTargets: { id: string | null; name: string }[] = [
     { id: null, name: 'Sans projet' },
@@ -237,110 +347,17 @@ export default function LotDetail({ drawer = false }: { drawer?: boolean }) {
               )}
             </div>
 
-            {lotTasks.map((t) => {
-              const late = t.due ? daysFromToday(t.due) < 0 && !t.done : false;
-              const picking = taskDatePickerId === t.id;
-              return (
-                <div key={t.id} className="taskRow">
-                  <div className="taskRow__main">
-                    <button
-                      className="taskRow__box"
-                      title={t.done ? 'rouvrir la tâche' : 'terminer la tâche'}
-                      onClick={() => toggleTask(t.id)}
-                      style={{
-                        borderColor: t.done ? 'var(--yellow)' : late ? 'var(--red)' : '#6f6f6c',
-                        background: t.done ? 'var(--yellow)' : 'transparent',
-                      }}
-                    >
-                      {t.done ? '✓' : ''}
-                    </button>
-                    <input
-                      className="taskRow__label"
-                      value={t.label}
-                      onChange={(e) => updateTaskLabel(t.id, e.target.value)}
-                      style={{
-                        color: t.done ? '#9c9c98' : 'var(--paper)',
-                        textDecoration: t.done ? 'line-through' : 'none',
-                      }}
-                    />
-                    <button
-                      className="taskRow__due"
-                      title="échéance de la tâche"
-                      style={{ color: late ? 'var(--red)' : '#9c9c98' }}
-                      onClick={() => openTaskDatePicker(t.id)}
-                    >
-                      {t.due ? (late ? `retard ${Math.abs(daysFromToday(t.due))}J` : formatShortDate(t.due)) : '+ date'}
-                    </button>
-                    <button className="taskRow__delete" title="supprimer la tâche" onClick={() => deleteTask(t.id)}>
-                      ✕
-                    </button>
-                  </div>
-                  {picking && (
-                    <div className="taskRow__picker">
-                      <span className="taskRow__pickerLabel">début</span>
-                      <input
-                        type="date"
-                        className="taskRow__pickerDate"
-                        title="début de la fourchette (optionnel)"
-                        aria-label="début de la fourchette de la tâche"
-                        value={t.startDate ?? ''}
-                        onChange={(e) => setTaskStartDate(t.id, e.target.value || null)}
-                      />
-                      <span className="taskRow__pickerLabel">fin</span>
-                      <input
-                        type="date"
-                        className="taskRow__pickerDate"
-                        title="date précise"
-                        aria-label="échéance précise de la tâche"
-                        value={t.due ?? ''}
-                        onChange={(e) => setTaskDueDate(t.id, e.target.value || null)}
-                      />
-                      {DATE_CHOICES.map((c) => {
-                        const current = t.due && daysFromToday(t.due) === c.offset;
-                        return (
-                          <button
-                            key={c.key}
-                            className="taskRow__pickerChoice"
-                            style={{
-                              background: current ? 'var(--yellow)' : 'transparent',
-                              color: current ? 'var(--ink)' : '#e4e4e0',
-                              borderColor: current ? 'var(--yellow)' : '#3a3a38',
-                            }}
-                            onClick={() => setTaskDue(t.id, c.key as DateChoiceKey)}
-                          >
-                            {c.label}
-                          </button>
-                        );
-                      })}
-                      <span className="taskRow__pickerLabel">de</span>
-                      <input
-                        type="time"
-                        className="taskRow__pickerDate"
-                        aria-label="heure de début de la tâche"
-                        value={t.startTime ?? ''}
-                        onChange={(e) => setTaskStartTime(t.id, e.target.value || null)}
-                      />
-                      <span className="taskRow__pickerLabel">à</span>
-                      <input
-                        type="time"
-                        className="taskRow__pickerDate"
-                        aria-label="heure de fin de la tâche"
-                        value={t.endTime ?? ''}
-                        onChange={(e) => setTaskEndTime(t.id, e.target.value || null)}
-                      />
-                      <input
-                        type="text"
-                        className="taskRow__pickerDate taskRow__pickerLocation"
-                        aria-label="lieu de la tâche"
-                        placeholder="lieu (optionnel)"
-                        value={t.location}
-                        onChange={(e) => setTaskLocation(t.id, e.target.value)}
-                      />
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+            {agenda ? (
+              <AgendaTasks
+                tasks={lotTasks}
+                pastOpen={pastOpen}
+                onTogglePast={() => setPastOpen((o) => !o)}
+                onToggle={toggleTask}
+                renderTask={renderTask}
+              />
+            ) : (
+              lotTasks.map(renderTask)
+            )}
 
             <input
               className="lotDetail__addTask"
@@ -374,4 +391,111 @@ function daysFromToday(due: string): number {
 function daysLate(due: string | null): number {
   if (!due) return 0;
   return Math.abs(daysFromToday(due));
+}
+
+/**
+ * Tâches d'un lot de cours (GPN1, GPN2, Commun) : par semaine, dans l'ordre chronologique. Les
+ * séances importées sont en lecture seule (réécrites à chaque import, on les modifie dans l'app
+ * cours) : seule la case « fait » reste. Passées (séances passées, tâches faites passées) repliées
+ * en tête ; tâches ajoutées à la main sans date à la fin, modifiables comme ailleurs.
+ */
+function AgendaTasks({
+  tasks,
+  pastOpen,
+  onTogglePast,
+  onToggle,
+  renderTask,
+}: {
+  tasks: Task[];
+  pastOpen: boolean;
+  onTogglePast: () => void;
+  onToggle: (id: string) => void;
+  renderTask: (t: Task) => React.ReactNode;
+}) {
+  const today = toDay(new Date());
+  const thisMonday = toDay(mondayOf(new Date()));
+  const nextMonday = toDay(shiftDays(mondayOf(new Date()), 7));
+  const dated = tasks
+    .filter((t) => t.due)
+    .sort(
+      (a, b) =>
+        a.due!.localeCompare(b.due!) || (a.startTime ?? '').localeCompare(b.startTime ?? '') || a.position - b.position,
+    );
+  const isPast = (t: Task) => t.due! < today && (isAgenda(t) || t.done);
+  const past = dated.filter(isPast);
+  const weeks = new Map<string, Task[]>();
+  for (const t of dated) {
+    if (isPast(t)) continue;
+    // Période (fourchette) : rangée à la semaine où elle commence, ou à celle-ci si elle a déjà commencé.
+    const from = t.startDate && t.startDate < t.due! ? (t.startDate > today ? t.startDate : today) : t.due!;
+    const w = toDay(mondayOf(parseDay(from)));
+    const list = weeks.get(w);
+    if (list) list.push(t);
+    else weeks.set(w, [t]);
+  }
+  const weekLabel = (w: string) =>
+    w === thisMonday
+      ? 'cette semaine'
+      : w === nextMonday
+        ? 'semaine prochaine'
+        : w < thisMonday
+          ? `en retard · semaine du ${formatShortDate(w)}`
+          : `semaine du ${formatShortDate(w)}`;
+  const row = (t: Task) =>
+    isAgenda(t) ? <SessionRow key={t.id} t={t} past={isPast(t)} onToggle={onToggle} /> : renderTask(t);
+  return (
+    <>
+      {past.length > 0 && (
+        <button className="agendaTasks__head agendaTasks__head--past" onClick={onTogglePast}>
+          {pastOpen ? '▾' : '▸'} passées · {past.length}
+        </button>
+      )}
+      {pastOpen && past.map(row)}
+      {[...weeks].map(([w, ts]) => (
+        <div key={w}>
+          <div className="agendaTasks__head">{weekLabel(w)}</div>
+          {ts.map(row)}
+        </div>
+      ))}
+      {tasks.filter((t) => !t.due).map(renderTask)}
+    </>
+  );
+}
+
+/** Séance / période / réunion importée : jour, horaire, libellé, salle — lecture seule sauf « fait ». */
+function SessionRow({ t, past, onToggle }: { t: Task; past: boolean; onToggle: (id: string) => void }) {
+  const d = parseDay(t.due!);
+  const range = t.startDate && t.startDate !== t.due;
+  const day = range
+    ? `${formatShortDate(t.startDate)} → ${formatShortDate(t.due)}`
+    : past
+      ? formatShortDate(t.due) // pas d'intitulé de semaine dans les passées : date complète
+      : `${DAYS_SHORT[d.getDay()]} ${d.getDate()}`;
+  return (
+    <div className="taskRow sessionRow">
+      <div className="taskRow__main">
+        <button
+          className="taskRow__box"
+          title={t.done ? 'rouvrir' : 'marquer comme fait'}
+          onClick={() => onToggle(t.id)}
+          style={{
+            borderColor: t.done ? 'var(--yellow)' : '#6f6f6c',
+            background: t.done ? 'var(--yellow)' : 'transparent',
+          }}
+        >
+          {t.done ? '✓' : ''}
+        </button>
+        <span className={`sessionRow__day ${range ? 'sessionRow__day--range' : ''}`}>{day}</span>
+        {!range && <span className="sessionRow__time">{formatTimeRange(t.startTime, t.endTime)}</span>}
+        <span
+          className="sessionRow__label"
+          title={t.label}
+          style={{ color: t.done ? '#9c9c98' : 'var(--paper)', textDecoration: t.done ? 'line-through' : 'none' }}
+        >
+          {t.label}
+        </span>
+        {t.location && <span className="sessionRow__place">{t.location}</span>}
+      </div>
+    </div>
+  );
 }
