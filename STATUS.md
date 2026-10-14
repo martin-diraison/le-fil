@@ -1,6 +1,6 @@
 # Le Fil — état d'avancement
 
-Dernière session : 2026-10-13 (voir section dédiée plus bas) ; avant : 2026-10-02 ; précédente : 2026-09-29 — traitement du backlog de retours utilisateur, puis chantier
+Dernière session : 2026-10-14 (Liste desktop par section, volet cours par semaine) ; avant : 2026-10-13, 2026-10-02 ; précédente : 2026-09-29 — traitement du backlog de retours utilisateur, puis chantier
 « rdv/agenda » (horaire + lieu, vue journalière) implémenté en une fois. Appli en ligne, installée :
 https://martin-diraison.github.io/le-fil/ (déployée via GitHub Actions, connexion testée, PWA
 installée sur smartphone Samsung). **Code commité et poussé.**
